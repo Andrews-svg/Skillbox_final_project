@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" th:href="@{/favicon/favicon.ico}" type="image/x-icon"/>
+    <link rel="icon" th:href="@{/favicon/favicon-16x16.png}" sizes="16x16" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon/favicon-32x32.png}" sizes="32x32" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon/favicon-64x64.png}" sizes="64x64" type="image/png"/>
+    <title>Site Search Engine</title>
+    <meta name="description" content="Site Search Engine">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <link rel="preload" href="/assets/fonts/Montserrat/Montserrat-SemiBold.woff2"
+          as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/assets/css/fonts.css?v=82368483}"/>
+    <link rel="stylesheet" th:href="@{/assets/css/basic.css?v=82368483}"/>
+    <link rel="stylesheet" th:href="@{/assets/css/extra.css?v=82368483}"/>
+
+    <script type="text/javascript" th:src="@{/assets/plg/jQuery/jquery-3.7.1.min.js}"></script>
+    <script th:src="@{/assets/js/config.js}"></script>
+    <script th:src="@{/assets/js/scripts.js(v=38874865)}" defer></script>
+</head>
+<body class="Site">
+<div class="Site-loader">
+
+    <div class="Site-loader-block">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+</div>
+
+<!-- Общая структура приложения -->
+<div th:if="${isLoginPage}">
+    <h2>Вход</h2>
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    <form action="/login" method="post">
+        <label for="username">Имя пользователя:</label>
+        <input type="text" id="username" name="username" required autocomplete="">
+        <br>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+        <br>
+        <button type="submit">Войти</button>
+    </form>
+</div>
+
+
+<div th:if="${isRegisterPage}">
+    <h2>Регистрация</h2>
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    <form action="/register" method="post">
+        <label for="reg_username">Имя пользователя:</label>
+        <input type="text" id="reg_username" name="username" required autocomplete="username">
+        <br>
+        <label for="reg_password">Пароль:</label>
+        <input type="password" id="reg_password" name="password" required autocomplete="new-password">
+        <br>
+        <label for="reg_email">Email:</label>
+        <input type="email" id="reg_email" name="email" required autocomplete="email">
+        <br>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</div>
+
+
+    <!-- Если это главная страница -->
+    <div th:if="${not isLoginPage && not isRegisterPage}">
+        <h1>Главная страница</h1>
+        <p th:text="${welcomeMessage}"></p>
+
+        <div class="Middle">
+            <div class="wrap">
+                <div class="Site-loadingIsComplete">
+                    <main class="Tabs Tabs_column Middle-main">
+                        <div class="Column">
+                            <div class="Tabs-links">
+                                <a class="Tabs-link" th:classappend="${activeTab == 'dashboard'} ? 'Tabs-link_ACTIVE'"
+                                   th:href="@{/dashboard}">
+                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/dashboard.svg}" alt="dashboard.svg"/>
+                                    <span class="Tabs-linkText" th:text="${DASHBOARD_TAB_NAME}">Dashboard</span>
+                                </a>
+                                <a class="Tabs-link" th:classappend="${activeTab == 'management'} ? 'Tabs-link_ACTIVE'"
+                                   th:href="@{/management}">
+                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/management.svg}" alt="management.svg"/>
+                                    <span class="Tabs-linkText" th:text="${MANAGEMENT_TAB_NAME}">Management</span>
+                                </a>
+                                <a class="Tabs-link" th:classappend="${activeTab == 'search'} ? 'Tabs-link_ACTIVE'"
+                                   th:href="@{/search}">
+                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/search.svg}" alt="search.svg"/>
+                                    <span class="Tabs-linkText" th:text="${SEARCH_TAB_NAME}">Search</span>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="Tabs-wrap">
+
+                            <!-- Вкладка Dashboard -->
+                            <div class="Tabs-block" id="dashboard" th:if="${activeTab == 'dashboard'}">
+                                <div class="Section">
+                                    <div class="Section-header">
+                                        <h2 class="Section-title" th:text="${DASHBOARD_TAB_NAME}">Dashboard</h2>
+                                    </div>
+                                    <div class="Statistics">
+                                        <div class="Statistics-info">
+                                            <div class="Statistics-block">
+                                                <span class="Statistics-amount" id="totalSites"></span>
+                                                <span class="Statistics-title">sites</span>
+                                            </div>
+                                            <div class="Statistics-block">
+                                                <span class="Statistics-amount" id="totalPages"></span>
+                                                <span class="Statistics-title">pages</span>
+                                            </div>
+                                            <div class="Statistics-block">
+                                                <span class="Statistics-amount" id="totalLemmas"></span>
+                                                <span class="Statistics-title">lemmas</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Вкладка Management -->
+                            <div class="Tabs-block" id="management" th:if="${activeTab == 'management'}">
+                                <div class="Section">
+                                    <div class="Section-header">
+                                        <h2 class="Section-title" th:text="${MANAGEMENT_TAB_NAME}">Management</h2>
+                                    </div>
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <form id="indexingForm" onsubmit="toggleIndexing(event)">
+                                                <input type="hidden" name="id" th:value="${id}"/>
+                                                <button type="submit" class="btn btn_primary" id="indexingButton"
+                                                        th:text="${indexingStatus == 'INDEXING' ? 'Stop indexing' :
+                                                        'Start indexing'}"></button>
+                                            </form>
+                                            <div>
+                    <span class="status-indicator" id="indexingIcon"
+                          th:class="${indexingStatus == 'INDEXED' ? 'green' : indexingStatus == 'FAILED' ? 'red' :
+                          indexingStatus == 'INDEXING' ? 'blue' : ''}"></span>
+                                                <button class="btn btn_primary" onclick="checkStatus()">Check Status</button>
+                                            </div>
+                                        </div>
+                                        <div th:if="${errorMessage}" class="error-message">
+                                            <p th:text="${errorMessage}" style="color: red;"></p>
+                                        </div>
+                                    </div>
+                                    <br>
+                                    <div class="UpdatePageBlock">
+                                        <h3>Add/update page:</h3>
+                                        <form class="form form_close" action="/indexPage" method="post">
+                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                            <input type="hidden" name="id" th:value="${id}"/>
+                                            <div class="form-group form-group_row">
+                                                <input class="form-input" id="page" name="url" type="text"
+                                                       required placeholder="Введите URL"/>
+                                                <button class="btn btn_primary form-btn" type="submit">Add/update</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Вкладка Search -->
+                            <div class="Tabs-block" id="search" th:if="${activeTab == 'search'}">
+                                <div class="Section">
+                                    <div class="Section-header">
+                                        <h2 class="Section-title" th:text="${SEARCH_TAB_NAME}">Search</h2>
+                                    </div>
+                                    <form class="form form_close" action="#" method="post" data-send="search" data-sendlimit="10">
+                                        <div class="form-group">
+                                            <div class="form-selectWrap">
+                                                <select class="form-select" name="site">
+                                                    <option value="" selected="selected">All sites</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group form-group_row">
+                                            <input class="form-input" id="query" name="query" type="text" placeholder="Query"/>
+                                            <button class="btn btn_primary form-btn" type="submit">Search</button>
+                                        </div>
+                                    </form>
+                                    <div class="SearchResult">
+                                        <strong class="SearchResult-title">Found
+                                            <span class="SearchResult-amount">0</span> results</strong>
+                                        <div class="SearchResult-content"></div>
+                                        <div class="SearchResult-footer SearchResult-footer_hide">
+                                            <button class="btn btn_primary" data-send="search" data-sendtype="next">Show more<span
+                                                    class="SearchResult-remain">(0)</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

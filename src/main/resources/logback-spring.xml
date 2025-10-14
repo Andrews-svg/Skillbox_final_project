@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Общие аппендеры -->
+
+    <!-- Основной общий аппендер для всех уровней логирования -->
+    <appender name="COMMON_APPENDER" class="ch.qos.logback.core.FileAppender">
+        <file>logs/app.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Аппендер для логов уровня ERROR -->
+    <appender name="ERROR_APPENDER" class="ch.qos.logback.core.FileAppender">
+        <file>logs/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Профиль DEV -->
+    <springProfile name="dev">
+
+        <!-- Логирование обычных сообщений в dev профиль -->
+        <appender name="DEV_APPENDER" class="ch.qos.logback.core.FileAppender">
+            <file>logs/dev-app.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- Настройка корневого логгера для профиля DEV -->
+        <root level="DEBUG">
+            <appender-ref ref="DEV_APPENDER" />
+            <appender-ref ref="ERROR_APPENDER" />
+        </root>
+    </springProfile>
+
+    <!-- Профиль TEST -->
+    <springProfile name="test">
+        <appender name="TEST_APPENDER" class="ch.qos.logback.core.FileAppender">
+            <file>logs/test-app.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- Настройка корневого логгера для профиля TEST -->
+        <root level="DEBUG">
+            <appender-ref ref="TEST_APPENDER" />
+            <appender-ref ref="ERROR_APPENDER" />
+        </root>
+    </springProfile>
+
+    <!-- Профиль PROD -->
+    <springProfile name="prod">
+        <appender name="PROD_APPENDER" class="ch.qos.logback.core.FileAppender">
+            <file>logs/prod-app.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- Настройка корневого логгера для профиля PROD -->
+        <root level="DEBUG">
+            <appender-ref ref="PROD_APPENDER" />
+            <appender-ref ref="ERROR_APPENDER" />
+        </root>
+    </springProfile>
+
+</configuration>

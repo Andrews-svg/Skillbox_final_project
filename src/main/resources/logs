@@ -1,0 +1,77 @@
+17:15:42.392 [main] INFO com.example.searchengine.Application -- Starting application...
+17:15:42,299 |-INFO in ch.qos.logback.classic.LoggerContext[default] - This is logback-classic version 1.5.8
+17:15:42,307 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Here is a list of configurators discovered as a service, by rank: 
+17:15:42,307 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 -   org.springframework.boot.logging.logback.RootLogLevelConfigurator
+17:15:42,307 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - They will be invoked in order until ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY is returned.
+17:15:42,307 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Constructed configurator of type class org.springframework.boot.logging.logback.RootLogLevelConfigurator
+17:15:42,326 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - org.springframework.boot.logging.logback.RootLogLevelConfigurator.configure() call lasted 1 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+17:15:42,326 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Trying to configure with ch.qos.logback.classic.joran.SerializedModelConfigurator
+17:15:42,328 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Constructed configurator of type class ch.qos.logback.classic.joran.SerializedModelConfigurator
+17:15:42,334 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.scmo]
+17:15:42,335 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.scmo]
+17:15:42,335 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - ch.qos.logback.classic.joran.SerializedModelConfigurator.configure() call lasted 7 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+17:15:42,335 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Trying to configure with ch.qos.logback.classic.util.DefaultJoranConfigurator
+17:15:42,337 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Constructed configurator of type class ch.qos.logback.classic.util.DefaultJoranConfigurator
+17:15:42,339 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+17:15:42,340 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.xml]
+17:15:42,340 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - ch.qos.logback.classic.util.DefaultJoranConfigurator.configure() call lasted 3 milliseconds. ExecutionStatus=INVOKE_NEXT_IF_ANY
+17:15:42,340 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Trying to configure with ch.qos.logback.classic.BasicConfigurator
+17:15:42,342 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - Constructed configurator of type class ch.qos.logback.classic.BasicConfigurator
+17:15:42,343 |-INFO in ch.qos.logback.classic.BasicConfigurator@5b444398 - Setting up default configuration.
+17:15:42,378 |-INFO in ch.qos.logback.classic.util.ContextInitializer@15cafec7 - ch.qos.logback.classic.BasicConfigurator.configure() call lasted 36 milliseconds. ExecutionStatus=NEUTRAL
+17:15:43,678 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [COMMON_APPENDER] not referenced. Skipping further processing.
+17:15:43,678 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [ERROR_APPENDER]
+17:15:43,679 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.FileAppender]
+17:15:43,696 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+17:15:43,729 |-INFO in ch.qos.logback.core.FileAppender[ERROR_APPENDER] - File property is set to [logs/error.log]
+17:15:43,732 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - Processing appender named [DEV_APPENDER]
+17:15:43,732 |-INFO in ch.qos.logback.core.model.processor.AppenderModelHandler - About to instantiate appender of type [ch.qos.logback.core.FileAppender]
+17:15:43,732 |-INFO in ch.qos.logback.core.model.processor.ImplicitModelHandler - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+17:15:43,733 |-INFO in ch.qos.logback.core.FileAppender[DEV_APPENDER] - File property is set to [logs/dev-app.log]
+17:15:43,734 |-INFO in ch.qos.logback.classic.model.processor.RootLoggerModelHandler - Setting level of ROOT logger to DEBUG
+17:15:43,735 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [DEV_APPENDER] to Logger[ROOT]
+17:15:43,735 |-INFO in ch.qos.logback.core.model.processor.AppenderRefModelHandler - Attaching appender named [ERROR_APPENDER] to Logger[ROOT]
+17:15:43,735 |-INFO in ch.qos.logback.core.model.processor.DefaultProcessor@cb191ca - End of configuration.
+17:15:43,735 |-INFO in org.springframework.boot.logging.logback.SpringBootJoranConfigurator@42f48531 - Registering current configuration as safe fallback point
+
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+Hibernate: select p1_0.id from page_table p1_0 where p1_0.available=1
+Hibernate: select count(*) from site_table s1_0
+Hibernate: select count(*) from page_table p1_0
+Hibernate: select count(l1_0.id) from lemma_table l1_0
+Hibernate: select s1_0.id,s1_0.domain,s1_0.group_id,s1_0.`is_accessible`,s1_0.last_error,s1_0.name,s1_0.parent_site_id,s1_0.robots_txt,s1_0.status,s1_0.status_time,s1_0.url from site_table s1_0 where s1_0.status=?
+Hibernate: select p1_0.site_id,count(p1_0.id) from page_table p1_0 where p1_0.site_id in (?) group by p1_0.site_id
+Hibernate: select l1_0.site_id,count(l1_0.id) from lemma_table l1_0 where l1_0.site_id in (?) group by l1_0.site_id
+Hibernate: select count(*) from site_table s1_0
+Hibernate: select count(*) from page_table p1_0
+Hibernate: select count(l1_0.id) from lemma_table l1_0
+Hibernate: select s1_0.id,s1_0.domain,s1_0.group_id,s1_0.`is_accessible`,s1_0.last_error,s1_0.name,s1_0.parent_site_id,s1_0.robots_txt,s1_0.status,s1_0.status_time,s1_0.url from site_table s1_0 where s1_0.status=?
+Hibernate: select p1_0.site_id,count(p1_0.id) from page_table p1_0 where p1_0.site_id in (?) group by p1_0.site_id
+Hibernate: select l1_0.site_id,count(l1_0.id) from lemma_table l1_0 where l1_0.site_id in (?) group by l1_0.site_id
+Hibernate: select count(*) from site_table s1_0
+Hibernate: select count(*) from page_table p1_0
+Hibernate: select count(l1_0.id) from lemma_table l1_0
+Hibernate: select s1_0.id,s1_0.domain,s1_0.group_id,s1_0.`is_accessible`,s1_0.last_error,s1_0.name,s1_0.parent_site_id,s1_0.robots_txt,s1_0.status,s1_0.status_time,s1_0.url from site_table s1_0 where s1_0.status=?
+Hibernate: select p1_0.site_id,count(p1_0.id) from page_table p1_0 where p1_0.site_id in (?) group by p1_0.site_id
+Hibernate: select l1_0.site_id,count(l1_0.id) from lemma_table l1_0 where l1_0.site_id in (?) group by l1_0.site_id
+Hibernate: select count(*) from site_table s1_0
+Hibernate: select count(*) from page_table p1_0
+Hibernate: select count(l1_0.id) from lemma_table l1_0
+Hibernate: select s1_0.id,s1_0.domain,s1_0.group_id,s1_0.`is_accessible`,s1_0.last_error,s1_0.name,s1_0.parent_site_id,s1_0.robots_txt,s1_0.status,s1_0.status_time,s1_0.url from site_table s1_0 where s1_0.status=?
+Hibernate: select p1_0.site_id,count(p1_0.id) from page_table p1_0 where p1_0.site_id in (?) group by p1_0.site_id
+Hibernate: select l1_0.site_id,count(l1_0.id) from lemma_table l1_0 where l1_0.site_id in (?) group by l1_0.site_id
+Hibernate: select count(*) from site_table s1_0
+Hibernate: select count(*) from page_table p1_0
+Hibernate: select count(l1_0.id) from lemma_table l1_0
+Hibernate: select s1_0.id,s1_0.domain,s1_0.group_id,s1_0.`is_accessible`,s1_0.last_error,s1_0.name,s1_0.parent_site_id,s1_0.robots_txt,s1_0.status,s1_0.status_time,s1_0.url from site_table s1_0 where s1_0.status=?
+Hibernate: select p1_0.site_id,count(p1_0.id) from page_table p1_0 where p1_0.site_id in (?) group by p1_0.site_id
+Hibernate: select l1_0.site_id,count(l1_0.id) from lemma_table l1_0 where l1_0.site_id in (?) group by l1_0.site_id

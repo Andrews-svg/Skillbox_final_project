@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Добавляем недостающие поля в таблицу site_table -->
+    <changeSet id="52" author="AndrewsS">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="site_table"/>
+
+                <!-- Проверка отсутствия конкретных полей -->
+                <not><columnExists tableName="site_table" columnName="group_id"/></not>
+                <not><columnExists tableName="site_table" columnName="accessible"/></not>
+                <not><columnExists tableName="site_table" columnName="robots_txt"/></not>
+                <not><columnExists tableName="site_table" columnName="domain"/></not>
+                <not><columnExists tableName="site_table" columnName="parent_site_id"/></not>
+            </and>
+        </preConditions>
+
+        <!-- Добавляем необходимые поля -->
+        <addColumn tableName="site_table">
+            <column name="group_id" type="int"/>
+        </addColumn>
+        <addColumn tableName="site_table">
+            <column name="accessible" type="tinyint"/>
+        </addColumn>
+        <addColumn tableName="site_table">
+            <column name="robots_txt" type="text"/>
+        </addColumn>
+        <addColumn tableName="site_table">
+            <column name="domain" type="varchar(255)"/>
+        </addColumn>
+        <addColumn tableName="site_table">
+            <column name="parent_site_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

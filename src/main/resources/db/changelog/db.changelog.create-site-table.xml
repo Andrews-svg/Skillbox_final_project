@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Создание таблицы site -->
+    <changeSet id="32" author="AndrewsS">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="site_table"/>
+            </not>
+        </preConditions>
+        <createTable tableName="site_table">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="status" type="enum('INDEXING', 'INDEXED', 'FAILED')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_time" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="page_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

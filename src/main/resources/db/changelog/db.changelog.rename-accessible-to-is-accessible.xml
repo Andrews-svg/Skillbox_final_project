@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Переименование столбца accessible в is_accessible -->
+    <changeSet id="56" author="AndrewsS">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="site_table"/>
+                <columnExists tableName="site_table" columnName="accessible"/>
+                <not><columnExists tableName="site_table" columnName="is_accessible"/></not>
+            </and>
+        </preConditions>
+
+        <!-- Операция переименования колонки -->
+        <renameColumn tableName="site_table"
+                      oldColumnName="accessible"
+                      newColumnName="is_accessible"
+                      columnDataType="BOOLEAN"/>
+    </changeSet>
+</databaseChangeLog>

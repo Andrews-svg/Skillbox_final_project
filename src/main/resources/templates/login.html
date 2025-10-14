@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link rel="shortcut icon" th:href="@{/favicon/favicon.ico}" type="image/x-icon"/>
+    <link rel="icon" th:href="@{/favicon/favicon-16x16.png}" sizes="16x16" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon/favicon-32x32.png}" sizes="32x32" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon/favicon-64x64.png}" sizes="64x64" type="image/png"/>
+    <title>Вход в систему</title>
+    <meta name="description" content="Форма входа в систему">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <link rel="preload" th:href="@{/assets/fonts/Montserrat/Montserrat-SemiBold.woff2}"
+          as="font" type="font/woff2" crossorigin="anonymous">
+
+    <link rel="stylesheet" th:href="@{/assets/css/fonts.css?v=82368483}"/>
+    <link rel="stylesheet" th:href="@{/assets/css/basic.css?v=82368483}"/>
+    <link rel="stylesheet" th:href="@{/assets/css/extra.css?v=82368483}"/>
+
+    <script type="text/javascript" th:src="@{/assets/plg/jQuery/jquery-3.7.1.min.js}"></script>
+    <script th:src="@{/assets/js/config.js}"></script>
+    <script th:src="@{/assets/js/scripts.js(v=38874865)}" defer></script>
+</head>
+<body class="Site">
+<div class="Site-loader">
+    <div class="Site-loader-block">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+</div>
+
+<div class="Middle">
+    <div class="wrap">
+        <div class="Site-loadingIsComplete">
+            <main class="Tabs Tabs_column Middle-main">
+                <div class="Column">
+                    <div class="Tabs-links">
+                        <h2>Вход в систему</h2>
+                        <div th:if="${errorMessage}" class="alert alert-danger">
+                            <p th:text="${errorMessage}"></p>
+                        </div>
+                        <form action="/login" method="post">
+                            <label for="username">Имя пользователя:</label>
+                            <input type="text" id="username" name="username" required autocomplete="username">
+                            <br>
+                            <label for="password">Пароль:</label>
+                            <input type="password" id="password" name="password" required autocomplete="current-password">
+                            <br>
+                            <button type="submit">Войти</button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+</body>
+</html>

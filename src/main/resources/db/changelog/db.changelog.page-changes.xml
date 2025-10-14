@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="48" author="AndrewsS">
+
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not><columnExists columnName="name" tableName="page_table"/></not>
+                <not><columnExists columnName="title" tableName="page_table"/></not>
+                <not><columnExists columnName="snippet" tableName="page_table"/></not>
+                <not><columnExists columnName="relevance" tableName="page_table"/></not>
+                <not><columnExists columnName="status" tableName="page_table"/></not>
+            </and>
+        </preConditions>
+
+        <addColumn tableName="page_table">
+            <column name="name" type="VARCHAR(255)"/>
+        </addColumn>
+
+        <addColumn tableName="page_table">
+            <column name="title" type="VARCHAR(255)"/>
+        </addColumn>
+
+        <addColumn tableName="page_table">
+            <column name="snippet" type="VARCHAR(255)"/>
+        </addColumn>
+
+        <addColumn tableName="page_table">
+            <column name="relevance" type="FLOAT" defaultValueNumeric="0.0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="page_table">
+            <column name="status" type="ENUM('PENDING','INDEXING','INDEXED','FAILED','NOT_FOUND','STOPPED','SERVER_ERROR')" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="page_table" columnName="name"/>
+            <dropColumn tableName="page_table" columnName="title"/>
+            <dropColumn tableName="page_table" columnName="snippet"/>
+            <dropColumn tableName="page_table" columnName="relevance"/>
+            <dropColumn tableName="page_table" columnName="status"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="49" author="AndrewsS">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists columnName="available" tableName="page_table"/>
+            </not>
+        </preConditions>
+        
+        <addColumn tableName="page_table">
+            <column name="available" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="page_table" columnName="available"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

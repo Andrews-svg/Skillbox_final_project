@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>Ошибка</title>
+    <link rel="stylesheet" th:href="@{/assets/css/basic.css?v=82368483}"/>
+    <link rel="stylesheet" th:href="@{/assets/css/extra.css?v=82368483}"/>
+</head>
+<body class="Site">
+<div class="Site-loader">
+    <div class="container">
+        <header>
+            <img src="/images/logo.png" alt="Логотип" width="150px" height="auto" />
+        </header>
+        <main>
+            <div class="error-container">
+                <h1 th:text="${errorMessage}">Сообщение об ошибке</h1>
+                <p>Мы столкнулись с проблемой, но работаем над её решением.<br/>
+                    Попробуйте повторить попытку позднее или обратитесь в нашу службу поддержки.</p>
+                <a href="/home" class="btn btn-primary">Вернуться на главную</a>
+            </div>
+        </main>
+        <footer>© 2025 MyApp Inc.</footer>
+    </div>
+</div>
+</body>
+</html>
