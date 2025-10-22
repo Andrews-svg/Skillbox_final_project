@@ -3,6 +3,7 @@ package com.example.searchengine.models;
 import jakarta.validation.constraints.NotBlank;
 
 
+
 public class LoginForm {
 
     @NotBlank(message = "{login.username.not_blank}")

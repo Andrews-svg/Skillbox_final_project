@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.example.searchengine.config.SiteSettings;
+import com.example.searchengine.config.SiteList;
 import com.example.searchengine.dao.SiteDao;
 import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.models.Site;
@@ -35,7 +35,7 @@ public class SiteService {
             LoggerFactory.getLogger(SiteService.class);
 
 
-    private final SiteSettings sitesList;
+    private final SiteList sitesList;
     private final SiteDao siteDao;
     private final SiteRepository siteRepository;
     private final NotificationService notificationService;
@@ -45,7 +45,7 @@ public class SiteService {
     private EntityManager entityManager;
 
     @Autowired
-    public SiteService(SiteDao siteDao, SiteSettings sitesList,
+    public SiteService(SiteDao siteDao, SiteList sitesList,
                        SiteRepository siteRepository,
                        NotificationService notificationService,
                        SiteValidationService siteValidationService) {
@@ -156,7 +156,7 @@ public class SiteService {
 
 
     public List<Site> findAllSites() {
-        Map<Long, SiteSettings.SiteConfig> siteConfigs = sitesList.getSites();
+        Map<Long, SiteList.SiteConfig> siteConfigs = sitesList.getSites();
         if (siteConfigs == null) {
             logger.error("SitesList or its sites is null.");
             return Collections.emptyList();

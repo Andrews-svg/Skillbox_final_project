@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.searchengine.config.SiteSettings;
+import com.example.searchengine.config.SiteList;
 import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.models.Site;
 import com.example.searchengine.models.Status;
@@ -26,7 +26,7 @@ public class SiteManager {
 
     private final SiteService siteService;
     private final DBSaver dbSaver;
-    private final SiteSettings sitesList;
+    private final SiteList sitesList;
     private final HealthCheckService healthCheckService;
     private final RobotsTxtChecker robotsTxtChecker;
     private volatile Status currentStatus = Status.INDEXED;
@@ -41,7 +41,7 @@ public class SiteManager {
     @Autowired
     public SiteManager(SiteService siteService, DBSaver dbSaver,
                        RobotsTxtChecker robotsTxtChecker,
-                       SiteSettings sitesList, HealthCheckService healthCheckService) {
+                       SiteList sitesList, HealthCheckService healthCheckService) {
         this.siteService = siteService;
         this.dbSaver = dbSaver;
         this.sitesList = sitesList;
@@ -74,10 +74,10 @@ public class SiteManager {
 
     public Map<String, String> getSitesFromConfig() {
         Map<String, String> siteMap = new HashMap<>();
-        Map<Long, SiteSettings.SiteConfig> sitesMap = sitesList.getSites();
+        Map<Long, SiteList.SiteConfig> sitesMap = sitesList.getSites();
 
         if (sitesMap != null && !sitesMap.isEmpty()) {
-            for (SiteSettings.SiteConfig site : sitesMap.values()) {
+            for (SiteList.SiteConfig site : sitesMap.values()) {
                 if (site != null && site.getName() != null && site.getUrl() != null) {
                     siteMap.put(site.getName(), site.getUrl());
                 } else {

@@ -1,7 +1,6 @@
 package com.example.searchengine.controllers.web;
 
 import com.example.searchengine.exceptions.ErrorMessages;
-import com.example.searchengine.indexing.IndexService;
 import com.example.searchengine.indexing.IndexingService;
 import com.example.searchengine.indexing.PageManager;
 import com.example.searchengine.models.Status;
@@ -105,8 +104,9 @@ public class IndexingWebController {
                             Model model,
                             RedirectAttributes redirectAttrs) {
         try {
+
             indexService.indexPage(url);
-            model.addAttribute("response", "Страница успешно проиндексирована");
+            model.addAttribute("response", "Запущена индексация страницы");
         } catch (Exception e) {
             logger.error("Ошибка при индексации страницы '{}': {}", url, e.getMessage());
             redirectAttrs.addFlashAttribute("error",

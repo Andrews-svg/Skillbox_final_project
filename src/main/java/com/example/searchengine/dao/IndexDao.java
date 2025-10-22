@@ -11,7 +11,6 @@ import jakarta.persistence.PersistenceContext;
 import com.example.searchengine.models.Lemma;
 import com.example.searchengine.models.Page;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -46,14 +45,19 @@ public class IndexDao {
             } else {
                 logger.info("Index already exists!");
                 Index indexFromDB = findByIdPair(index.getPage(), index.getLemma());
-                BigDecimal rank = index.getRank().add(indexFromDB.getRank());
-                indexFromDB.setRank(rank);
+
+                float currentRank = index.getRank();
+                float dbRank = indexFromDB.getRank();
+                float updatedRank = currentRank + dbRank;
+
+                indexFromDB.setRank(updatedRank);
                 update(indexFromDB);
                 logger.info("Index saveOrUpdated successfully: {}", indexFromDB);
                 return indexFromDB.getId();
             }
         }, "Failed to save or update index");
     }
+
 
     public Boolean checkIfIndexExists(Page page, Lemma lemma) {
         return executeWithLogging(() -> {

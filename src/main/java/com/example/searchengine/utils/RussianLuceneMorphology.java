@@ -17,7 +17,7 @@ public class RussianLuceneMorphology extends LuceneMorphology {
 
     private static final Logger logger = LoggerFactory.getLogger(RussianLuceneMorphology.class);
 
-
+    // TODO проблема: циклическая зависимость, решение: создание Lemmatizer -> интерфейса -> LemmatizerImpl
     private final Lemmatizer internalAnalyzer;
 
 

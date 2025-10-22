@@ -1,5 +1,6 @@
 package com.example.searchengine.utils;
 
+import com.example.searchengine.indexing.IndexService;
 import com.example.searchengine.services.SearcherService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,14 +11,12 @@ import org.slf4j.LoggerFactory;
 import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.models.*;
 import com.example.searchengine.dto.statistics.Data;
-import com.example.searchengine.indexing.IndexService;
 import com.example.searchengine.services.LemmaService;
 import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -64,7 +63,7 @@ public class Searcher {
         logger.info("Starting search with query: '{}' and siteURL: '{}'", query, siteURL);
 
         ArrayList<Data> dataList = searchStringToDataArray(query, siteURL);
-        int totalResults = dataList.size();
+        Long totalResults = (long) dataList.size();
 
         List<Data> paginatedResults = dataList.stream()
                 .skip(offset)
@@ -254,7 +253,8 @@ public class Searcher {
                     Page page = currentIndex.getPage();
                     Long pageId = page != null ? page.getPageId() : null;
 
-                    if (pageId == null || !indexService.checkIfIndexExists(pageId, lemmaList.get(i).getId())) {
+                    if (pageId == null || !indexService.checkIfIndexExists(pageId,
+                            lemmaList.get(i).getId())) {
                         iterator.remove();
                     }
                 }

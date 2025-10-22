@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.*;
 
+
 public class AppUserPrincipal implements UserDetails {
 
     private final AppUser appUser;

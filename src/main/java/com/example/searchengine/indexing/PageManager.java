@@ -44,11 +44,9 @@ public class PageManager {
     private final SearcherService searcherService;
     private final IndexingHistoryService indexingHistoryService;
     private final SiteService siteService;
-    private final SiteManager siteManager;
     private final IndexingService indexingService;
 
-    private Long currentIndexingLemmaId;
-    private List<Long> indexedLemmaIds;
+
 
     @Autowired
     public PageManager(IndexRepository indexRepository,
@@ -67,7 +65,6 @@ public class PageManager {
         this.searcherService = searcherService;
         this.indexingHistoryService = indexingHistoryService;
         this.siteService = siteService;
-        this.siteManager = siteManager;
         this.indexingService = indexingService;
     }
 

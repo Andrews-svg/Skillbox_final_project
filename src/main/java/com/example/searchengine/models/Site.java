@@ -2,14 +2,25 @@ package com.example.searchengine.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.*;
 
+
+@Indexed
+@Getter
+@Setter
+@RequiredArgsConstructor
 @Entity
-@Table(name = "site_table")
+@Table(name = "site")
 @NamedQueries({
         @NamedQuery(name = "Site.findByStatus",
                 query = "SELECT s FROM Site s WHERE s.status = :status"),
@@ -22,13 +33,16 @@ import java.util.*;
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Site {
 
+    @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @NotNull
     @Column(nullable = false)
     private LocalDateTime statusTime;
 
@@ -36,6 +50,8 @@ public class Site {
     @Column(nullable = false, unique = true, length = 255)
     private String url;
 
+    @FullTextField(analyzer = "russian")
+    @KeywordField(name = "name_keyword")
     @NotBlank(message = "Name cannot be blank.")
     @Column(nullable = false, length = 255)
     private String name;
@@ -44,43 +60,48 @@ public class Site {
     @Column(name = "domain")
     private String domain;
 
+    @NotNull
     @Column(name = "last_error")
     private String lastError;
 
+    @NotNull
     @Column(name = "group_id")
     private Long groupId;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_site_id")
     private Site parentSite;
 
+    @NotNull
     @OneToMany(mappedBy = "site", cascade =
             CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Page> pages = new ArrayList<>();
+    private List<Page> pages;
 
+    @NotNull
     @Column(name = "robots_txt")
     private String robotsTxt;
 
+    @NotNull
     @Column(name = "`is_accessible`", columnDefinition = "TINYINT DEFAULT 0")
     private boolean isAccessible;
 
+    @NotNull
     @ElementCollection
-    private Map<String, String> content;
+    @MapKeyColumn(name = "key")
+    @Column(name = "value")
+    @FullTextField(analyzer = "russian")
+    private Map<String, String> contentRus;
+
+    @NotNull
+    @ElementCollection
+    @MapKeyColumn(name = "key")
+    @Column(name = "value")
+    @FullTextField(analyzer = "english")
+    private Map<String, String> contentEng;
 
 
 
-    public Site() {
-        this.content = new HashMap<>();
-    }
-
-    public Site(String name, String url, Status status) {
-        this();
-        setName(name);
-        setUrl(url);
-        setStatus(status);
-        this.robotsTxt = "";
-        this.isAccessible = false;
-    }
 
     public void addPage(Page page) {
         if (!pages.contains(page)) {
@@ -100,122 +121,6 @@ public class Site {
 
     public void updateStatusTime() {
         this.statusTime = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        if (status == null) {
-            throw new IllegalArgumentException("Status must not be null");
-        }
-        this.status = status;
-    }
-
-    public LocalDateTime getStatusTime() {
-        return statusTime;
-    }
-
-    public void setStatusTime(LocalDateTime statusTime) {
-        this.statusTime = statusTime;
-    }
-
-    public String getLastError() {
-        return lastError;
-    }
-
-    public void setLastError(String lastError) {
-        this.lastError = lastError;
-    }
-
-    public List<Page> getPages() {
-        return pages;
-    }
-
-    public void setPages(List<Page> pages) {
-        if (pages == null) {
-            throw new IllegalArgumentException("Pages list must not be null");
-        }
-        this.pages = pages;
-    }
-
-    public Long getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        if (url == null || url.isEmpty()) {
-            throw new IllegalArgumentException("URL must not be null or empty");
-        }
-        this.url = url;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("Name must not be null or empty");
-        }
-        this.name = name;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public Map<String, String> getContent() {
-        return Collections.unmodifiableMap(content);
-    }
-
-    public Site getParentSite() {
-        return parentSite;
-    }
-
-    public void setParentSite(Site parentSite) {
-        this.parentSite = parentSite;
-    }
-
-    public boolean isAccessible() {
-        return isAccessible;
-    }
-
-    public String getRobotsTxt() {
-        return robotsTxt;
-    }
-
-    public void setRobotsTxt(String robotsTxt) {
-        this.robotsTxt = robotsTxt;
-    }
-
-    public void setAccessible(boolean accessible) {
-        this.isAccessible = accessible;
-    }
-
-    public void setContent(Map<String, String> content) {
-        this.content = content;
     }
 
 

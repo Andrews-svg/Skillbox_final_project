@@ -5,7 +5,6 @@ import com.example.searchengine.indexing.IndexingHistoryRecord;
 import com.example.searchengine.indexing.IndexingService;
 import com.example.searchengine.indexing.SiteManager;
 import com.example.searchengine.models.Index;
-import com.example.searchengine.models.Status;
 import com.example.searchengine.services.IndexingHistoryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

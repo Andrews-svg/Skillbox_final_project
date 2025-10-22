@@ -7,12 +7,13 @@ import com.example.searchengine.utils.DBSaver;
 import com.example.searchengine.utils.UrlRecursiveParser;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
-import org.jsoup.nodes.Document;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.searchengine.config.SiteSettings;
+import com.example.searchengine.config.SiteList;
 import com.example.searchengine.models.Site;
 import com.example.searchengine.models.Status;
 import com.example.searchengine.repository.IndexRepository;
@@ -29,12 +30,16 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
+
+@Getter
+@Setter
 @Service
 @Transactional
 public class IndexingService {
 
     private final IndexRepository indexRepository;
-    private volatile Status currentStatus = Status.PENDING;
+    private volatile Status currentStatus = Status.INDEXING;
     private CountDownLatch latch;
 
     private final UrlRecursiveParser recursiveParser;
@@ -42,12 +47,8 @@ public class IndexingService {
     private final JsoupWrapper jsoupWrapper;
     private final SiteService siteService;
     private final DBSaver dbSaver;
-    private final SiteIndexer siteIndexer;
-    private final SiteManager siteManager;
-    private final LinkProcessor linkProcessor;
-    private final SiteSettings siteSettings;
-    private final IndexService indexService;
-    private List<SiteSettings.SiteConfig> sites;
+    private final SiteList siteSettings;
+    private List<SiteList.SiteConfig> sites;
     private final Map<Long, Boolean> indexingInProgress =
             new ConcurrentHashMap<>();
     private final AtomicInteger activeIndexingThreads =
@@ -72,30 +73,20 @@ public class IndexingService {
             UrlRecursiveParser recursiveParser,
             JsoupWrapper jsoupWrapper,
             SiteService siteService, DBSaver dbSaver,
-            SiteIndexer siteIndexer,
-            SiteManager siteManager,
-            LinkProcessor linkProcessor,
-            SiteSettings siteSettings,
-            IndexRepository indexRepository,
-            IndexService indexService
+            SiteList siteSettings,
+            IndexRepository indexRepository, PageRepository pageRepository
     ) {
         this.recursiveParser = recursiveParser;
         this.jsoupWrapper = jsoupWrapper;
         this.siteService = siteService;
         this.dbSaver = dbSaver;
-        this.siteIndexer = siteIndexer;
-        this.siteManager = siteManager;
-        this.linkProcessor = linkProcessor;
         this.siteSettings = siteSettings;
         this.indexRepository = indexRepository;
-        this.indexService = indexService;
-
+        this.pageRepository = pageRepository;
     }
 
 
-    public synchronized void changeCurrentStatus(Status newStatus) {
-        this.currentStatus = newStatus;
-    }
+
 
 
     @PostConstruct
@@ -162,15 +153,11 @@ public class IndexingService {
     }
 
 
-    private String convertPageIdToUrl(Long id) {
-        Optional<String> optionalUrl = pageRepository.findUrlById(id);
-        return optionalUrl.orElseThrow(() ->
-                new IllegalArgumentException("URL не найден для pageId=" + id));
-    }
+
 
     public void indexAllSites(Long id) {
         if (sites != null) {
-            for (SiteSettings.SiteConfig site : sites) {
+            for (SiteList.SiteConfig site : sites) {
                 indexSite(site.getUrl(), id);
             }
         }
@@ -180,79 +167,53 @@ public class IndexingService {
         return currentStatus == Status.INDEXING;
     }
 
-    public void setLatch(CountDownLatch latch) {
-        this.latch = latch;
-    }
 
-
+    // TODO проблема гонка за ресурсы, статус один для всех! Исправление: использование ConcurrentHashMap
+    // Map<Long, IndexingService> siteStates = new ConcurrentHashMap<>()
     public void indexSite(String siteUrl, Long id) {
-        lock.lock();
+        Status currentStatus = indexingStatuses.get(id);
+
+        if (currentStatus == Status.INDEXING) {
+            logger.warn("Индексация уже в процессе для сайта: {}", siteUrl);
+            return;
+        }
+
+        indexingStatuses.put(id, Status.INDEXING);
+        logger.info("Начало индексации сайта с ID: {} для URL: {}", id, siteUrl);
+
+        Optional<Long> optionalSiteId = siteService.getSiteId(siteUrl);
+        if (optionalSiteId.isEmpty()) {
+            logger.warn("Не удалось получить идентификатор для сайта: {}", siteUrl);
+            indexingStatuses.put(id, Status.FAILED);
+            finishIndexing(id, false);
+            return;
+        }
+        Long siteId = optionalSiteId.get();
+
         try {
-            if (currentStatus == Status.INDEXING) {
-                logger.warn("Индексация уже в процессе для сайта: {}", siteUrl);
-                return;
+            UrlRecursiveParser parser = new UrlRecursiveParser(dbSaver, siteSettings, jsoupWrapper);
+            HashSet<String> foundLinks = parser.startParsing(siteUrl);
+
+            if (foundLinks.isEmpty()) {
+                logger.warn("Нет ссылок обнаружено для сайта: {}", siteUrl);
             }
-            currentStatus = Status.INDEXING;
-            logger.info("Индексация сайта с ID: {} для URL: {}", id, siteUrl);
 
-            Optional<Long> optionalSiteId = siteService.getSiteId(siteUrl);
-            if (optionalSiteId.isEmpty()) {
-                logger.warn("Не удалось получить идентификатор для сайта: {}", siteUrl);
-                currentStatus = Status.FAILED;
-                finishIndexing(false);
-                return;
-            }
-            Long siteId = optionalSiteId.get();
-
-            try {
-                UrlRecursiveParser parser = new UrlRecursiveParser(dbSaver, siteSettings, jsoupWrapper);
-
-                HashSet<String> foundLinks = parser.startParsing(siteUrl);
-
-                if (foundLinks.isEmpty()) {
-                    logger.warn("Ни одной ссылки найдено не было для сайта: {}", siteUrl);
+            for (String link : foundLinks) {
+                if (validateLink(link)) {
+                    persistLink(link);
                 }
-
-                for (String link : foundLinks) {
-                    if (validateLink(link)) {
-                        persistLink(link);
-                    }
-                }
-                currentStatus = Status.INDEXED;
-                finishIndexing(true);
-            } catch (InterruptedException e) {
-                logger.error("Индексирование было прервано для сайта {}: {}", siteUrl, e.getMessage());
-                Thread.currentThread().interrupt();
-                currentStatus = Status.FAILED;
-                finishIndexing(false);
-            } catch (IOException e) {
-                logger.error("Ошибка сети при доступе к сайту {}: {}", siteUrl, e.getMessage());
-                currentStatus = Status.FAILED;
-                finishIndexing(false);
             }
-        } finally {
-            lock.unlock();
+            indexingStatuses.put(id, Status.INDEXED);
+            finishIndexing(id, true);
+        } catch (InterruptedException | IOException e) {
+            logger.error("Ошибка при обработке сайта {}: {}", siteUrl, e.getMessage(), e);
+            indexingStatuses.put(id, Status.FAILED);
+            finishIndexing(id, false);
         }
     }
 
 
-    private Document connectWithRetry(String url, String userAgent,
-                                      String referrer) throws IOException {
-        int maxRetries = 3;
-        for (int attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                return jsoupWrapper.connect(url, userAgent, referrer);
-            } catch (IOException ioEx) {
-                if (attempt < maxRetries - 1) {
-                    logger.warn("Ошибка подключения, повторная попытка #{}: {}",
-                            attempt + 1, ioEx.getMessage());
-                    continue;
-                }
-                throw ioEx;
-            }
-        }
-        return null;
-    }
+
 
 
     private void persistLink(String link) {
@@ -271,7 +232,7 @@ public class IndexingService {
                     "Link Title",
                     "Link snippet",
                     0.0f,
-                    Status.PENDING,
+                    Status.INDEXING,
                     true
             );
 
@@ -304,6 +265,7 @@ public class IndexingService {
             }
         });
     }
+
 
     private String extractHostFromLink(String link) {
         try {
@@ -416,7 +378,7 @@ public class IndexingService {
                     logger.info("Индексация для ID: {} остановлена.", id);
                 } catch (Exception e) {
                     logger.error("Ошибка при остановке индексации для ID: {}, сообщение: {}", id, e.getMessage());
-                    currentStatus = Status.FAILED;
+                    currentStatus = Status.INDEXED;
                 }
             } else {
                 logger.warn("Индексация для ID: {} уже была закончена или не началась.", id);
@@ -441,13 +403,23 @@ public class IndexingService {
     }
 
 
-    public Status getCurrentStatus() {
-        return currentStatus;
-    }
+
 
 
     private void logInfo(String message, Object... args) {
 
         logger.info(message, args);
+    }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public Set<Long> getIndexedLemmaIds() {
+        return indexedLemmaIds;
+    }
+
+    public void setIndexedLemmaIds(Set<Long> indexedLemmaIds) {
+        this.indexedLemmaIds = indexedLemmaIds;
     }
 }

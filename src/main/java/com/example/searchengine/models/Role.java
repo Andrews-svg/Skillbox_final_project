@@ -1,21 +1,20 @@
 package com.example.searchengine.models;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Arrays;
 
+
+@Getter
+@RequiredArgsConstructor
+@AllArgsConstructor
 public enum Role {
     USER("USER"),
     ADMIN("ADMIN");
 
     private final String authority;
-
-    Role(final String authority) {
-        this.authority = authority;
-    }
-
-    public String getAuthority() {
-        return authority;
-    }
-
 
     public static Role fromString(final String authority) {
         return Arrays.stream(values())

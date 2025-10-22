@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Component
 @ConfigurationProperties(prefix = "indexing-settings")
-public class SiteSettings {
+public class SiteList {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

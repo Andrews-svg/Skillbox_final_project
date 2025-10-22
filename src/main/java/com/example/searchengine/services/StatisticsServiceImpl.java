@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.searchengine.config.SiteSettings;
+import com.example.searchengine.config.SiteList;
 import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.dao.PageDao;
 import com.example.searchengine.models.Site;
@@ -27,7 +27,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
-    private final SiteSettings sites;
+    private final SiteList sites;
     private final LemmaDao lemmaDao;
     private final PageDao pageDao;
 
@@ -36,7 +36,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                  PageService pageService,
                                  LemmaDao lemmaDao,
                                  LemmaService lemmaService,
-                                 SiteSettings sites, PageDao pageDao) {
+                                 SiteList sites, PageDao pageDao) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
