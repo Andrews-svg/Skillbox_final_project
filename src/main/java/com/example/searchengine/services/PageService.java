@@ -1,6 +1,6 @@
 package com.example.searchengine.services;
 
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.repository.PageRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -57,6 +58,13 @@ public class PageService {
     }
 
 
+    @Transactional
+    public void saveAll(List<Page> pages) {
+        for (Page page : pages) {
+            savePage(page);
+        }
+    }
+
     private void updateExistingPage(Page existingPage, Page updatedPage) {
         existingPage.setContent(updatedPage.getContent());
         existingPage.setStatus(updatedPage.getStatus());
@@ -73,7 +81,7 @@ public class PageService {
     }
 
 
-    public Long validateAndSavePage(Page page) {
+    public Integer validateAndSavePage(Page page) {
         validatePage(page);
         pageRepository.save(page);
         return page.getId();
@@ -92,19 +100,19 @@ public class PageService {
         return pageRepository.findByPath(path);
     }
 
-    public long countPages() {
-        return pageRepository.count();
+    public Integer countPages() {
+        return (int) pageRepository.count();
     }
 
-    public Optional<Page> findPage(Long id) {
+    public Optional<Page> findPage(Integer id) {
         return pageRepository.findById(id);
     }
 
-    public Optional<Page> findById(long pageId) {
+    public Optional<Page> findById(Integer pageId) {
         return pageRepository.findById(pageId);
     }
 
-    public Optional<String> findUrlById(Long id) {
+    public Optional<String> findUrlById(Integer id) {
         return pageRepository.findById(id)
                 .map(Page::getUrl);
     }
@@ -122,8 +130,7 @@ public class PageService {
 
 
     @Transactional(readOnly = true)
-    public long getTotalPages() {
-        return pageRepository.count();
+    public Integer getTotalPages() {
+        return Math.toIntExact(pageRepository.count());
     }
-
 }

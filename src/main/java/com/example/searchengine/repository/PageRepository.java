@@ -5,19 +5,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Page;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 
 import java.util.List;
 import java.util.Optional; 
 
 @Repository
-public interface PageRepository extends JpaRepository<Page, Long> {
+public interface PageRepository extends JpaRepository<Page, Integer> {
 
     boolean existsByPath(String path);
 
     Optional<Page> findByPath(String path);
 
-    Long countByUrl(String url);
+    Integer countByUrl(String url);
 
     Optional<Page> findByUrl(String url);
 
@@ -26,7 +26,7 @@ public interface PageRepository extends JpaRepository<Page, Long> {
     boolean existsByUri(String uri);
 
     @Query("SELECT p.url FROM Page p WHERE p.id = :id")
-    Optional<String> findUrlById(@Param("id") Long id);
+    Optional<String> findUrlById(@Param("id") Integer id);
 
     Optional<Page> findByUri(String uri);
 

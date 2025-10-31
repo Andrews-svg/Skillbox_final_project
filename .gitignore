@@ -36,3 +36,96 @@ build/
 
 **.run.xml**
 .run/
+# Common ignore rules for Java projects
+target/
+!.mvn/wrapper/maven-wrapper.jar
+src/main/resources/application.yaml
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+.qodo
+
+# Logs
+*.log
+
+# Temporary files
+*~
+
+# System files on Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Temporaries from Java or Maven builds
+*.jar
+*.war
+*.ear
+*.class
+
+# Eclipse-specific ignores
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.locator
+.project
+.externalToolBuilders/
+.rebel.xml
+.builderinfo
+.autobuild.xml
+.artifacts.xml
+
+# Java Dependency Management
+pom.xml.tag
+pom.xml.releaseBackup
+maven-ejb-plugin-manifest.vm
+dependency-reduced-pom.xml
+generated-sources/
+
+# Gradle-related temporary directories
+gradle
+.gradle
+out/
+.gradletasknamecache
+
+# Maven repositories
+.m2/repository/
+.mvn/wrapper/
+
+# IDE specific ignores
+.DS_Store
+.AppleDouble
+Icon?
+.Trashes
+__MACOSX

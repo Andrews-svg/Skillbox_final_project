@@ -1,5 +1,8 @@
 package com.example.searchengine.models;
 
+import lombok.Getter;
+
+@Getter
 public enum Status {
     INDEXING("INDEXING"),
     INDEXED("INDEXED"),
@@ -12,10 +15,6 @@ public enum Status {
 
     Status(String status) {
         this.status = status;
-    }
-
-    public String getStatus() {
-        return status;
     }
 
     @Override

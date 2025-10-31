@@ -1,6 +1,6 @@
 package com.example.searchengine.statisticsResponse;
 
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.dto.statistics.StatisticsData;
 
 import java.util.List;

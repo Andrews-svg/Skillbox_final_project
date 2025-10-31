@@ -9,17 +9,17 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LemmaRepository extends JpaRepository<Lemma, Long> {
+public interface LemmaRepository extends JpaRepository<Lemma, Integer> {
 
     List<Lemma> findAllByLemma(String lemma);
 
 
-    List<Lemma> findAllBySite_Id(Long siteId);
+    List<Lemma> findAllBySite_Id(Integer siteId);
 
     @Query("SELECT l.lemma, l.frequency FROM Lemma l WHERE l.lemma = " +
             ":lemma AND l.site.id = :siteId")
     List<Object[]> findByLemmaAndSiteId(
             @Param("lemma") String lemma,
-            @Param("siteId") Long siteId
+            @Param("siteId") Integer siteId
     );
 }

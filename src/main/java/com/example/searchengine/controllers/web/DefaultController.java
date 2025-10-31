@@ -1,25 +1,17 @@
 package com.example.searchengine.controllers.web;
 
+import com.example.searchengine.indexing.IndexServiceImpl;
+import com.example.searchengine.indexing.IndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-import com.example.searchengine.indexing.IndexingService;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.services.*;
-import com.example.searchengine.dto.statistics.Data;
 
-import java.net.URI;
 import java.security.Principal;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -32,7 +24,10 @@ public class DefaultController {
             LoggerFactory.getLogger(DefaultController.class);
 
     @Autowired
-    private RestTemplate restTemplate;
+    private IndexingService indexingService;
+
+    @Autowired
+    private IndexServiceImpl indexServiceImpl;
 
     @Autowired
     private SiteService siteService;
@@ -44,28 +39,15 @@ public class DefaultController {
     private LemmaService lemmaService;
 
     @Autowired
-    private IndexingService indexingService;
-
-    @Autowired
-    private SearcherService searcherService;
-
-    @Autowired
     private String siteUrlRegex;
 
-    @Autowired
-    private String exampleDomainRegex;
 
     public DefaultController(SiteService siteService,
-                             PageService pageService, LemmaService lemmaService,
-                             IndexingService indexingService,
-                             SearcherService searcherService) {
+                             PageService pageService, LemmaService lemmaService) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
-        this.indexingService = indexingService;
-        this.searcherService = searcherService;
     }
-
 
 
     @GetMapping("/")
@@ -80,7 +62,6 @@ public class DefaultController {
         }
         return "index";
     }
-
 
 
     @GetMapping("/dashboard")
@@ -106,47 +87,95 @@ public class DefaultController {
     @GetMapping("/management")
     public String management(
             Model model,
-            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) Integer id,
             @RequestParam(required = false) Boolean isLemma,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String url
     ) {
         logger.info("Accessed management page with id: {}, isLemma: {}, action: {}",
-                Optional.ofNullable(id).map(Object::toString).
-                        orElse("null"), isLemma, action);
+                Optional.ofNullable(id).map(Object::toString).orElse("null"),
+                isLemma, action);
 
-        if (!isValidId(id)) {
-            logger.error("Invalid or missing ID: {}", id);
-            model.addAttribute("errorMessage",
-                    "Некорректный или отсутствующий ID. Пожалуйста, проверьте ваш запрос.");
-            model.addAttribute("activeTab", "management");
-            return "index";
-        }
-
-        if (isLemma == null) {
-            logger.warn("isLemma parameter is not provided. Defaulting to false.");
-            isLemma = false;
-        }
-        model.addAttribute("activeTab", "management");
-
-        switch (action) {
-            case "startIndexing":
-                manageStartIndexing(model, id, isLemma);
-                break;
-            case "stopIndexing":
-                manageStopIndexing(model, id);
-                break;
-            case "indexPage":
-                manageIndexPage(model, url);
-                break;
-            case "checkStatus":
-                manageCheckStatus(model, id);
-                break;
-            default:
-                logger.warn("Unknown action received in management: {}", action);
+        if ("stopIndexing".equals(action)) {
+            manageStopIndexing(model);
+        } else if ("startIndexing".equals(action)) {
+            if (!isValidId(id)) {
+                logger.error("Invalid or missing ID: {}", id);
                 model.addAttribute("errorMessage",
-                        "Неизвестное действие. Пожалуйста, попробуйте снова.");
+                        "Некорректный или отсутствующий ID. Пожалуйста, проверьте ваш запрос.");
+                model.addAttribute("activeTab", "management");
+                return "index";
+            }
+            manageStartIndexing(model, id, isLemma);
+        } else if ("indexPage".equals(action)) {
+            manageIndexPage(model, url);
+        } else if ("checkStatus".equals(action)) {
+            manageCheckStatus(model, id);
+        } else {
+            logger.warn("Unknown action received in management: {}", action);
+            model.addAttribute("errorMessage",
+                    "Неизвестное действие. Пожалуйста, попробуйте снова.");
         }
+
+        model.addAttribute("activeTab", "management");
         return "index";
+    }
+
+
+    private void manageCheckStatus(Model model, Integer id) {
+        Object resource = siteService.findById(id);
+        if (resource != null) {
+            model.addAttribute("statusInfo",
+                    "Статус ресурса успешно проверен.");
+        } else {
+            model.addAttribute("errorMessage",
+                    "Ошибка при проверке статуса ресурса.");
+        }
+    }
+
+
+    private void manageIndexPage(Model model, String url) {
+        try {
+            indexServiceImpl.indexPage(url);
+            model.addAttribute("infoMessage", "Запрос на индексацию принят.");
+        } catch (Exception e) {
+            logger.error("Error indexing page {}: {}", url, e.getMessage(), e);
+            model.addAttribute("errorMessage",
+                    "Ошибка при добавлении страницы для индексации.");
+        }
+    }
+
+
+    private void manageStopIndexing(Model model) {
+        try {
+            indexingService.stopIndexing();
+            model.addAttribute("infoMessage",
+                    "Процесс индексации остановлен.");
+        } catch (Exception e) {
+            logger.error("Ошибка при остановке индексации: {}", e.getMessage(), e);
+            model.addAttribute("errorMessage",
+                    "Ошибка при попытке остановить процесс индексации.");
+        }
+    }
+
+    private void manageStartIndexing(Model model, Integer id, Boolean isLemma) {
+        try {
+            if (isLemma) {
+                indexingService.startIndexing(id, true);
+            } else {
+                indexingService.startIndexing(id, false);
+            }
+
+            model.addAttribute("infoMessage", "Процесс индексации начат.");
+        } catch (Exception e) {
+            logger.error("Error starting indexing for site {}: {}", id, e.getMessage(), e);
+            model.addAttribute("errorMessage",
+                    "Ошибка при запуске процесса индексации.");
+        }
+    }
+
+
+    private boolean isValidId(Integer id) {
+        return id != null && id > 0;
     }
 }

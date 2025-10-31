@@ -1,9 +1,9 @@
 package com.example.searchengine.models;
 
+import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
@@ -16,7 +16,6 @@ import java.util.Objects;
 @Indexed
 @Getter
 @Setter
-@RequiredArgsConstructor
 @Entity
 @Access(AccessType.FIELD)
 @Table(name = "page", indexes = {
@@ -42,7 +41,7 @@ public class Page {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @NotNull
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, unique = true, length = 255)
     @NotNull
@@ -96,6 +95,41 @@ public class Page {
     @NotNull
     private boolean available = true;
 
+
+    public Page(Integer id, String url, String uri, String path,
+                Integer code, String name, String content, Site site,
+                String title, String snippet, float relevance,
+                Status status, boolean available) {
+        this.id = id;
+        this.url = url;
+        this.uri = uri;
+        this.path = path;
+        this.code = code;
+        this.name = name;
+        this.content = content;
+        this.site = site;
+        this.title = title;
+        this.snippet = snippet;
+        this.relevance = relevance;
+        this.status = status;
+        this.available = available;
+    }
+
+
+    public Page(String link, String path, String link1,
+                Site site, String s, int i, String unnamedLink,
+                String linkTitle, String linkSnippet,
+                float v, Status status, boolean b) {
+    }
+
+    public CharSequence getCodeOptional() {
+        return code != null ? String.valueOf(code) : null;
+    }
+
+
+    public Integer getPageId() {
+        return this.id;
+    }
 
 
     @Override

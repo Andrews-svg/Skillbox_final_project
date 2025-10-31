@@ -28,7 +28,7 @@ public class IndexDao {
         this.entityManager = entityManager;
     }
 
-    public Long save(Index index) {
+    public Integer save(Index index) {
         return executeWithLogging(() -> {
             entityManager.persist(index);
             logger.info("Index saved successfully: {}", index);
@@ -93,7 +93,7 @@ public class IndexDao {
         }, "Failed to update index");
     }
 
-    public Optional<Index> findById(Long id) {
+    public Optional<Index> findById(Integer id) {
         return executeWithLogging(() -> {
             Index index = entityManager.find(Index.class, id);
             logger.info("Index found by id: {}: {}", id, index);
@@ -158,7 +158,7 @@ public class IndexDao {
     }
 
 
-    public void deleteByPageId(Long pageId) {
+    public void deleteByPageId(Integer pageId) {
         executeWithLogging(() -> {
             Query query = entityManager.createQuery(
                     "DELETE FROM Index i WHERE i.page.id = :pageId");

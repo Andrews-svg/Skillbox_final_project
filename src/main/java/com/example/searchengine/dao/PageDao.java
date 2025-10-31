@@ -7,7 +7,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Page;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.models.Status;
 import org.springframework.cache.annotation.Cacheable;
 
@@ -24,7 +24,7 @@ public class PageDao {
     private EntityManager entityManager;
 
 
-    public Long save(Page page) {
+    public Integer save(Page page) {
         validatePage(page);
         entityManager.persist(page);
         return page.getId();
@@ -156,8 +156,8 @@ public class PageDao {
     }
 
 
-    public Long count() {
-        return ((Number) entityManager.createQuery("SELECT COUNT(*) FROM Page").getSingleResult()).longValue();
+    public Integer count() {
+        return ((Number) entityManager.createQuery("SELECT COUNT(*) FROM Page").getSingleResult()).intValue();
     }
 
 
@@ -166,48 +166,48 @@ public class PageDao {
                 "SELECT COUNT(*) FROM Page").getSingleResult()).intValue();
     }
 
-    public int countPagesOnSite(Long siteID) {
+    public int countPagesOnSite(Integer siteId) {
         return ((Number) entityManager.createQuery(
-                        "SELECT COUNT(*) FROM Page p WHERE p.site.id = :site_id", Long.class)
-                .setParameter("site_id", siteID)
+                        "SELECT COUNT(*) FROM Page p WHERE p.site.id = :site_id", Integer.class)
+                .setParameter("site_id", siteId)
                 .getSingleResult()).intValue();
     }
 
-    public long countByUrl(String url) {
+    public int countByUrl(String url) {
         return ((Number) entityManager.createQuery(
                         "SELECT COUNT(*) FROM Page WHERE url = :url", Long.class)
                 .setParameter("url", url)
-                .getSingleResult()).longValue();
+                .getSingleResult()).intValue();
     }
 
-    public Long countByContentContainingAndSiteUrl(String query, String siteUrl) {
+    public Integer countByContentContainingAndSiteUrl(String query, String siteUrl) {
         return ((Number) entityManager.createQuery(
                         "SELECT COUNT(p) FROM Page p WHERE LOWER(p.content) " +
-                                "LIKE LOWER(:query) AND p.site.url = :siteUrl", Long.class)
+                                "LIKE LOWER(:query) AND p.site.url = :siteUrl", Integer.class)
                 .setParameter("query", "%" + query + "%")
                 .setParameter("siteUrl", siteUrl)
-                .getSingleResult()).longValue();
+                .getSingleResult()).intValue();
     }
 
-    public Long countByContentContaining(String query) {
+    public Integer countByContentContaining(String query) {
         return ((Number) entityManager.createQuery(
                         "SELECT COUNT(p) FROM Page p WHERE LOWER(p.content) " +
                                 "LIKE LOWER(:query)", Long.class)
                 .setParameter("query", "%" + query + "%")
-                .getSingleResult()).longValue();
+                .getSingleResult()).intValue();
     }
 
 
-    public Map<Long, Long> countPagesGroupedBySite(List<Site> sites) {
-        Set<Long> siteIds = sites.stream().map(Site::getId).collect(Collectors.toSet());
+    public Map<Integer, Integer> countPagesGroupedBySite(List<Site> sites) {
+        Set<Integer> siteIds = sites.stream().map(Site::getId).collect(Collectors.toSet());
         TypedQuery<Object[]> query = entityManager.createQuery(
                 "SELECT p.site.id, COUNT(p) FROM Page p WHERE p.site.id IN (:ids) " +
                         "GROUP BY p.site.id", Object[].class);
         query.setParameter("ids", siteIds);
-        Map<Long, Long> result = new HashMap<>();
+        Map<Integer, Integer> result = new HashMap<>();
         for (Object[] row : query.getResultList()) {
-            Long siteId = ((BigDecimal) row[0]).longValue();
-            Long count = (Long) row[1];
+            Integer siteId = ((BigDecimal) row[0]).intValue();
+            Integer count = (Integer) row[1];
             result.put(siteId, count);
         }
         return result;
@@ -215,9 +215,9 @@ public class PageDao {
 
 
     public boolean existsByUri(String uri) {
-        return entityManager.createQuery("SELECT COUNT(p) FROM Page p WHERE p.uri = :uri", Long.class)
+        return entityManager.createQuery("SELECT COUNT(p) FROM Page p WHERE p.uri = :uri", Integer.class)
                 .setParameter("uri", uri)
-                .getSingleResult() > 0L;
+                .getSingleResult() > 0;
     }
 
 

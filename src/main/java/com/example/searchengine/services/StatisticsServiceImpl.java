@@ -4,10 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.searchengine.config.SiteList;
+import com.example.searchengine.config.SitesList;
 import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.dao.PageDao;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.dto.statistics.DetailedStatisticsItem;
 import com.example.searchengine.dto.statistics.StatisticsData;
 import com.example.searchengine.dto.statistics.StatisticsReport;
@@ -27,7 +27,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
-    private final SiteList sites;
+    private final SitesList sites;
     private final LemmaDao lemmaDao;
     private final PageDao pageDao;
 
@@ -36,7 +36,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                  PageService pageService,
                                  LemmaDao lemmaDao,
                                  LemmaService lemmaService,
-                                 SiteList sites, PageDao pageDao) {
+                                 SitesList sites, PageDao pageDao) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -63,8 +63,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         for (int i = 0; i < allSites.size(); i += batchSize) {
             List<Site> currentBatch = allSites.subList(i, Math.min(allSites.size(), i + batchSize));
 
-            Map<Long, Long> pagesCountMap = pageDao.countPagesGroupedBySite(currentBatch);
-            Map<Long, Long> lemmasCountMap = lemmaService.countLemmasGroupedBySite(currentBatch);
+            Map<Integer, Integer> pagesCountMap = pageDao.countPagesGroupedBySite(currentBatch);
+            Map<Integer, Integer> lemmasCountMap = lemmaService.countLemmasGroupedBySite(currentBatch);
 
             for (Site site : currentBatch) {
                 try {
@@ -81,12 +81,12 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    public DetailedStatisticsItem getDetailed(Site site, Map<Long, Long> pagesCountMap,
-                                              Map<Long, Long> lemmasCountMap) {
+    public DetailedStatisticsItem getDetailed(Site site, Map<Integer, Integer> pagesCountMap,
+                                              Map<Integer, Integer> lemmasCountMap) {
         logger.debug("Формирование детализированной статистики для сайта: {}", site.getUrl());
 
-        Long pages = pagesCountMap.getOrDefault(site.getId(), 0L);
-        Long lemmas = lemmasCountMap.getOrDefault(site.getId(), 0L);
+        Integer pages = pagesCountMap.getOrDefault(site.getId(), 0);
+        Integer lemmas = lemmasCountMap.getOrDefault(site.getId(), 0);
 
         DetailedStatisticsItem detailedItem = new DetailedStatisticsItem(
                 site.getUrl(), site.getName(), site.getStatus(),
@@ -96,19 +96,19 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
 
-    private long getStatusTime(Site site) {
+    private int getStatusTime(Site site) {
         if (site.getStatusTime() != null) {
             ZonedDateTime zdt = site.getStatusTime()
                     .atZone(ZoneId.systemDefault());
-            return zdt.toInstant().toEpochMilli();
+            return Math.toIntExact(zdt.toInstant().toEpochMilli());
         }
-        return 0L;
+        return 0;
     }
 
     private StatisticsReport getTotal() {
-        Long siteNumber = siteService.countSites();
-        Long pageNumber = pageService.countPages();
-        Long lemmaNumber = lemmaDao.countLemmas();
+        Integer siteNumber = siteService.countSites();
+        Integer pageNumber = pageService.countPages();
+        Integer lemmaNumber = lemmaDao.countLemmas();
 
         boolean isIndexing = siteService.isAnySiteIndexing();
 

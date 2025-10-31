@@ -1,5 +1,6 @@
 package com.example.searchengine.dao;
 
+import com.example.searchengine.config.Site;
 import com.example.searchengine.models.*;
 import jakarta.persistence.*;
 import org.slf4j.Logger;
@@ -9,9 +10,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Supplier;
 
 
 @Repository
@@ -27,16 +26,12 @@ public class LemmaDao {
         this.entityManager = entityManager;
     }
 
-    public Long save(Lemma lemma) {
+    public Integer save(Lemma lemma) {
         entityManager.persist(lemma);
         logger.info("Lemma saved successfully: {}", lemma);
         return lemma.getId();
     }
 
-    public Long createLemma(String name, double frequency, Site site, Status status) {
-        Lemma lemma = new Lemma(name, frequency, site, status);
-        return save(lemma);
-    }
 
     public void saveOrUpdateLemma(Lemma lemma) {
         TypedQuery<Lemma> query = entityManager.createQuery(
@@ -77,7 +72,7 @@ public class LemmaDao {
     }
 
     @Cacheable(value = "lemmas", key = "#id")
-    public Optional<Lemma> findById(Long id) {
+    public Optional<Lemma> findById(Integer id) {
         return Optional.ofNullable(entityManager.find(Lemma.class, id));
     }
 
@@ -107,7 +102,7 @@ public class LemmaDao {
         return lemmas;
     }
 
-    public Optional<Lemma> findLemma(Long lemmaId) {
+    public Optional<Lemma> findLemma(Integer lemmaId) {
         return Optional.ofNullable(entityManager.find(Lemma.class, lemmaId));
     }
 
@@ -118,7 +113,7 @@ public class LemmaDao {
         return query.getResultList();
     }
 
-    public Lemma findByNameAndSiteID(String name, Long siteId) {
+    public Lemma findByNameAndSiteID(String name, Integer siteId) {
         TypedQuery<Lemma> query = entityManager.createQuery(
                 "SELECT l FROM Lemma l WHERE l.lemma =" +
                         ":lemma AND l.site.id = :siteId", Lemma.class);
@@ -145,21 +140,21 @@ public class LemmaDao {
         return lemma.getFrequency() > FREQUENCY_THRESHOLD;
     }
 
-    public Long countLemmas() {
-        TypedQuery<Long> query = entityManager.createQuery(
-                "SELECT COUNT(l) FROM Lemma l", Long.class);
+    public Integer countLemmas() {
+        TypedQuery<Integer> query = entityManager.createQuery(
+                "SELECT COUNT(l) FROM Lemma l", Integer.class);
         return query.getSingleResult();
     }
 
-    public Long countLemmasOnSite(Long siteID) {
-        TypedQuery<Long> query = entityManager.createQuery(
-                "SELECT COUNT(l) FROM Lemma l WHERE l.site.id = :siteId", Long.class);
-        query.setParameter("siteId", siteID);
+    public Integer countLemmasOnSite(Integer siteId) {
+        TypedQuery<Integer> query = entityManager.createQuery(
+                "SELECT COUNT(l) FROM Lemma l WHERE l.site.id = :siteId", Integer.class);
+        query.setParameter("siteId", siteId);
         return query.getSingleResult();
     }
 
 
-    public Map<Long, Long> countLemmasGroupedBySite(Set<Long> siteIds) {
+    public Map<Integer, Integer> countLemmasGroupedBySite(Set<Integer> siteIds) {
         if (siteIds == null || siteIds.isEmpty()) {
             return new HashMap<>();
         }
@@ -171,10 +166,10 @@ public class LemmaDao {
         );
         query.setParameter("ids", siteIds);
 
-        Map<Long, Long> result = new HashMap<>();
+        Map<Integer, Integer> result = new HashMap<>();
         for (Object[] row : query.getResultList()) {
-            Long siteId = (Long) row[0];
-            Long count = (Long) row[1];
+            Integer siteId = (Integer) row[0];
+            Integer count = (Integer) row[1];
             result.put(siteId, count);
         }
 

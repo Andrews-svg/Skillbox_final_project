@@ -1,10 +1,11 @@
-package com.example.searchengine.models;
+package com.example.searchengine.config;
 
+import com.example.searchengine.models.Page;
+import com.example.searchengine.models.Status;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
@@ -18,7 +19,6 @@ import java.util.*;
 @Indexed
 @Getter
 @Setter
-@RequiredArgsConstructor
 @Entity
 @Table(name = "site")
 @NamedQueries({
@@ -36,8 +36,8 @@ public class Site {
     @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    private Integer id;
+    
     @NotNull
     @Enumerated(EnumType.STRING)
     private Status status;
@@ -66,7 +66,7 @@ public class Site {
 
     @NotNull
     @Column(name = "group_id")
-    private Long groupId;
+    private Integer groupId;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -102,6 +102,34 @@ public class Site {
 
 
 
+    public Site(Integer id, Status status, LocalDateTime statusTime,
+                String url, String name, String domain, String lastError,
+                Integer groupId, Site parentSite, List<Page> pages, String robotsTxt,
+                boolean isAccessible, Map<String, String> contentRus,
+                Map<String, String> contentEng) {
+        this.id = id;
+        this.status = status;
+        this.statusTime = statusTime;
+        this.url = url;
+        this.name = name;
+        this.domain = domain;
+        this.lastError = lastError;
+        this.groupId = groupId;
+        this.parentSite = parentSite;
+        this.pages = pages;
+        this.robotsTxt = robotsTxt;
+        this.isAccessible = isAccessible;
+        this.contentRus = contentRus;
+        this.contentEng = contentEng;
+    }
+
+
+    public Site(String host, String host1, Status status) {
+        this.url = host;
+        this.name = host1;
+        this.status = status;
+        this.statusTime = LocalDateTime.now();
+    }
 
     public void addPage(Page page) {
         if (!pages.contains(page)) {

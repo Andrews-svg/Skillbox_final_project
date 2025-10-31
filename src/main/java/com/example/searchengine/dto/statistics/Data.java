@@ -1,17 +1,18 @@
 package com.example.searchengine.dto.statistics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 
 import java.io.Serializable;
 
 
 @Setter
 @Getter
-@RequiredArgsConstructor
 @EqualsAndHashCode
 @ToString
 public class Data implements Comparable<Data>, Serializable {
@@ -41,6 +42,13 @@ public class Data implements Comparable<Data>, Serializable {
 
     @JsonProperty("relevance")
     private double relevance;
+
+    public Data(Object o, Site site, @NotBlank(message = "Name cannot be blank.") String name, @NotNull String path, String pageTitle, String pageSnippet, int i) {
+    }
+
+    public Data() {
+
+    }
 
     @Override
     public int compareTo(Data other) {

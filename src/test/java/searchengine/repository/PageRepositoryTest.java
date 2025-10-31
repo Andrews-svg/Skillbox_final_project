@@ -1,7 +1,7 @@
 //package searchengine.repository;
 //
 //import com.example.searchengine.models.Page;
-//import com.example.searchengine.models.Site;
+//import com.example.searchengine.config.Site;
 //import com.example.searchengine.repository.PageRepository;
 //import com.example.searchengine.services.PageService;
 //import org.junit.jupiter.api.BeforeEach;

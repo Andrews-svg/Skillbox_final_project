@@ -1,5 +1,6 @@
 package com.example.searchengine.utils;
 
+import com.example.searchengine.config.Site;
 import com.example.searchengine.indexing.IndexService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
@@ -13,9 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;
-import com.example.searchengine.config.SiteList;
+import com.example.searchengine.config.SitesList;
 import com.example.searchengine.exceptions.InvalidSiteException;
-import com.example.searchengine.services.IndexingHistoryService;
 import com.example.searchengine.models.*;
 import com.example.searchengine.services.*;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,7 +37,7 @@ public class DBSaver implements Closeable {
     private final LemmaService lemmaService;
     private final IndexService indexService;
     private final Lemmatizer lemmatizer;
-    private final SiteList sitesList;
+    private final SitesList sitesList;
     private final SearcherService searcherService;
     private final IndexingHistoryService indexingHistoryService;
     private static final ConcurrentHashMap<String, Site> cachedSites = new ConcurrentHashMap<>();
@@ -45,7 +45,7 @@ public class DBSaver implements Closeable {
     @Autowired
     public DBSaver(SiteService siteService, PageService pageService, LemmaService lemmaService,
                    @Lazy IndexService indexService, IndexingHistoryService indexingHistoryService,
-                   Lemmatizer lemmatizer, SiteList sitesList, SearcherService searcherService) {
+                   Lemmatizer lemmatizer, SitesList sitesList, SearcherService searcherService) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -118,10 +118,10 @@ public class DBSaver implements Closeable {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private void saveLemmaAndIndex(UUID sessionId, Site site, Long pageId, String lemmaText, float rank) {
-        Lemma lemma = new Lemma(lemmaText, 1, site, site.getStatus());
+    private void saveLemmaAndIndex(UUID sessionId, Site site, Integer pageId,
+                                   String lemmaText, float rank) {
+        Lemma lemma = new Lemma(0, lemmaText, 1, site);
         lemmaService.saveOrUpdateLemma(lemma);
-
         Index index = new Index();
         index.setLemma(lemma);
         index.setPage(pageService.findById(pageId).orElseThrow(() ->
@@ -242,17 +242,19 @@ public class DBSaver implements Closeable {
             return;
         }
 
-        Optional<Site> existingSiteOpt = cachedSites.computeIfAbsent(url, k -> siteService.findByUrl(url).orElse(null));
+        Optional<Site> existingSiteOpt = Optional.ofNullable(cachedSites.computeIfAbsent(url,
+                k -> siteService.findByUrl(url).orElse(null)));
+
         Site site;
-        if (existingSiteOpt == null) {
+        if (existingSiteOpt.isPresent()) {
+            site = existingSiteOpt.get();
+        } else {
             site = new Site(title, url, Status.INDEXING);
             try {
                 siteService.saveSite(site);
             } catch (InvalidSiteException e) {
                 logger.error("Ошибка при сохранении сайта: {}", e.getMessage(), e);
             }
-        } else {
-            site = existingSiteOpt;
         }
 
         Page page = new Page(

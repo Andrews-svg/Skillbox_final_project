@@ -10,36 +10,36 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface IndexRepository extends JpaRepository<Index, Long> {
+public interface IndexRepository extends JpaRepository<Index, Integer> {
 
-    Optional<Index> findByPageId(Long pageId);
+    Optional<Index> findByPageId(Integer pageId);
 
-    Optional<Index> findByLemmaId(Long lemmaId);
+    Optional<Index> findByLemmaId(Integer lemmaId);
 
-    default Long findIdByPageId(Long pageId) {
+    default Integer findIdByPageId(Integer pageId) {
         return findByPageId(pageId).map(Index::getId).orElse(null);
     }
 
-    default Long findIdByLemmaId(Long lemmaId) {
+    default Integer findIdByLemmaId(Integer lemmaId) {
         return findByLemmaId(lemmaId).map(Index::getId).orElse(null);
     }
 
-    boolean existsByPageIdAndLemmaId(Long pageId, Long lemmaId);
+    boolean existsByPageIdAndLemmaId(Integer pageId, Integer lemmaId);
 
-    boolean existsIndexByPageId(Long pageId);
+    boolean existsIndexByPageId(Integer pageId);
 
-    boolean existsByLemmaId(Long lemmaId);
+    boolean existsByLemmaId(Integer lemmaId);
 
-    Object getIndexingStatusByPageId(Long pageId);
+    Object getIndexingStatusByPageId(Integer pageId);
 
-    void deleteByPageId(Long pageId);
+    void deleteByPageId(Integer pageId);
 
     void deleteAll();
 
     void deleteAllByLastModifiedBefore(LocalDateTime threshold);
 
-    Optional<Index> findByPageIdAndLemmaId(Long pageId, Long lemmaId);
+    Optional<Index> findByPageIdAndLemmaId(Integer pageId, Integer lemmaId);
 
     @Query("SELECT p.id FROM Page p WHERE p.available = TRUE")
-    List<Long> findAvailablePageIds();
+    List<Integer> findAvailablePageIds();
 }

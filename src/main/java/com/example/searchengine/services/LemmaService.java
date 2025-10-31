@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.models.Lemma;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.repository.LemmaRepository;
 import com.example.searchengine.repository.SiteRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,16 +50,16 @@ public class LemmaService {
         lemmaDao.update(lemma);
     }
 
-    public Long getCountBySiteUrl(String url) {
+    public Integer getCountBySiteUrl(String url) {
         logger.info("Получение количества лемм для сайта с URL: {}", url);
 
         return siteRepository.findByUrl(url)
                 .map(Site::getId)
                 .map(lemmaDao::countLemmasOnSite)
-                .orElse(0L);
+                .orElse(0);
     }
 
-    public Long countLemmasOnSite(Long siteID) {
+    public Integer countLemmasOnSite(Integer siteID) {
         logger.info("Подсчет лемм на сайте с ID: {}", siteID);
         return lemmaDao.countLemmasOnSite(siteID);
     }
@@ -120,7 +120,7 @@ public class LemmaService {
     }
 
 
-    public List<String> findByLemmaAndSiteId(String lemma, Long siteId) {
+    public List<String> findByLemmaAndSiteId(String lemma, Integer siteId) {
         List<Object[]> results = lemmaRepository.findByLemmaAndSiteId(lemma, siteId);
         ObjectMapper objectMapper = new ObjectMapper();
         return results.stream()
@@ -138,8 +138,8 @@ public class LemmaService {
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, Long> countLemmasGroupedBySite(List<Site> sites) {
-        Set<Long> siteIds = sites.stream()
+    public Map<Integer, Integer> countLemmasGroupedBySite(List<Site> sites) {
+        Set<Integer> siteIds = sites.stream()
                 .map(Site::getId)
                 .collect(Collectors.toSet());
         return lemmaDao.countLemmasGroupedBySite(siteIds);

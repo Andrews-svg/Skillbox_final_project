@@ -1,10 +1,9 @@
 package com.example.searchengine.models;
 
+import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.persistence.Index;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -13,8 +12,6 @@ import java.util.Objects;
 
 @Getter
 @Setter
-@RequiredArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(
         name = "lemma",
@@ -33,21 +30,27 @@ public class Lemma implements Serializable, Comparable<Lemma> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false)
     private String lemma;
 
     @Column(nullable = false)
-    private double frequency;
+    private int frequency;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", referencedColumnName = "id", nullable = false)
     private Site site;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status;
+
+    public Lemma(int id, String lemma, int frequency, Site site) {
+        this.id = id;
+        this.lemma = lemma;
+        this.frequency = frequency;
+        this.site = site;
+    }
+
+
 
     @Override
     public int compareTo(Lemma other) {
@@ -73,7 +76,6 @@ public class Lemma implements Serializable, Comparable<Lemma> {
                 ", lemma='" + lemma + '\'' +
                 ", frequency=" + frequency +
                 ", site=" + site +
-                ", status=" + status +
                 '}';
     }
 }

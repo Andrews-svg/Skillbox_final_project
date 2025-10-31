@@ -7,7 +7,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import com.example.searchengine.config.SiteList;
+import com.example.searchengine.config.SitesList;
 
 import java.io.IOException;
 import java.net.URI;
@@ -32,7 +32,7 @@ public class UrlRecursiveParser extends RecursiveTask<HashSet<String>> {
     private static final int DEFAULT_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     private final DBSaver dbSaver;
-    private final SiteList sitesList;
+    private final SitesList sitesList;
     private final JsoupWrapper jsoupWrapper;
 
     private final ForkJoinPool pool = new ForkJoinPool(DEFAULT_POOL_SIZE);
@@ -42,7 +42,7 @@ public class UrlRecursiveParser extends RecursiveTask<HashSet<String>> {
 
     private volatile String url;
 
-    public UrlRecursiveParser(DBSaver dbSaver, SiteList sitesList, JsoupWrapper jsoupWrapper) {
+    public UrlRecursiveParser(DBSaver dbSaver, SitesList sitesList, JsoupWrapper jsoupWrapper) {
         this.dbSaver = dbSaver;
         this.sitesList = sitesList;
         this.jsoupWrapper = jsoupWrapper;

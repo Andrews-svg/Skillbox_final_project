@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.example.searchengine.config.SiteList;
+import com.example.searchengine.config.SitesList;
 import com.example.searchengine.dao.SiteDao;
 import com.example.searchengine.exceptions.InvalidSiteException;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import com.example.searchengine.models.Status;
 import com.example.searchengine.repository.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static java.util.stream.Collectors.toList;
 
+
 @Service
 public class SiteService {
 
@@ -35,7 +36,7 @@ public class SiteService {
             LoggerFactory.getLogger(SiteService.class);
 
 
-    private final SiteList sitesList;
+    private final SitesList sitesList;
     private final SiteDao siteDao;
     private final SiteRepository siteRepository;
     private final NotificationService notificationService;
@@ -45,7 +46,7 @@ public class SiteService {
     private EntityManager entityManager;
 
     @Autowired
-    public SiteService(SiteDao siteDao, SiteList sitesList,
+    public SiteService(SiteDao siteDao, SitesList sitesList,
                        SiteRepository siteRepository,
                        NotificationService notificationService,
                        SiteValidationService siteValidationService) {
@@ -74,13 +75,21 @@ public class SiteService {
     }
 
 
+    @Transactional
+    public void saveAll(List<Site> sites) throws InvalidSiteException {
+        for (Site site : sites) {
+            saveSite(site);
+        }
+    }
+
+
     public boolean isAnySiteIndexing() {
         List<Site> activeSites = siteRepository.findByStatus(Status.INDEXING);
         return !activeSites.isEmpty();
     }
 
 
-    public Site fetchFullyLoadedSite(Long siteId) {
+    public Site fetchFullyLoadedSite(Integer siteId) {
         TypedQuery<Site> query = entityManager.createQuery(
                 "SELECT s FROM Site s LEFT JOIN FETCH s.pages WHERE s.id = :siteId",
                 Site.class
@@ -97,7 +106,7 @@ public class SiteService {
     }
 
 
-    public Optional<Site> findById(Long id) {
+    public Optional<Site> findById(Integer id) {
         return siteRepository.findById(id);
     }
 
@@ -156,7 +165,7 @@ public class SiteService {
 
 
     public List<Site> findAllSites() {
-        Map<Long, SiteList.SiteConfig> siteConfigs = sitesList.getSites();
+        Map<Integer, SitesList.SiteConfig> siteConfigs = sitesList.getSites();
         if (siteConfigs == null) {
             logger.error("SitesList or its sites is null.");
             return Collections.emptyList();
@@ -197,7 +206,7 @@ public class SiteService {
 
 
 
-    public boolean checkIfSiteExistsById(Long id) {
+    public boolean checkIfSiteExistsById(Integer id) {
         Optional<Site> entity = siteRepository.findById(id);
         return entity.isPresent();
     }
@@ -213,7 +222,7 @@ public class SiteService {
     }
 
 
-    public Optional<Long> getSiteId(String siteUrl) {
+    public Optional<Integer> getSiteId(String siteUrl) {
         if (siteUrl == null || siteUrl.isBlank()) {
             return Optional.empty();
         }
@@ -221,12 +230,9 @@ public class SiteService {
         return siteOptional.map(Site::getId);
     }
 
-    public List<Long> getSiteIdsByGroupId(Long groupId) {
-        return siteRepository.findByGroupId(groupId);
-    }
 
-    public Long getTotalSites() {
-        return siteRepository.count();
+    public Integer getTotalSites() {
+        return (int) siteRepository.count();
     }
 
 
@@ -246,8 +252,8 @@ public class SiteService {
     }
 
     @Transactional(readOnly = true)
-    public Long countSites() {
-        return siteRepository.count();
+    public Integer countSites() {
+        return (int) siteRepository.count();
     }
 }
 

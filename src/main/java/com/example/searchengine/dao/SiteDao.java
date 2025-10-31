@@ -7,7 +7,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Page;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -27,7 +27,7 @@ public class SiteDao {
         this.entityManager = entityManager;
     }
 
-    public Long save(Site site) {
+    public Integer save(Site site) {
         return executeWithLogging(() -> {
             entityManager.persist(site);
             if (site.getId() == null) {
@@ -50,7 +50,7 @@ public class SiteDao {
 
 
     @Cacheable(value = "sites", key = "#id")
-    public Optional<Site> findById(Long id) {
+    public Optional<Site> findById(Integer id) {
         return executeWithLogging(() -> {
             Site site = entityManager.find(Site.class, id);
             logger.info("Site found by id {}: {}", id, site);
@@ -115,15 +115,15 @@ public class SiteDao {
         }
     }
 
-    public Long count() {
+    public Integer count() {
         return executeWithLogging(() -> {
-            Long count = (Long) entityManager.createQuery("SELECT COUNT(s) FROM Site s").getSingleResult();
+            Integer count = (Integer) entityManager.createQuery("SELECT COUNT(s) FROM Site s").getSingleResult();
             logger.info("Counted total sites: {}", count);
             return count;
         }, "Failed to count sites");
     }
 
-    public List<Page> getAllPagesForSite(Long siteId) {
+    public List<Page> getAllPagesForSite(Integer siteId) {
         TypedQuery<Page> query = entityManager.createQuery(
                 "SELECT p FROM Page p WHERE p.site.id = :siteId",
                 Page.class

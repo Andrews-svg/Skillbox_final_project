@@ -6,8 +6,6 @@ import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.models.*;
 import com.example.searchengine.repository.IndexRepository;
 import com.example.searchengine.repository.LemmaRepository;
-import com.example.searchengine.services.IndexingHistoryService;
-import com.example.searchengine.services.NotificationService;
 import com.example.searchengine.utils.DBSaver;
 import com.example.searchengine.utils.UrlRecursiveParser;
 import jakarta.persistence.EntityManager;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,8 +37,6 @@ public class IndexServiceImpl implements IndexService {
 
     private final IndexDao indexDao;
     private final IndexRepository indexRepository;
-    private final IndexingHistoryService indexingHistoryService;
-    private final NotificationService notificationService;
     private final UrlRecursiveParser urlRecursiveParser;
     private final DBSaver dbSaver;
     private final LemmaRepository lemmaRepository;
@@ -55,7 +50,7 @@ public class IndexServiceImpl implements IndexService {
 
     @Override
     @Async
-    public void indexPage(String url) throws IOException, InvalidSiteException, InterruptedException {
+    public void indexPage(String url) throws IOException, InterruptedException {
         logger.info("Начало индексации страницы: {}", url);
 
         Set<String> links = urlRecursiveParser.startParsing(url);
@@ -78,7 +73,7 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public long saveIndex(Index index, UUID sessionId) {
+    public int saveIndex(Index index, UUID sessionId) {
         if (index == null) {
             logger.error("Передан нулевой индекс для сохранения");
             return -1;
@@ -86,33 +81,25 @@ public class IndexServiceImpl implements IndexService {
 
         logger.info("Сохранение индекса: {}", index);
         Index savedIndex = indexRepository.save(index);
-        notificationService.addNotification("Индекс сохранен: " + savedIndex);
-        String url = getUrlFromIndex(savedIndex);
-
-
-        indexingHistoryService.addRecord(sessionId, new IndexingHistoryRecord(url,
-                LocalDateTime.now(), Status.INDEXED));
-
         return savedIndex.getId();
     }
 
-
     @Override
-    public boolean checkIfIndexExists(Long pageId, Long lemmaId) {
+    public boolean checkIfIndexExists(Integer pageId, Integer lemmaId) {
         logger.info("Проверка существования индекса для страницы ID: {}, леммы ID: {}", pageId, lemmaId);
         return indexRepository.existsByPageIdAndLemmaId(pageId, lemmaId);
     }
 
 
     @Override
-    public Optional<Index> findIndex(Long id) {
+    public Optional<Index> findIndex(Integer id) {
         logger.info("Поиск индекса с ID: {}", id);
         return indexRepository.findById(id);
     }
 
 
     @Override
-    public List<Index> findByLemmaId(Long lemmaId) {
+    public List<Index> findByLemmaId(Integer lemmaId) {
         logger.info("Поиск индексов по ID леммы: {}", lemmaId);
         Optional<Lemma> optionalLemma = lemmaRepository.findById(lemmaId);
 
@@ -125,8 +112,9 @@ public class IndexServiceImpl implements IndexService {
     }
 
 
+
     @Override
-    public Index findById(Long indexId) {
+    public Index findById(Integer indexId) {
         return indexRepository.findById(indexId).orElse(null);
     }
 
@@ -153,27 +141,10 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public List<String> getNotifications() {
-        return notificationService.getNotifications();
-    }
-
-
-    @Override
-    public void clearNotifications() {
-        notificationService.clearNotifications();
-    }
-
-
-    @Override
-    public void deleteByPageId(Long pageId, UUID sessionId) {
+    public void deleteByPageId(Integer pageId, UUID sessionId) {
         logger.info("Удаление индексов по ID страницы: {}", pageId);
         indexDao.deleteByPageId(pageId);
-        notificationService.addNotification("Индексы удалены по ID страницы: " + pageId);
-        indexingHistoryService.addRecord(sessionId,
-                new IndexingHistoryRecord("Page ID: " + pageId,
-                        LocalDateTime.now(), Status.INDEXED));
     }
-
 
     @Override
     public int deleteAllIndexes() {
@@ -186,7 +157,7 @@ public class IndexServiceImpl implements IndexService {
 
     @Override
     public Set<String> getParsedLinks(String url) throws IOException,
-            InvalidSiteException, InterruptedException {
+            InterruptedException {
         return urlRecursiveParser.startParsing(url);
     }
 
@@ -207,7 +178,7 @@ public class IndexServiceImpl implements IndexService {
             for (Page page : foundPages) {
                 SearchResult result = new SearchResult();
                 result.setSuccess(true);
-                result.setTotalCount(Long.valueOf(foundPages.size()));
+                result.setTotalCount(foundPages.size());
                 Data dataItem = new Data();
                 dataItem.setSite(page.getSite());
                 dataItem.setPath(page.getPath());

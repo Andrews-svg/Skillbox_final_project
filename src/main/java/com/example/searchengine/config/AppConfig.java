@@ -14,18 +14,18 @@ public class AppConfig {
     }
 
     @Bean
-    public Long siteNumber() {
-        return 5L;
+    public Integer siteNumber() {
+        return 5;
     }
 
     @Bean
-    public Long pageNumber() {
-        return 100L;
+    public Integer pageNumber() {
+        return 100;
     }
 
     @Bean
-    public Long lemmaNumber() {
-        return 50L;
+    public Integer lemmaNumber() {
+        return 50;
     }
 
     @Bean
@@ -34,8 +34,8 @@ public class AppConfig {
     }
 
     @Bean
-    public StatisticsReport total(Long siteNumber,
-                                  Long pageNumber, Long lemmaNumber,
+    public StatisticsReport total(Integer siteNumber,
+                                  Integer pageNumber, Integer lemmaNumber,
                                   Boolean isIndexing) {
         return new StatisticsReport(siteNumber, pageNumber,
                 lemmaNumber, isIndexing);

@@ -29,7 +29,6 @@ public class ApiController {
     private final IndexingService indexingService;
     private final IndexService indexService;
     private final StatisticsService statisticsService;
-    private final PageManager pageManager;
     private final DBSaver dbSaver;
 
 
@@ -38,31 +37,26 @@ public class ApiController {
 
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<Map<String, String>> startIndexing(
-            @RequestParam Long id,
-            @RequestParam boolean isLemma) {
-        if (id <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error",
-                            "Недопустимый идентификатор сайта."));
+    public Map<String, Object> startIndexing() {
+        try {
+            indexingService.startFullIndexing();
+            return Map.of("result", true);
+        } catch (Exception e) {
+            return Map.of("result", false, "error", "Индексация уже запущена");
         }
-        indexingService.startIndexing(id, isLemma);
-        return ResponseEntity.ok(Map.of("status", "Индексация начата."));
     }
 
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<Map<String, String>> stopIndexing(
-            @RequestParam Long id) {
-        if (id <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error",
-                            "Недопустимый идентификатор сайта."));
+    public ResponseEntity<Map<String, Object>> stopIndexing() {
+        try {
+            indexingService.stopIndexing();
+            return ResponseEntity.ok(Map.of("result", true));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.ok(Map.of("result", false, "error", "Индексация не запущена"));
         }
-        indexingService.stopIndexing(id);
-        return ResponseEntity.ok(Map.of("status",
-                "Индексация остановлена."));
     }
+
 
 
     @RequestMapping(value="/indexPage", method= RequestMethod.POST)
@@ -176,21 +170,18 @@ public class ApiController {
 
 
     @GetMapping("/status")
-    public ResponseEntity<Map<String, String>> getIndexingStatus(
-            @RequestParam Long id, @RequestParam boolean isLemma) {
+    public ResponseEntity<Map<String, String>> getIndexingStatus(@RequestParam Integer id) {
         if (id <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error",
-                            "Недопустимый идентификатор сайта."));
+            return ResponseEntity.badRequest().body(Map.of("error",
+                    "Недопустимый идентификатор страницы"));
         }
         try {
-            String status = pageManager.getIndexingStatusById(id, isLemma);
+            String status = indexingService.getStatus(id);
             return ResponseEntity.ok(Map.of("status", status));
-        } catch (IndexingStatusFetchException ex) {
-            logger.error("Ошибка при получении статуса индексации: " +
-                    "{}", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", ex.getMessage()));
+        } catch (IndexingStatusFetchException e) {
+            logger.error("Ошибка при получении статуса индексации:", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).
+                    body(Map.of("error", e.getMessage()));
         }
     }
 }

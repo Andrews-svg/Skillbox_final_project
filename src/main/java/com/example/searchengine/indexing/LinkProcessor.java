@@ -9,7 +9,7 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.searchengine.models.Page;
-import com.example.searchengine.models.Site;
+import com.example.searchengine.config.Site;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.searchengine.services.PageService;

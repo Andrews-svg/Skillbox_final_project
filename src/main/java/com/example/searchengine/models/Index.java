@@ -1,5 +1,6 @@
 package com.example.searchengine.models;
 
+import com.example.searchengine.config.Site;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +25,7 @@ public class Index implements Serializable {
     @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)

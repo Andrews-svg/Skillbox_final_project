@@ -19,8 +19,8 @@ public class DetailedStatisticsItem {
     private long lemmas;
 
     public DetailedStatisticsItem(String url, String name,
-                                  Status status, long statusTime, String error,
-                                  long pages, long lemmas) {
+                                  Status status, int statusTime, String error,
+                                  int pages, int lemmas) {
         setUrl(url);
         setName(name);
         setStatus(status);

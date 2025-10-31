@@ -9,12 +9,12 @@ public class StatisticsReport {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsReport.class);
 
-    private Long siteNumber;
-    private Long pageNumber;
-    private Long lemmaNumber;
+    private Integer siteNumber;
+    private Integer pageNumber;
+    private Integer lemmaNumber;
     private boolean isIndexing;
 
-    public StatisticsReport(Long siteNumber, Long pageNumber, Long lemmaNumber, Boolean isIndexing) {
+    public StatisticsReport(Integer siteNumber, Integer pageNumber, Integer lemmaNumber, Boolean isIndexing) {
         this.siteNumber = siteNumber != null ? siteNumber : 0;
         this.pageNumber = pageNumber != null ? pageNumber : 0;
         this.lemmaNumber = lemmaNumber != null ? lemmaNumber : 0;
@@ -25,11 +25,11 @@ public class StatisticsReport {
     }
 
 
-    public Long getSiteNumber() {
+    public Integer getSiteNumber() {
         return siteNumber;
     }
 
-    public void setSiteNumber(Long siteNumber) {
+    public void setSiteNumber(Integer siteNumber) {
         if (siteNumber < 0) {
             throw new IllegalArgumentException("Number of sites cannot be negative.");
         }
@@ -40,18 +40,18 @@ public class StatisticsReport {
         return pageNumber;
     }
 
-    public void setPageNumber(long pageNumber) {
+    public void setPageNumber(int pageNumber) {
         if (pageNumber < 0) {
             throw new IllegalArgumentException("Number of pages cannot be negative.");
         }
         this.pageNumber = pageNumber;
     }
 
-    public Long getLemmaNumber() {
+    public Integer getLemmaNumber() {
         return lemmaNumber;
     }
 
-    public void setLemmaNumber(Long lemmaNumber) {
+    public void setLemmaNumber(Integer lemmaNumber) {
         if (lemmaNumber < 0) {
             throw new IllegalArgumentException("Number of lemmas cannot be negative.");
         }
@@ -66,15 +66,15 @@ public class StatisticsReport {
         isIndexing = indexing;
     }
 
-    public long getPages() {
+    public int getPages() {
         return pageNumber;
     }
 
-    public long getLemmas() {
+    public int getLemmas() {
         return lemmaNumber;
     }
 
-    public void addPages(long pages) {
+    public void addPages(int pages) {
         if (pages < 0) {
             throw new IllegalArgumentException("Number of pages to add cannot be negative.");
         }
@@ -82,7 +82,7 @@ public class StatisticsReport {
         logger.info("Added pages: {}. New pageNumber: {}", pages, this.pageNumber);
     }
 
-    public void addLemmas(long lemmas) {
+    public void addLemmas(int lemmas) {
         if (lemmas < 0) {
             throw new IllegalArgumentException("Number of lemmas to add cannot be negative.");
         }

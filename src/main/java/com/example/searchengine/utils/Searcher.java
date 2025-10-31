@@ -1,5 +1,6 @@
 package com.example.searchengine.utils;
 
+import com.example.searchengine.config.Site;
 import com.example.searchengine.indexing.IndexService;
 import com.example.searchengine.services.SearcherService;
 import org.jsoup.Jsoup;
@@ -63,7 +64,7 @@ public class Searcher {
         logger.info("Starting search with query: '{}' and siteURL: '{}'", query, siteURL);
 
         ArrayList<Data> dataList = searchStringToDataArray(query, siteURL);
-        Long totalResults = (long) dataList.size();
+        Integer totalResults = (int) dataList.size();
 
         List<Data> paginatedResults = dataList.stream()
                 .skip(offset)
@@ -96,16 +97,6 @@ public class Searcher {
         }
     }
 
-    public List<Index> getIndexesForLeastFrequentLemmasGroupedBySite(
-            ArrayList<Lemma> sortedArray) {
-        return sortedArray.stream()
-                .collect(Collectors.groupingBy(Lemma::getSite))
-                .values().stream()
-                .filter(group -> group.size() == lemmaInInputCount)
-                .map(this::findIndexesForSearchOutput)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-    }
 
     public List<Index> findIndexesForSearchOutput(List<Lemma> lemmaList) {
         if (lemmaList.isEmpty()) {
@@ -143,7 +134,7 @@ public class Searcher {
                 );
 
                 for (Lemma currentLemma : sortedArray) {
-                    Long lemmaIndexId = currentLemma.getId();
+                    Integer lemmaIndexId = currentLemma.getId();
                     if (indexService.checkIfIndexExists(page.getId(),
                             lemmaIndexId)) {
                         data.setRelevance(data.getRelevance() + 1);
@@ -208,7 +199,7 @@ public class Searcher {
         ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
         List<String> basicForms = lemmatizer.getBasicFormsFromString(input);
         lemmaInInputCount = basicForms.size();
-        long totalPagesCount = pageService.countPages();
+        int totalPagesCount = pageService.countPages();
         double frequencyThreshold = calculateDynamicFrequencyThreshold(totalPagesCount);
         int tooFrequentCoefficient = (int) (totalPagesCount * frequencyThreshold);
 
@@ -239,7 +230,7 @@ public class Searcher {
         return lemmasSortedList;
     }
 
-    private double calculateDynamicFrequencyThreshold(long totalPagesCount) {
+    private double calculateDynamicFrequencyThreshold(int totalPagesCount) {
         return Math.log(totalPagesCount) / totalPagesCount;
     }
 
@@ -251,7 +242,7 @@ public class Searcher {
                     Index currentIndex = iterator.next();
 
                     Page page = currentIndex.getPage();
-                    Long pageId = page != null ? page.getPageId() : null;
+                    Integer pageId = page != null ? page.getPageId() : null;
 
                     if (pageId == null || !indexService.checkIfIndexExists(pageId,
                             lemmaList.get(i).getId())) {

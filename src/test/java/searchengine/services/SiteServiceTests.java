@@ -2,7 +2,7 @@
 //
 //import com.example.searchengine.Application;
 //import com.example.searchengine.models.Page;
-//import com.example.searchengine.models.Site;
+//import com.example.searchengine.config.Site;
 //import com.example.searchengine.repository.PageRepository;
 //import com.example.searchengine.repository.SiteRepository;
 //import com.example.searchengine.services.SiteService;

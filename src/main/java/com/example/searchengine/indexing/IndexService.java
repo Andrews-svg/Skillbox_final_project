@@ -22,25 +22,21 @@ import java.util.UUID;
         void indexPage(String url) throws IOException,
                 InvalidSiteException, InterruptedException;
 
-        long saveIndex(Index index, UUID sessionId);
+        int saveIndex(Index index, UUID sessionId);
 
-        boolean checkIfIndexExists(Long pageId, Long lemmaId);
+        boolean checkIfIndexExists(Integer pageId, Integer lemmaId);
 
-        Optional<Index> findIndex(Long id);
+        Optional<Index> findIndex(Integer id);
 
-        List<Index> findByLemmaId(Long lemmaId);
+        List<Index> findByLemmaId(Integer lemmaId);
 
-        Index findById(Long indexId);
+        Index findById(Integer indexId);
 
         List<Index> findAllIndexes();
 
         String getUrlFromIndex(Index index);
 
-        List<String> getNotifications();
-
-        void clearNotifications();
-
-        void deleteByPageId(Long pageId, UUID sessionId);
+        void deleteByPageId(Integer pageId, UUID sessionId);
 
         int deleteAllIndexes();
 
