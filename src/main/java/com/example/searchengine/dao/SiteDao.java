@@ -6,7 +6,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
-import com.example.searchengine.models.Page;
 import com.example.searchengine.config.Site;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -75,19 +74,6 @@ public class SiteDao {
         return sites;
     }
 
-    @Cacheable
-    public List<Page> findPagesBySiteUrl(String siteUrl) {
-        return executeWithLogging(() -> {
-            TypedQuery<Page> query = entityManager.createQuery(
-                    "SELECT p FROM Page p WHERE p.site.url = :siteUrl",
-                    Page.class);
-            query.setParameter("siteUrl", siteUrl);
-            List<Page> pages = query.getResultList();
-            logger.info("Found pages for site URL '{}', count: {}", siteUrl, pages.size());
-            return pages;
-        }, "Failed to retrieve pages by site URL");
-    }
-
 
     @CacheEvict(value = "sites", key = "#site.id")
     public void delete(Site site) {
@@ -98,13 +84,6 @@ public class SiteDao {
         }, "Failed to delete site");
     }
 
-    public void deleteAll() {
-        executeWithLogging(() -> {
-            entityManager.createQuery("DELETE FROM Site").executeUpdate();
-            logger.info("All sites deleted successfully");
-            return null;
-        }, "Failed to delete all sites");
-    }
 
     private <T> T executeWithLogging(Supplier<T> action, String errorMessage) {
         try {
@@ -117,18 +96,12 @@ public class SiteDao {
 
     public Integer count() {
         return executeWithLogging(() -> {
-            Integer count = (Integer) entityManager.createQuery("SELECT COUNT(s) FROM Site s").getSingleResult();
+            Integer count = (Integer) entityManager.createQuery(
+                    "SELECT COUNT(s) FROM Site s").getSingleResult();
             logger.info("Counted total sites: {}", count);
             return count;
         }, "Failed to count sites");
     }
 
-    public List<Page> getAllPagesForSite(Integer siteId) {
-        TypedQuery<Page> query = entityManager.createQuery(
-                "SELECT p FROM Page p WHERE p.site.id = :siteId",
-                Page.class
-        );
-        query.setParameter("siteId", siteId);
-        return query.getResultList();
-    }
+
 }

@@ -8,7 +8,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.config.Site;
-import com.example.searchengine.models.Status;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.math.BigDecimal;
@@ -68,63 +67,6 @@ public class PageDao {
     }
 
 
-    public Optional<Page> findByName(String path) {
-        return entityManager.createQuery("FROM Page WHERE path = :path", Page.class)
-                .setParameter("path", path)
-                .getResultStream()
-                .findFirst();
-    }
-
-    public List<Page> findAllBySite(Site site) {
-        if (site == null || site.getId() <= 0) {
-            throw new IllegalArgumentException("Некорректный объект сайта.");
-        }
-        TypedQuery<Page> query = entityManager.createQuery("FROM Page WHERE site.id = :siteId", Page.class);
-        query.setParameter("siteId", site.getId());
-        List<Page> pages = query.getResultList();
-        if (!pages.isEmpty()) {
-            logger.info("Найдено {} страниц для сайта с id {}", pages.size(), site.getId());
-        } else {
-            logger.warn("Нет страниц для сайта с id {}", site.getId());
-        }
-        return pages;
-    }
-
-    public List<Page> findPagesByStatus(Status status) {
-        return entityManager.createNamedQuery("Page.findByStatus", Page.class)
-                .setParameter("status", status)
-                .getResultList();
-    }
-
-    public boolean checkIfPageExists(String path) {
-        return !entityManager.createQuery("FROM Page WHERE path = :path", Page.class)
-                .setParameter("path", path)
-                .getResultList().isEmpty();
-    }
-
-
-
-    public int getCountBySiteUrl(String url) {
-        return ((Number) entityManager.createQuery(
-                "SELECT COUNT(*) FROM Page WHERE url = :url", Long.class)
-                .setParameter("url", url)
-                .getSingleResult()).intValue();
-    }
-
-    public List<Page> getAllPages() {
-        return findAll(-1);
-    }
-
-    public List<Page> getPagesBySiteUrl(String siteUrl) {
-        if (siteUrl == null || siteUrl.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
-        return entityManager.createQuery("FROM Page WHERE url = :url", Page.class)
-                .setParameter("url", siteUrl)
-                .getResultList();
-    }
-
-
     @CacheEvict(value = "pages", key = "#entity.id")
     public void delete(Page entity) {
         if (entity == null || entity.getId() == null || entity.getId() <= 0) {
@@ -157,44 +99,8 @@ public class PageDao {
 
 
     public Integer count() {
-        return ((Number) entityManager.createQuery("SELECT COUNT(*) FROM Page").getSingleResult()).intValue();
-    }
-
-
-    public int countPages() {
         return ((Number) entityManager.createQuery(
                 "SELECT COUNT(*) FROM Page").getSingleResult()).intValue();
-    }
-
-    public int countPagesOnSite(Integer siteId) {
-        return ((Number) entityManager.createQuery(
-                        "SELECT COUNT(*) FROM Page p WHERE p.site.id = :site_id", Integer.class)
-                .setParameter("site_id", siteId)
-                .getSingleResult()).intValue();
-    }
-
-    public int countByUrl(String url) {
-        return ((Number) entityManager.createQuery(
-                        "SELECT COUNT(*) FROM Page WHERE url = :url", Long.class)
-                .setParameter("url", url)
-                .getSingleResult()).intValue();
-    }
-
-    public Integer countByContentContainingAndSiteUrl(String query, String siteUrl) {
-        return ((Number) entityManager.createQuery(
-                        "SELECT COUNT(p) FROM Page p WHERE LOWER(p.content) " +
-                                "LIKE LOWER(:query) AND p.site.url = :siteUrl", Integer.class)
-                .setParameter("query", "%" + query + "%")
-                .setParameter("siteUrl", siteUrl)
-                .getSingleResult()).intValue();
-    }
-
-    public Integer countByContentContaining(String query) {
-        return ((Number) entityManager.createQuery(
-                        "SELECT COUNT(p) FROM Page p WHERE LOWER(p.content) " +
-                                "LIKE LOWER(:query)", Long.class)
-                .setParameter("query", "%" + query + "%")
-                .getSingleResult()).intValue();
     }
 
 
@@ -211,22 +117,5 @@ public class PageDao {
             result.put(siteId, count);
         }
         return result;
-    }
-
-
-    public boolean existsByUri(String uri) {
-        return entityManager.createQuery("SELECT COUNT(p) FROM Page p WHERE p.uri = :uri", Integer.class)
-                .setParameter("uri", uri)
-                .getSingleResult() > 0;
-    }
-
-
-    private <T> T executeWithLogging(java.util.function.Supplier<T> action, String errorMessage) {
-        try {
-            return action.get();
-        } catch (Exception e) {
-            logger.error("Ошибка: {}, Причина: {}", errorMessage, e.getMessage(), e);
-            throw new RuntimeException(errorMessage, e);
-        }
     }
 }

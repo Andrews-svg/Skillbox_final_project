@@ -53,7 +53,6 @@ public class SitesList {
     }
 
 
-
     public static class SiteConfig {
         private String name;
         private String url;

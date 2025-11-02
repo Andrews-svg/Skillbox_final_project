@@ -7,10 +7,7 @@ import jakarta.persistence.TypedQuery;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.access.prepost.PreAuthorize;
 import com.example.searchengine.config.SitesList;
-import com.example.searchengine.dao.SiteDao;
 import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.config.Site;
 import com.example.searchengine.models.Status;
@@ -20,9 +17,9 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -37,41 +34,52 @@ public class SiteService {
 
 
     private final SitesList sitesList;
-    private final SiteDao siteDao;
     private final SiteRepository siteRepository;
-    private final NotificationService notificationService;
-    private final SiteValidationService siteValidationService;
+
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
-    public SiteService(SiteDao siteDao, SitesList sitesList,
-                       SiteRepository siteRepository,
-                       NotificationService notificationService,
-                       SiteValidationService siteValidationService) {
-        this.siteDao = requireNonNull(siteDao,
-                "SiteDao cannot be null");
+    public SiteService(SitesList sitesList,
+                       SiteRepository siteRepository) {
         this.sitesList = requireNonNull(sitesList,
                 "SitesList cannot be null");
         this.siteRepository = requireNonNull(siteRepository,
                 "SiteRepository cannot be null");
-        this.notificationService = requireNonNull(notificationService,
-                "NotificationService cannot be null");
-        this.siteValidationService = siteValidationService;
     }
+
 
     @Transactional
     public void saveSite(Site site) throws InvalidSiteException {
-        siteValidationService.validateSite(site);
+        validateSite(site);
         logger.debug("Перед сохранением сайта: {}", site);
         siteRepository.saveAndFlush(site);
         entityManager.refresh(site);
+
         if (site.getId() == null) {
             logger.error("Ошибка: идентификатор сайта равен null после сохранения.");
             throw new IllegalStateException("Ошибка при сохранении сайта: идентификатор не присвоен.");
         }
         logger.info("Сайт успешно сохранён с идентификатором: {}", site.getId());
+    }
+    
+    
+    private void validateSite(Site site) throws InvalidSiteException {
+        if (!isValidUrl(site.getUrl())) { 
+            throw new InvalidSiteException("Некорректный адрес сайта");
+        }
+    }
+
+    private boolean isValidUrl(String inputUrl) {
+        try {
+            new URL(inputUrl).toURI();
+            Pattern pattern = Pattern.compile(
+                    "^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+            return pattern.matcher(inputUrl).matches();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 
@@ -108,42 +116,6 @@ public class SiteService {
 
     public Optional<Site> findById(Integer id) {
         return siteRepository.findById(id);
-    }
-
-
-    @Transactional
-    public void markAllSitesAsFailedImmediately() {
-        executeWithLogging(() -> {
-            List<Site> allSites = siteDao.findAll();
-            allSites.forEach(s -> {
-                s.setStatus(Status.FAILED);
-                s.setLastError("Индексация прервана вручную!");
-                siteDao.update(s);
-            });
-            logger.info("Все сайты отмечены как сбойные немедленно");
-            notificationService.sendAdminNotification("Все сайты были отмечены " +
-                    "как сбойные немедленно.");
-            return null;
-        });
-    }
-
-
-    @Async
-    @PreAuthorize("hasRole('ADMIN')")
-    public void scheduleMarkAllSitesAsFailed(long delayInSeconds) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(delayInSeconds * 1000);
-                markAllSitesAsFailedImmediately();
-                logger.warn("Все сайты отмечены как сбойные после планирования задания.");
-                notificationService.sendAdminNotification("Массовая пометка сайтов " +
-                        "как сбойных выполнена успешно.");
-            } catch (Exception ex) {
-                logger.error("Ошибка при пометке всех сайтов как сбойных:", ex);
-                notificationService.sendAdminNotification("Ошибка произошла " +
-                        "при массовой пометке сайтов как сбойных.");
-            }
-        });
     }
 
 
@@ -204,24 +176,6 @@ public class SiteService {
     }
 
 
-
-
-    public boolean checkIfSiteExistsById(Integer id) {
-        Optional<Site> entity = siteRepository.findById(id);
-        return entity.isPresent();
-    }
-
-    public boolean existsByUrl(String url) {
-        if (url == null) {
-            logger.warn("Attempted to find site with null URL.");
-        }
-        boolean exists = siteRepository.existsByUrl(url);
-        logger.info(exists ? "Site exists for URL: {}" :
-                "Site does not exist for URL: {}", url);
-        return exists;
-    }
-
-
     public Optional<Integer> getSiteId(String siteUrl) {
         if (siteUrl == null || siteUrl.isBlank()) {
             return Optional.empty();
@@ -242,14 +196,6 @@ public class SiteService {
         logger.info("Site deleted: {}", site);
     }
 
-    private <T> void executeWithLogging(Supplier<T> action) {
-        try {
-            action.get();
-        } catch (Exception e) {
-            logger.error("{}: {}", "Ошибка при пометке всех сайтов как сбойных немедленно", e.getMessage());
-            throw new RuntimeException("Ошибка при пометке всех сайтов как сбойных немедленно", e);
-        }
-    }
 
     @Transactional(readOnly = true)
     public Integer countSites() {

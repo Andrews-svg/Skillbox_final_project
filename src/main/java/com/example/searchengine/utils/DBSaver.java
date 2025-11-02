@@ -39,12 +39,11 @@ public class DBSaver implements Closeable {
     private final Lemmatizer lemmatizer;
     private final SitesList sitesList;
     private final SearcherService searcherService;
-    private final IndexingHistoryService indexingHistoryService;
     private static final ConcurrentHashMap<String, Site> cachedSites = new ConcurrentHashMap<>();
 
     @Autowired
     public DBSaver(SiteService siteService, PageService pageService, LemmaService lemmaService,
-                   @Lazy IndexService indexService, IndexingHistoryService indexingHistoryService,
+                   @Lazy IndexService indexService,
                    Lemmatizer lemmatizer, SitesList sitesList, SearcherService searcherService) {
         this.siteService = siteService;
         this.pageService = pageService;
@@ -52,7 +51,6 @@ public class DBSaver implements Closeable {
         this.indexService = indexService;
         this.lemmatizer = lemmatizer;
         this.sitesList = sitesList;
-        this.indexingHistoryService = indexingHistoryService;
         this.searcherService = searcherService;
     }
 
@@ -102,15 +100,13 @@ public class DBSaver implements Closeable {
         siteService.saveAll(List.of(site));
         pageService.saveAll(List.of(page));
 
-
         Map<String, Float> mapTitle = new HashMap<>();
         Map<String, Float> mapBody = new HashMap<>();
         generateLemmas(content, mapTitle, mapBody);
         Map<String, Float> mapToDB = combineTwoMaps(mapTitle, mapBody);
 
-        UUID sessionId = indexingHistoryService.startIndexingSession();
         mapToDB.forEach((lemmaText, frequency) -> {
-            saveLemmaAndIndex(sessionId, site, page.getId(), lemmaText, frequency);
+            saveLemmaAndIndex(site, page.getId(), lemmaText, frequency);
         });
 
         logger.info("Завершена обработка URL: {}", url);
@@ -118,10 +114,10 @@ public class DBSaver implements Closeable {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    private void saveLemmaAndIndex(UUID sessionId, Site site, Integer pageId,
-                                   String lemmaText, float rank) {
+    private void saveLemmaAndIndex(Site site, Integer pageId, String lemmaText, float rank) {
         Lemma lemma = new Lemma(0, lemmaText, 1, site);
         lemmaService.saveOrUpdateLemma(lemma);
+
         Index index = new Index();
         index.setLemma(lemma);
         index.setPage(pageService.findById(pageId).orElseThrow(() ->
@@ -129,7 +125,7 @@ public class DBSaver implements Closeable {
         index.setSite(site);
         index.setRank(rank);
 
-        indexService.saveIndex(index, sessionId);
+        indexService.saveIndex(index);
     }
 
 

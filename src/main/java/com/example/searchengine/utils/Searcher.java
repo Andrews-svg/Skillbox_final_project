@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class Searcher {
@@ -211,7 +210,7 @@ public class Searcher {
                         .filter(site -> site.getUrl().equals(siteURL)).findFirst();
                 if (matchingSite.isPresent()) {
                     Site site = matchingSite.get();
-                    Optional<Lemma> lemmaOpt = Optional.ofNullable(lemmaDao.findByNameAndSiteID(form, site.getId()));
+                    Optional<Lemma> lemmaOpt = Optional.ofNullable(lemmaDao.findByNameAndSiteId(form, site.getId()));
                     lemmaOpt.ifPresent(listFromDB::add);
                 } else {
                     logger.warn("Сайт с URL {} не найден", siteURL);

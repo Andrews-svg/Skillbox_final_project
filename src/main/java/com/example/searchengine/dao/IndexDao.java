@@ -169,9 +169,9 @@ public class IndexDao {
         }, "Failed to delete indexes by pageId");
     }
 
-    public Long count() {
+    public Integer count() {
         return ((Number) entityManager.createQuery(
-                "SELECT COUNT(i) FROM Index i").getSingleResult()).longValue();
+                "SELECT COUNT(i) FROM Index i").getSingleResult()).intValue();
     }
 
     private <T> T executeWithLogging(Supplier<T> action, String errorMessage) {

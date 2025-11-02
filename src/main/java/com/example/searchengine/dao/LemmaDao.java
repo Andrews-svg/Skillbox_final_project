@@ -1,6 +1,5 @@
 package com.example.searchengine.dao;
 
-import com.example.searchengine.config.Site;
 import com.example.searchengine.models.*;
 import jakarta.persistence.*;
 import org.slf4j.Logger;
@@ -57,19 +56,6 @@ public class LemmaDao {
         logger.info("Lemma updated successfully: {}", lemma);
     }
 
-    public boolean checkIfLemmaExists(String name) {
-        TypedQuery<Lemma> query = entityManager.createQuery(
-                "SELECT l FROM Lemma l WHERE l.lemma = :lemma", Lemma.class);
-        query.setParameter("lemma", name);
-        try {
-            query.getSingleResult();
-            logger.info("Lemma exists check for '{}': true", name);
-            return true;
-        } catch (NoResultException e) {
-            logger.info("Lemma exists check for '{}': false", name);
-            return false;
-        }
-    }
 
     @Cacheable(value = "lemmas", key = "#id")
     public Optional<Lemma> findById(Integer id) {
@@ -102,18 +88,8 @@ public class LemmaDao {
         return lemmas;
     }
 
-    public Optional<Lemma> findLemma(Integer lemmaId) {
-        return Optional.ofNullable(entityManager.find(Lemma.class, lemmaId));
-    }
 
-    public List<Lemma> findAllBySite(Site site) {
-        TypedQuery<Lemma> query = entityManager.createQuery(
-                "SELECT l FROM Lemma l WHERE l.site.id = :siteId", Lemma.class);
-        query.setParameter("siteId", site.getId());
-        return query.getResultList();
-    }
-
-    public Lemma findByNameAndSiteID(String name, Integer siteId) {
+    public Lemma findByNameAndSiteId(String name, Integer siteId) {
         TypedQuery<Lemma> query = entityManager.createQuery(
                 "SELECT l FROM Lemma l WHERE l.lemma =" +
                         ":lemma AND l.site.id = :siteId", Lemma.class);
@@ -126,12 +102,6 @@ public class LemmaDao {
         }
     }
 
-    public List<Lemma> findByName(String name) {
-        TypedQuery<Lemma> query = entityManager.createQuery(
-                "SELECT l FROM Lemma l WHERE l.lemma = :lemma", Lemma.class);
-        query.setParameter("lemma", name);
-        return query.getResultList();
-    }
 
     public boolean isLemmaTooFrequent(Lemma lemma) {
         if (lemma == null) {

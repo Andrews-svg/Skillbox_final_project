@@ -22,7 +22,7 @@ import java.util.UUID;
         void indexPage(String url) throws IOException,
                 InvalidSiteException, InterruptedException;
 
-        int saveIndex(Index index, UUID sessionId);
+        int saveIndex(Index index);
 
         boolean checkIfIndexExists(Integer pageId, Integer lemmaId);
 

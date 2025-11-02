@@ -73,7 +73,7 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public int saveIndex(Index index, UUID sessionId) {
+    public int saveIndex(Index index) {
         if (index == null) {
             logger.error("Передан нулевой индекс для сохранения");
             return -1;
