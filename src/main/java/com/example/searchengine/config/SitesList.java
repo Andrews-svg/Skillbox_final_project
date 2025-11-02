@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,6 +34,24 @@ public class SitesList {
         logger.debug("Returning all Sites: {}", sites);
         return Collections.unmodifiableMap(sites);
     }
+
+
+    public boolean isAllowedDomain(String url) {
+        for (SiteConfig site : sites.values()) {
+            try {
+                URL inputUrl = new URL(url);
+                URL allowedUrl = new URL(site.getUrl());
+
+                if (inputUrl.getHost().equalsIgnoreCase(allowedUrl.getHost())) {
+                    return true;
+                }
+            } catch (MalformedURLException e) {
+                logger.error("Ошибка парсинга URL: {}", e.getMessage());
+            }
+        }
+        return false;
+    }
+
 
 
     public static class SiteConfig {
