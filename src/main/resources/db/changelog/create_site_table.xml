@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- Создание таблицы site -->
+    <changeSet author="yourname" id="create-site-table">
+        <createTable tableName="site">
+            <!-- Идентификатор сайта -->
+            <column autoIncrement="true" name="id" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+
+            <!-- Статус индексации -->
+            <column name="status" type="ENUM('INDEXING','INDEXED','FAILED')">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Дата и время последнего изменения статуса -->
+            <column name="status_time" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Сообщение об ошибке -->
+            <column name="last_error" type="TEXT"/>
+
+            <!-- URL сайта -->
+            <column name="url" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Название сайта -->
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

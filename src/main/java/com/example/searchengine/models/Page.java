@@ -3,65 +3,34 @@ package com.example.searchengine.models;
 import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Objects;
 
-
+@Data
 @Indexed
-@Getter
-@Setter
 @Entity
 @Access(AccessType.FIELD)
 @Table(name = "page", indexes = {
-        @jakarta.persistence.Index(name = "idx_path", columnList = "path"),
-        @jakarta.persistence.Index(name = "idx_url", columnList = "url")
-})
-
-@NamedQueries({
-        @NamedQuery(name = "Page.findByStatus",
-                query = "SELECT p FROM Page p WHERE p.status = :status"),
-        @NamedQuery(name = "Page.findByUrl",
-                query = "SELECT p FROM Page p WHERE p.url = :url"),
-        @NamedQuery(name = "Page.findAll",
-                query = "SELECT p FROM Page p")
+        @jakarta.persistence.Index(name = "idx_path", columnList = "path(255)")
 })
 @Cacheable
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Page {
-
-    private static final Logger logger = LoggerFactory.getLogger(Page.class);
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @NotNull
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 255)
-    @NotNull
-    private String url;
-
-    @Column(nullable = false, unique = true, length = 255)
-    @NotNull
-    private String uri;
-
-    @Column(nullable = false, length = 255)
+    @Column(columnDefinition = "TEXT", nullable = false)
     @NotNull
     private String path;
 
     @Column(nullable = false)
     @NotNull
-    private Integer code = 200;
-
-    @Column(length = 255)
-    @NotNull
-    private String name;
+    private Integer code;
 
     @FullTextField(analyzer = "standard")
     @Lob
@@ -74,95 +43,20 @@ public class Page {
     @NotNull
     private Site site;
 
-    @Column(length = 255)
-    @NotNull
-    private String title;
+    public Page() {}
 
-    @Column(length = 255)
-    @NotNull
-    private String snippet;
-
-    @Column(nullable = false)
-    @NotNull
-    private float relevance;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @NotNull
-    private Status status;
-
-    @Column(nullable = false)
-    @NotNull
-    private boolean available = true;
-
-
-    public Page(Integer id, String url, String uri, String path,
-                Integer code, String name, String content, Site site,
-                String title, String snippet, float relevance,
-                Status status, boolean available) {
+    public Page(Integer id, String path, Integer code, String content, Site site) {
         this.id = id;
-        this.url = url;
-        this.uri = uri;
         this.path = path;
         this.code = code;
-        this.name = name;
         this.content = content;
         this.site = site;
-        this.title = title;
-        this.snippet = snippet;
-        this.relevance = relevance;
-        this.status = status;
-        this.available = available;
     }
 
-
-    public Page(String link, String path, String link1,
-                Site site, String s, int i, String unnamedLink,
-                String linkTitle, String linkSnippet,
-                float v, Status status, boolean b) {
-    }
-
-    public CharSequence getCodeOptional() {
-        return code != null ? String.valueOf(code) : null;
-    }
-
-
-    public Integer getPageId() {
-        return this.id;
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Page page)) return false;
-        return Float.compare(page.relevance, relevance) == 0 &&
-                Objects.equals(id, page.id) &&
-                Objects.equals(url, page.url) &&
-                Objects.equals(path, page.path) &&
-                Objects.equals(code, page.code) &&
-                Objects.equals(title, page.title) &&
-                Objects.equals(snippet, page.snippet) &&
-                status == page.status;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, url, path, code,
-                title, snippet, relevance, status);
-    }
-
-    @Override
-    public String toString() {
-        return "Page{" +
-                "id=" + id +
-                ", url='" + url + '\'' +
-                ", path='" + path + '\'' +
-                ", code=" + code +
-                ", title='" + title + '\'' +
-                ", snippet='" + snippet + '\'' +
-                ", relevance=" + relevance +
-                ", status=" + status +
-                '}';
+    public Page(String path, Integer code, String content, Site site) {
+        this.path = path;
+        this.code = code;
+        this.content = content;
+        this.site = site;
     }
 }

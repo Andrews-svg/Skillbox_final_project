@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
-
 
 @Getter
 @Setter
@@ -38,23 +36,8 @@ public class Index implements Serializable {
     private Lemma lemma;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "site_id", nullable = false)
-    private Site site;
-
-    @NotNull
     @Column(name = "search_rank", precision=10, scale=2)
     private float rank;
-
-    @NotNull
-    @Column(name = "last_modified")
-    private LocalDateTime lastModified;
-
-    @NotNull
-    @Column(name = "available")
-    private Boolean available;
-
-
 
 
     @Override
@@ -63,9 +46,10 @@ public class Index implements Serializable {
                 "id=" + id +
                 ", page=" + page.getId() +
                 ", lemma=" + lemma.getId() +
-                ", site=" + site.getId() +
                 ", rank=" + rank +
-                ", lastModified=" + lastModified +
                 '}';
+    }
+
+    public void setSite(Site site) {
     }
 }

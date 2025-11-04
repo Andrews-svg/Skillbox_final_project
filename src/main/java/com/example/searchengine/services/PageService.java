@@ -1,6 +1,7 @@
 package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
+import jakarta.persistence.PersistenceException;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +29,8 @@ public class PageService {
     }
 
     @Transactional
-    public Page savePage(Page page) {
-        if (page.getCodeOptional().isEmpty()) {
+    public void savePage(Page page) {
+        if (page.getCode() == null) {
             throw new IllegalArgumentException("Код страницы не указан!");
         }
 
@@ -38,22 +39,25 @@ public class PageService {
         }
 
         if (page.getSite() == null) {
-            Site determinedSite = siteService.determineSiteForPage(page.getUri());
+            Site determinedSite = siteService.determineSiteForPage(page.getPath());
             if (determinedSite == null) {
                 throw new IllegalArgumentException("Не удалось определить сайт для страницы.");
             }
             page.setSite(determinedSite);
         }
 
-        Optional<Page> existingPageOpt = pageRepository.findByUri(page.getUri());
+        Optional<Page> existingPageOpt = pageRepository.findByPath(page.getPath());
 
         if (existingPageOpt.isPresent()) {
             Page existingPage = existingPageOpt.get();
             updateExistingPage(existingPage, page);
-            return existingPage;
         } else {
             validateNewPage(page);
-            return pageRepository.save(page);
+            try {
+                pageRepository.save(page);
+            } catch (PersistenceException ex) {
+                throw new RuntimeException("Ошибка сохранения страницы.", ex);
+            }
         }
     }
 
@@ -67,17 +71,13 @@ public class PageService {
 
     private void updateExistingPage(Page existingPage, Page updatedPage) {
         existingPage.setContent(updatedPage.getContent());
-        existingPage.setStatus(updatedPage.getStatus());
-        existingPage.setRelevance(updatedPage.getRelevance());
-        existingPage.setSnippet(updatedPage.getSnippet());
-        existingPage.setTitle(updatedPage.getTitle());
+        existingPage.setCode(updatedPage.getCode());
     }
 
     private void validateNewPage(Page page) {
-        if (pageRepository.existsByUri(page.getUri())) {
-            throw new IllegalArgumentException("Страница с таким URI уже существует!");
+        if (pageRepository.existsByPath(page.getPath())) {
+            throw new IllegalArgumentException("Страница с таким путём уже существует!");
         }
-
     }
 
 
@@ -89,9 +89,8 @@ public class PageService {
 
 
     private void validatePage(Page page) {
-        if (page == null || page.getPath() == null || page.getPath().isEmpty() ||
-                page.getUrl() == null || page.getUrl().isEmpty()) {
-            throw new IllegalArgumentException("Page, its path and URL must not be null or empty");
+        if (page == null || page.getPath() == null || page.getPath().isEmpty()) {
+            throw new IllegalArgumentException("Page and its path must not be null or empty");
         }
     }
 
@@ -111,23 +110,6 @@ public class PageService {
     public Optional<Page> findById(Integer pageId) {
         return pageRepository.findById(pageId);
     }
-
-    public Optional<String> findUrlById(Integer id) {
-        return pageRepository.findById(id)
-                .map(Page::getUrl);
-    }
-
-    @Transactional
-    public void deletePage(Page page) {
-        pageRepository.delete(page);
-    }
-
-    @Transactional
-    public void deleteAllPages() {
-        pageRepository.deleteAll();
-    }
-
-
 
     @Transactional(readOnly = true)
     public Integer getTotalPages() {

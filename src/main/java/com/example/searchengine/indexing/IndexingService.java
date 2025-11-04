@@ -25,6 +25,7 @@ import com.example.searchengine.utils.JsoupWrapper;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -117,34 +118,22 @@ public class IndexingService {
             if (maybeExampleSite.isPresent()) {
                 exampleSite = maybeExampleSite.get();
             } else {
-                exampleSite = new Site("https://example.com",
-                        "https://example.com", Status.INDEXING);
+                exampleSite = new Site(Status.INDEXING, LocalDateTime.now(), "https://example.com", "Example Website");
+
                 try {
                     siteService.saveSite(exampleSite);
                     logger.info("Сайт создан: {}", exampleSite.getUrl());
                 } catch (InvalidSiteException ise) {
-                    logger.error("Ошибка при создании сайта: {}", ise.getMessage());
+                    logger.error("Ошибка ensureInitialData() при создании сайта: {}", ise.getMessage());
                     return;
                 }
             }
 
-            Page initialPage = new Page(
-                    "https://example.com",
-                    "/",
-                    "https://example.com/",
-                    exampleSite,
-                    "Пример содержания для индексации",
-                    200,
-                    "Название по умолчанию",
-                    "Заголовок примера",
-                    "Описание примера",
-                    0.5f,
-                    Status.INDEXING,
-                    true
-            );
+            Page initialPage = new Page("/", 200,
+                    "Пример содержания для индексации", exampleSite);
 
             pageRepository.save(initialPage);
-            logger.info("Первая страница создана: {}", initialPage.getUrl());
+            logger.info("Первая страница создана: {}", initialPage.getPath());
         }
     }
 
@@ -196,26 +185,12 @@ public class IndexingService {
         Site site = resolveSiteFromLink(link);
 
         if (site != null && validateLink(link)) {
-            Page page = new Page(
-                    link,
-                    path,
-                    link,
-                    site,
-                    "",
-                    200,
-                    "Unnamed Link",
-                    "Link Title",
-                    "Link snippet",
-                    0.0f,
-                    Status.INDEXING,
-                    true
-            );
+            Page page = new Page(path, 200, "", site);
 
             pageRepository.save(page);
             logger.info("Ссылка сохранена: {}", link);
         }
     }
-
     private String parsePathFromLink(String link) {
         try {
             return new URI(link).getPath();
@@ -229,7 +204,8 @@ public class IndexingService {
         String host = extractHostFromLink(link);
         Optional<Site> siteOpt = siteService.findByUrl(host);
         return siteOpt.orElseGet(() -> {
-            Site newSite = new Site(host, host, Status.INDEXING);
+            Site newSite = new Site(Status.INDEXING, LocalDateTime.now(), host, host);
+
             try {
                 siteService.saveSite(newSite);
                 return newSite;

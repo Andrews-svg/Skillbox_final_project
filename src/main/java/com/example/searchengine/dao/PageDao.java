@@ -1,5 +1,6 @@
 package com.example.searchengine.dao;
 
+import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +8,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Page;
-import com.example.searchengine.config.Site;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.math.BigDecimal;
@@ -86,8 +86,8 @@ public class PageDao {
 
 
     private void validatePage(Page page) {
-        if (page.getUrl() == null || page.getUrl().trim().isEmpty()) {
-            throw new IllegalArgumentException("Поле URL должно быть заполнено.");
+        if (page.getPath() == null || page.getPath().trim().isEmpty()) {
+            throw new IllegalArgumentException("Поле PATH должно быть заполнено.");
         }
         if (page.getContent() == null || page.getContent().trim().isEmpty()) {
             throw new IllegalArgumentException("Поле CONTENT должно быть заполнено.");
@@ -97,7 +97,6 @@ public class PageDao {
         }
     }
 
-
     public Integer count() {
         return ((Number) entityManager.createQuery(
                 "SELECT COUNT(*) FROM Page").getSingleResult()).intValue();
@@ -106,16 +105,19 @@ public class PageDao {
 
     public Map<Integer, Integer> countPagesGroupedBySite(List<Site> sites) {
         Set<Integer> siteIds = sites.stream().map(Site::getId).collect(Collectors.toSet());
+
         TypedQuery<Object[]> query = entityManager.createQuery(
-                "SELECT p.site.id, COUNT(p) FROM Page p WHERE p.site.id IN (:ids) " +
-                        "GROUP BY p.site.id", Object[].class);
+                "SELECT p.site.id, COUNT(p) FROM Page p WHERE p.site.id IN (:ids) GROUP BY p.site.id", Object[].class);
         query.setParameter("ids", siteIds);
+
         Map<Integer, Integer> result = new HashMap<>();
         for (Object[] row : query.getResultList()) {
-            Integer siteId = ((BigDecimal) row[0]).intValue();
-            Integer count = (Integer) row[1];
+            Integer siteId = ((Number) row[0]).intValue();
+            Integer count = ((Number) row[1]).intValue();
             result.put(siteId, count);
         }
         return result;
     }
+
+
 }

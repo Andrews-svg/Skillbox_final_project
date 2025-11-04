@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- Создание таблицы lemma -->
+    <changeSet author="yourname" id="create-lemma-table">
+        <createTable tableName="lemma">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="site_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lemma" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="frequency" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Создание внешнего ключа -->
+    <changeSet author="yourname" id="add-fk-lemma-site">
+        <addForeignKeyConstraint baseColumnNames="site_id"
+                                 baseTableName="lemma"
+                                 constraintName="fk_lemma_site"
+                                 referencedColumnNames="id"
+                                 referencedTableName="site"/>
+    </changeSet>
+
+    <!-- Создание индексов -->
+    <changeSet author="yourname" id="add-indexes-for-lemma">
+        <createIndex indexName="idx_lemma_name" tableName="lemma">
+            <column name="lemma"/>
+        </createIndex>
+        <createIndex indexName="idx_site_id" tableName="lemma">
+            <column name="site_id"/>
+        </createIndex>
+        <createIndex indexName="idx_lemma_and_site" tableName="lemma">
+            <column name="lemma"/>
+            <column name="site_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

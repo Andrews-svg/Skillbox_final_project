@@ -43,7 +43,7 @@ public class Lemma implements Serializable, Comparable<Lemma> {
     private Site site;
 
 
-    public Lemma(int id, String lemma, int frequency, Site site) {
+    public Lemma(Integer id, String lemma, int frequency, Site site) {
         this.id = id;
         this.lemma = lemma;
         this.frequency = frequency;

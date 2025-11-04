@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -143,9 +145,9 @@ public class SiteService {
             return Collections.emptyList();
         }
         return siteConfigs.values().stream()
-                .map(config -> new Site(config.getName(),
-                        config.getUrl(), Status.INDEXING))
-                .collect(toList());
+                .map(config -> new Site(Status.INDEXING,
+                        LocalDateTime.now(), config.getUrl(), config.getName()))
+                .collect(Collectors.toList());
     }
 
 

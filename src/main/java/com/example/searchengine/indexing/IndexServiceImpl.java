@@ -136,9 +136,8 @@ public class IndexServiceImpl implements IndexService {
             logger.error("Передан некорректный индекс");
             return null;
         }
-        return index.getPage().getUrl();
+        return index.getPage().getPath();
     }
-
 
     @Override
     public void deleteByPageId(Integer pageId, UUID sessionId) {
@@ -182,7 +181,7 @@ public class IndexServiceImpl implements IndexService {
                 Data dataItem = new Data();
                 dataItem.setSite(page.getSite());
                 dataItem.setPath(page.getPath());
-                dataItem.setTitle(page.getTitle());
+                dataItem.setTitle(page.getPath());
                 dataItem.setSnippet(truncateText(page.getContent(), 150));
                 dataItem.setRelevance(computeRelevance(page.getContent(), query));
                 result.getData().add(dataItem);

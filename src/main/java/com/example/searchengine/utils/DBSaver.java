@@ -24,6 +24,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -79,20 +80,7 @@ public class DBSaver implements Closeable {
         }
 
         Site site = sites.get(0);
-        Page page = new Page(
-                url,
-                getPathFromLink(url),
-                url,
-                site,
-                content,
-                fetchUrlStatusCode(url),
-                "Newly Added Page",
-                "Page Title",
-                "Page snippet",
-                0.0f,
-                Status.INDEXED,
-                true
-        );
+        Page page = new Page(getPathFromLink(url), fetchUrlStatusCode(url), content, site);
 
         site.addPage(page);
         site.updateStatusTime();
@@ -112,17 +100,18 @@ public class DBSaver implements Closeable {
         logger.info("Завершена обработка URL: {}", url);
     }
 
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     private void saveLemmaAndIndex(Site site, Integer pageId, String lemmaText, float rank) {
-        Lemma lemma = new Lemma(0, lemmaText, 1, site);
+        Lemma lemma = new Lemma(null, lemmaText, 1, site);
+
         lemmaService.saveOrUpdateLemma(lemma);
+
+        Page page = pageService.findById(pageId).orElseThrow(() ->
+                new IllegalStateException("Страница с ID=" + pageId + " не найдена"));
 
         Index index = new Index();
         index.setLemma(lemma);
-        index.setPage(pageService.findById(pageId).orElseThrow(() ->
-                new IllegalStateException("Страница с ID=" + pageId + " не найдена")));
-        index.setSite(site);
+        index.setPage(page);
         index.setRank(rank);
 
         indexService.saveIndex(index);
@@ -231,7 +220,6 @@ public class DBSaver implements Closeable {
             String currentContent = fetchUrlContent(url);
             if (!currentContent.equals(oldPage.getContent())) {
                 oldPage.setContent(currentContent);
-                oldPage.setTitle(title);
                 pageService.savePage(oldPage);
             }
             logger.info("Обновлена страница с URL: {}", url);
@@ -245,7 +233,7 @@ public class DBSaver implements Closeable {
         if (existingSiteOpt.isPresent()) {
             site = existingSiteOpt.get();
         } else {
-            site = new Site(title, url, Status.INDEXING);
+            site = new Site(Status.INDEXING, LocalDateTime.now(), url, title);
             try {
                 siteService.saveSite(site);
             } catch (InvalidSiteException e) {
@@ -253,20 +241,7 @@ public class DBSaver implements Closeable {
             }
         }
 
-        Page page = new Page(
-                url,
-                getPathFromLink(url),
-                url,
-                site,
-                fetchUrlContent(url),
-                200,
-                title,
-                title,
-                "Page snippet",
-                0.0f,
-                Status.INDEXED,
-                true
-        );
+        Page page = new Page(getPathFromLink(url), 200, fetchUrlContent(url), site);
         site.addPage(page);
         pageService.savePage(page);
 
@@ -277,17 +252,5 @@ public class DBSaver implements Closeable {
     public String extractTitleFromContent(String htmlContent) {
         Document doc = Jsoup.parse(htmlContent);
         return doc.title();
-    }
-
-
-    private String extractNameFromUrl(String url) {
-        try {
-            URL urlObj = new URL(url);
-            String host = urlObj.getHost();
-            return host.startsWith("www.") ? host.substring(4) : host;
-        } catch (MalformedURLException e) {
-            logger.error("Неправильный URL: {}", url, e);
-            return "Unknown Site";
-        }
     }
 }

@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.models.*;
 import com.example.searchengine.dto.statistics.Data;
-import com.example.searchengine.services.LemmaService;
 import com.example.searchengine.services.PageService;
-import com.example.searchengine.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,27 +25,21 @@ public class Searcher {
 
     private final IndexService indexService;
     private final PageService pageService;
-    private final SiteService siteService;
-    private final LemmaService lemmaService;
     private final Lemmatizer lemmatizer;
     private final LemmaDao lemmaDao;
     private final SearcherService searcherService;
 
     @Autowired
     public Searcher(IndexService indexService,
-                    PageService pageService, SiteService siteService,
-                    LemmaService lemmaService,
+                    PageService pageService,
                     Lemmatizer lemmatizer, LemmaDao lemmaDao, SearcherService searcherService) {
         this.indexService = indexService;
         this.pageService = pageService;
-        this.siteService = siteService;
-        this.lemmaService = lemmaService;
         this.lemmatizer = lemmatizer;
         this.lemmaDao = lemmaDao;
         this.searcherService = searcherService;
     }
 
-    private int lemmaInInputCount;
 
 
     public SearchResult search(
@@ -96,22 +88,6 @@ public class Searcher {
         }
     }
 
-
-    public List<Index> findIndexesForSearchOutput(List<Lemma> lemmaList) {
-        if (lemmaList.isEmpty()) {
-            logger.warn("Received empty lemma list for finding indexes.");
-            return new ArrayList<>();
-        }
-        try {
-            List<Index> leastFrequentLemmaIndexesToDeleteFrom =
-                    getLeastFrequentLemmaIndexes(lemmaList);
-            return filterIndexes(lemmaList, leastFrequentLemmaIndexesToDeleteFrom);
-        } catch (Exception e) {
-            logger.error("Error finding indexes for search output: {}",
-                    e.getMessage(), e);
-            return new ArrayList<>();
-        }
-    }
 
     public ArrayList<Data> lemmaIndexesToData(List<Index> leastFrequentLemmaIndexes,
                                               ArrayList<Lemma> sortedArray) {
@@ -193,21 +169,25 @@ public class Searcher {
     }
 
 
-    public ArrayList<Lemma> inputToLemmasSortedArrayWithoutTooFrequentLemmas(String input,
-                                                                             String siteURL) {
-        ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
+    public ArrayList<Lemma> inputToLemmasSortedArrayWithoutTooFrequentLemmas(String input, String siteURL) {
         List<String> basicForms = lemmatizer.getBasicFormsFromString(input);
-        lemmaInInputCount = basicForms.size();
+
         int totalPagesCount = pageService.countPages();
         double frequencyThreshold = calculateDynamicFrequencyThreshold(totalPagesCount);
-        int tooFrequentCoefficient = (int) (totalPagesCount * frequencyThreshold);
+        int tooFrequentCoefficient = (int)(totalPagesCount * frequencyThreshold);
+
+        ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
 
         for (String form : basicForms) {
             List<Lemma> listFromDB = new ArrayList<>();
+
             if (!siteURL.isEmpty()) {
                 List<Site> sites = searcherService.findByPartialUrl(siteURL);
+
                 Optional<Site> matchingSite = sites.stream()
-                        .filter(site -> site.getUrl().equals(siteURL)).findFirst();
+                        .filter(site -> site.getUrl().equals(siteURL))
+                        .findFirst();
+
                 if (matchingSite.isPresent()) {
                     Site site = matchingSite.get();
                     Optional<Lemma> lemmaOpt = Optional.ofNullable(lemmaDao.findByNameAndSiteId(form, site.getId()));
@@ -219,38 +199,21 @@ public class Searcher {
             } else {
                 listFromDB = lemmaDao.findLemmaByName(form);
             }
+
             for (Lemma l : listFromDB) {
-                if (l.getFrequency() <= tooFrequentCoefficient && l.getFrequency() != 0) {
+                if (l.getFrequency() <= tooFrequentCoefficient && l.getFrequency() > 0) {
                     lemmasSortedList.add(l);
                 }
             }
         }
+
         Collections.sort(lemmasSortedList);
         return lemmasSortedList;
     }
 
+
     private double calculateDynamicFrequencyThreshold(int totalPagesCount) {
         return Math.log(totalPagesCount) / totalPagesCount;
-    }
-
-    public List<Index> filterIndexes(List<Lemma> lemmaList, List<Index> indexes) {
-        for (int i = 1; i < lemmaList.size(); i++) {
-            if (!indexes.isEmpty()) {
-                Iterator<Index> iterator = indexes.iterator();
-                while (iterator.hasNext()) {
-                    Index currentIndex = iterator.next();
-
-                    Page page = currentIndex.getPage();
-                    Integer pageId = page != null ? page.getPageId() : null;
-
-                    if (pageId == null || !indexService.checkIfIndexExists(pageId,
-                            lemmaList.get(i).getId())) {
-                        iterator.remove();
-                    }
-                }
-            }
-        }
-        return indexes;
     }
 }
 
