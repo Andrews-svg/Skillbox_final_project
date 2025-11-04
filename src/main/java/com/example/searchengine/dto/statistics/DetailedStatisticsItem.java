@@ -1,10 +1,12 @@
 package com.example.searchengine.dto.statistics;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.searchengine.models.Status;
 import org.springframework.stereotype.Component;
 
+@Getter
 @Component
 public class DetailedStatisticsItem {
 
@@ -32,34 +34,6 @@ public class DetailedStatisticsItem {
     }
 
     public DetailedStatisticsItem() {
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public long getStatusTime() {
-        return statusTime;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public long getPages() {
-        return pages;
-    }
-
-    public long getLemmas() {
-        return lemmas;
     }
 
     public void setUrl(String url) {
