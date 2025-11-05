@@ -1,6 +1,6 @@
 package com.example.searchengine.exceptions;
 
-import com.example.searchengine.dto.response.ErrorResponseDTO;
+import com.example.searchengine.dto.statistics.response.ErrorResponseDTO;
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

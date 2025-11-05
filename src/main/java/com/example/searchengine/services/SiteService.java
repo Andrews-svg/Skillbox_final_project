@@ -151,7 +151,7 @@ public class SiteService {
     }
 
 
-    public Site determineSiteForPage(String uri) {
+    public Optional<Site> determineSiteForPage(String uri) {
         if (uri == null || uri.trim().isEmpty()) {
             throw new IllegalArgumentException("Полный URI страницы не может быть пустым или null");
         }
@@ -170,7 +170,7 @@ public class SiteService {
     }
 
 
-    public Site findByDomain(String domain) {
+    public Optional<Site> findByDomain(String domain) {
         if (domain == null || domain.trim().isEmpty()) {
             throw new IllegalArgumentException("Домен не может быть пустым или null");
         }

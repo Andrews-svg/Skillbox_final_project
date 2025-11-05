@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.searchengine.request.IndexPageRequest;
+import com.example.searchengine.dto.statistics.request.IndexPageRequest;
 import com.example.searchengine.exceptions.*;
 import com.example.searchengine.indexing.*;
 import com.example.searchengine.dto.statistics.StatisticsData;
@@ -28,7 +28,7 @@ public class ApiController {
     @Autowired
     private SitesList sitesList;
 
-    private final IndexingService indexingService;
+    private final IndexingServiceImpl indexingService;
     private final IndexService indexService;
     private final StatisticsService statisticsService;
     private final DBSaver dbSaver;

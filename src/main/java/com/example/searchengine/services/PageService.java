@@ -28,6 +28,7 @@ public class PageService {
         this.siteService = siteService;
     }
 
+
     @Transactional
     public void savePage(Page page) {
         if (page.getCode() == null) {
@@ -39,10 +40,9 @@ public class PageService {
         }
 
         if (page.getSite() == null) {
-            Site determinedSite = siteService.determineSiteForPage(page.getPath());
-            if (determinedSite == null) {
-                throw new IllegalArgumentException("Не удалось определить сайт для страницы.");
-            }
+            Site determinedSite = siteService.determineSiteForPage(page.getPath())
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("Не удалось определить сайт для страницы."));
             page.setSite(determinedSite);
         }
 

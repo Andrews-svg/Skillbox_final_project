@@ -31,5 +31,9 @@ public interface PageRepository extends JpaRepository<Page, Integer> {
     Optional<Page> findByUri(String uri);
 
     boolean existsByUrl(String url);
+
+    void deleteBySite(Site site);
+
+    void batchInsert(List<Page> pages);
 }
 

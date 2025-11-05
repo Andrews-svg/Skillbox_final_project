@@ -1,4 +1,4 @@
-package com.example.searchengine.request;
+package com.example.searchengine.dto.statistics.request;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;

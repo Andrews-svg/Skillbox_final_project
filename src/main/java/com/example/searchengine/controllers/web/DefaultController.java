@@ -1,7 +1,7 @@
 package com.example.searchengine.controllers.web;
 
 import com.example.searchengine.indexing.IndexServiceImpl;
-import com.example.searchengine.indexing.IndexingService;
+import com.example.searchengine.indexing.IndexingServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ public class DefaultController {
             LoggerFactory.getLogger(DefaultController.class);
 
     @Autowired
-    private IndexingService indexingService;
+    private IndexingServiceImpl indexingService;
 
     @Autowired
     private IndexServiceImpl indexServiceImpl;
