@@ -6,6 +6,10 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
     <changeSet author="yourname" id="create-page-table">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="page"/></not>
+        </preConditions>
+
         <createTable tableName="page">
             <column autoIncrement="true" name="id" type="INT">
                 <constraints nullable="false" primaryKey="true"/>
@@ -27,9 +31,12 @@
 
 
     <changeSet author="yourname" id="add-path-index">
-        <sql>
-            CREATE INDEX idx_path ON page(path);
-        </sql>
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_path"/></not>
+        </preConditions>
+        <createIndex tableName="page" indexName="idx_path">
+            <column name="path"/>
+        </createIndex>
     </changeSet>
 
 </databaseChangeLog>

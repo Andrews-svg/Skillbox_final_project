@@ -6,6 +6,10 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
     <changeSet author="yourname" id="create-index-table">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="search_index"/></not>
+        </preConditions>
+
         <createTable tableName="search_index">
             <column autoIncrement="true" name="id" type="INT">
                 <constraints nullable="false" primaryKey="true"/>

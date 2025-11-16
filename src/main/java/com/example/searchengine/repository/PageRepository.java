@@ -35,5 +35,6 @@ public interface PageRepository extends JpaRepository<Page, Integer> {
     void deleteBySite(Site site);
 
     void batchInsert(List<Page> pages);
+    void deleteByPageId(Integer pageId);
 }
 

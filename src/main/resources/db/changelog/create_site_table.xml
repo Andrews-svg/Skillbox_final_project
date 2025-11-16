@@ -7,6 +7,10 @@
 
     <!-- Создание таблицы site -->
     <changeSet author="yourname" id="create-site-table">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="site"/></not>
+        </preConditions>
+
         <createTable tableName="site">
             <!-- Идентификатор сайта -->
             <column autoIncrement="true" name="id" type="INT">

@@ -7,6 +7,10 @@
 
     <!-- Создание таблицы lemma -->
     <changeSet author="yourname" id="create-lemma-table">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="lemma"/></not>
+        </preConditions>
+
         <createTable tableName="lemma">
             <column autoIncrement="true" name="id" type="BIGINT">
                 <constraints nullable="false" primaryKey="true"/>
@@ -23,8 +27,12 @@
         </createTable>
     </changeSet>
 
-    <!-- Создание внешнего ключа -->
+    <!-- Добавляем проверку существования внешнего ключа -->
     <changeSet author="yourname" id="add-fk-lemma-site">
+        <preConditions onFail="MARK_RAN">
+            <not><foreignKeyConstraintExists foreignKeyName="fk_lemma_site"/></not>
+        </preConditions>
+
         <addForeignKeyConstraint baseColumnNames="site_id"
                                  baseTableName="lemma"
                                  constraintName="fk_lemma_site"

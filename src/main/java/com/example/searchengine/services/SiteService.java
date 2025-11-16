@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,68 +22,64 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static java.util.stream.Collectors.toList;
-
 
 @Service
 public class SiteService {
 
-    private static final Logger logger =
-            LoggerFactory.getLogger(SiteService.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(SiteService.class);
 
     private final SitesList sitesList;
     private final SiteRepository siteRepository;
-
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
-    public SiteService(SitesList sitesList,
-                       SiteRepository siteRepository) {
-        this.sitesList = requireNonNull(sitesList,
-                "SitesList cannot be null");
-        this.siteRepository = requireNonNull(siteRepository,
-                "SiteRepository cannot be null");
+    public SiteService(SitesList sitesList, SiteRepository siteRepository) {
+        this.sitesList = requireNonNull(sitesList, "SitesList cannot be null");
+        this.siteRepository = requireNonNull(siteRepository, "SiteRepository cannot be null");
+    }
+
+
+    private void validateSite(Site site) throws InvalidSiteException {
+        if (!isValidUrl(site.getUrl())) {
+            throw new InvalidSiteException("Некорректный адрес сайта");
+        }
+    }
+
+
+    private boolean isValidUrl(String inputUrl) {
+        try {
+            new URL(inputUrl).toURI();
+            Pattern pattern =
+                    Pattern.compile(
+                            "^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]$");
+            return pattern.matcher(inputUrl).matches();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 
     @Transactional
     public void saveSite(Site site) throws InvalidSiteException {
         validateSite(site);
-        logger.debug("Перед сохранением сайта: {}", site);
+        logger.debug("Before saving site: {}", site);
         siteRepository.saveAndFlush(site);
         entityManager.refresh(site);
 
         if (site.getId() == null) {
-            logger.error("Ошибка: идентификатор сайта равен null после сохранения.");
-            throw new IllegalStateException("Ошибка при сохранении сайта: идентификатор не присвоен.");
+            logger.error("Error: site ID is null after saving.");
+            throw new IllegalStateException(
+                    "Ошибка при сохранении сайта: идентификатор не присвоен.");
         }
-        logger.info("Сайт успешно сохранён с идентификатором: {}", site.getId());
-    }
-    
-    
-    private void validateSite(Site site) throws InvalidSiteException {
-        if (!isValidUrl(site.getUrl())) { 
-            throw new InvalidSiteException("Некорректный адрес сайта");
-        }
-    }
-
-    private boolean isValidUrl(String inputUrl) {
-        try {
-            new URL(inputUrl).toURI();
-            Pattern pattern = Pattern.compile(
-                    "^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
-            return pattern.matcher(inputUrl).matches();
-        } catch (Exception e) {
-            return false;
-        }
+        logger.info("Website saved with ID: {}", site.getId());
     }
 
 
@@ -94,8 +92,8 @@ public class SiteService {
 
 
     public boolean isAnySiteIndexing() {
-        List<Site> activeSites = siteRepository.findByStatus(Status.INDEXING);
-        return !activeSites.isEmpty();
+        List<Site> indexingSites = siteRepository.findByStatus(Status.INDEXING);
+        return !indexingSites.isEmpty();
     }
 
 
@@ -103,59 +101,44 @@ public class SiteService {
         TypedQuery<Site> query = entityManager.createQuery(
                 "SELECT s FROM Site s LEFT JOIN FETCH s.pages WHERE s.id = :siteId",
                 Site.class
-        );
-        query.setParameter("siteId", siteId);
+        ).setParameter("siteId", siteId);
 
         Optional<Site> result = Optional.ofNullable(query.getSingleResult());
-
         if (result.isEmpty()) {
             throw new EntityNotFoundException("Сайт с идентификатором " + siteId + " не найден.");
         }
-
         return result.get();
     }
 
 
+    @Cacheable(value = "sites", key = "#id")
     public Optional<Site> findById(Integer id) {
         return siteRepository.findById(id);
     }
 
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<Site> findByUrl(String url) {
         if (isBlank(url)) {
-            throw new IllegalArgumentException("URL не может быть пустым или null");
+            throw new IllegalArgumentException("URL not allowed to be blank");
         }
-
-        Optional<Site> foundSite = siteRepository.findByUrl(url);
-
-        if (foundSite.isPresent()) {
-            logger.info("Найден сайт с URL: {}", url);
-        } else {
-            logger.info("Нет сайта с указанным URL: {}", url);
-        }
-        return foundSite;
+        return siteRepository.findByUrl(url);
     }
 
 
     public List<Site> findAllSites() {
-        Map<Integer, SitesList.SiteConfig> siteConfigs = sitesList.getSites();
-        if (siteConfigs == null) {
-            logger.error("SitesList or its sites is null.");
-            return Collections.emptyList();
-        }
-        return siteConfigs.values().stream()
-                .map(config -> new Site(Status.INDEXING,
-                        LocalDateTime.now(), config.getUrl(), config.getName()))
+        return sitesList.getSites().values().stream()
+                .map(config -> new Site(Status.INDEXING, LocalDateTime.now(),
+                        config.getUrl(), config.getName()))
                 .collect(Collectors.toList());
     }
 
 
-    public Optional<Site> determineSiteForPage(String uri) {
-        if (uri == null || uri.trim().isEmpty()) {
-            throw new IllegalArgumentException("Полный URI страницы не может быть пустым или null");
+    public Optional<Site> determineSiteForPage(String pageUri) {
+        if (pageUri == null || pageUri.trim().isEmpty()) {
+            throw new IllegalArgumentException("Full URI of a page must not be empty");
         }
-        String domain = extractDomainFromUri(uri);
+        String domain = extractDomainFromUri(pageUri);
         return findByDomain(domain);
     }
 
@@ -165,14 +148,14 @@ public class SiteService {
             URI parsedUri = new URI(uri);
             return parsedUri.getHost();
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Некорректный формат URI страницы.", e);
+            throw new IllegalArgumentException("Invalid URI format provided.", e);
         }
     }
 
 
     public Optional<Site> findByDomain(String domain) {
         if (domain == null || domain.trim().isEmpty()) {
-            throw new IllegalArgumentException("Домен не может быть пустым или null");
+            throw new IllegalArgumentException("Domain name cannot be empty");
         }
         return siteRepository.findByDomain(domain);
     }
@@ -182,26 +165,41 @@ public class SiteService {
         if (siteUrl == null || siteUrl.isBlank()) {
             return Optional.empty();
         }
-        Optional<Site> siteOptional = siteRepository.findByUrl(siteUrl);
-        return siteOptional.map(Site::getId);
+        return siteRepository.findByUrl(siteUrl).map(Site::getId);
     }
 
 
-    public Integer getTotalSites() {
-        return (int) siteRepository.count();
+    public int getTotalSites() {
+        return Math.toIntExact(siteRepository.count());
     }
 
 
     @Transactional
+    @CacheEvict(value = "sites", key = "#site.id")
     public void delete(Site site) {
         siteRepository.delete(site);
-        logger.info("Site deleted: {}", site);
+        logger.info("Deleted site: {}", site);
     }
 
 
-    @Transactional(readOnly = true)
+    private <T> T executeWithLogging(Supplier<T> action, String errorMessage) {
+        try {
+            return action.get();
+        } catch (Exception e) {
+            logger.error("{}: {}", errorMessage, e.getMessage());
+            throw new RuntimeException(errorMessage, e);
+        }
+    }
+
+
+    public Integer count() {
+        return executeWithLogging(() ->
+                        ((Number)entityManager.createQuery(
+                                "SELECT COUNT(s) FROM Site s").getSingleResult()).intValue(),
+                "Failed to count sites");
+    }
+
     public Integer countSites() {
-        return (int) siteRepository.count();
+        return Math.toIntExact(siteRepository.count());
     }
 }
-

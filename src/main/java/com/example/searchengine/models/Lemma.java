@@ -3,6 +3,7 @@ package com.example.searchengine.models;
 import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.persistence.Index;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -50,6 +51,8 @@ public class Lemma implements Serializable, Comparable<Lemma> {
         this.site = site;
     }
 
+    public Lemma(String lemmaText, int i, Site site, @NotNull Status status) {
+    }
 
 
     @Override

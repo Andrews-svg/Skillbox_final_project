@@ -2,7 +2,6 @@ package com.example.searchengine.controllers.api;
 
 import com.example.searchengine.config.SitesList;
 import com.example.searchengine.models.SearchResult;
-import com.example.searchengine.utils.DBSaver;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.searchengine.dto.statistics.request.IndexPageRequest;
 import com.example.searchengine.exceptions.*;
 import com.example.searchengine.indexing.*;
 import com.example.searchengine.dto.statistics.StatisticsData;
@@ -31,7 +29,8 @@ public class ApiController {
     private final IndexingServiceImpl indexingService;
     private final IndexService indexService;
     private final StatisticsService statisticsService;
-    private final DBSaver dbSaver;
+    private final AsyncJobService asyncJobService;
+    private final WebProcessingService webProcessingService;
 
 
     private static final Logger logger =
@@ -41,7 +40,7 @@ public class ApiController {
     @GetMapping("/startIndexing")
     public ResponseEntity<Map<String, Object>> startIndexing() {
         try {
-            indexingService.startFullIndexing();
+            asyncJobService.startFullIndexing();
             return ResponseEntity.ok(Map.of("result", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("result",
@@ -53,7 +52,7 @@ public class ApiController {
     @GetMapping("/stopIndexing")
     public ResponseEntity<Map<String, Object>> stopIndexing() {
         try {
-            indexingService.stopIndexing();
+            asyncJobService.stopIndexing();
             return ResponseEntity.ok(Map.of("result", true));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("result",
@@ -64,27 +63,27 @@ public class ApiController {
 
 
     @PostMapping("/indexPage")
-    public ResponseEntity<Map<String, Object>> indexPage(@RequestBody IndexPageRequest request) {
+    public ResponseEntity<Map<String, Object>> indexPage(@RequestParam String url) {
         Map<String, Object> responseMap = new HashMap<>();
 
         try {
-            if (!isValidUrl(request.getUrl())) {
+            if (!isValidUrl(url)) {
                 responseMap.put("result", false);
                 responseMap.put("error", "Неверный формат адреса страницы.");
                 return ResponseEntity.badRequest().body(responseMap);
             }
 
-            if (!sitesList.isAllowedDomain(request.getUrl())) {
+            if (!sitesList.isAllowedDomain(url)) {
                 responseMap.put("result", false);
-                responseMap.put("error",
-                        "Данная страница находится за пределами сайтов, " +
-                                "указанных в конфигурационном файле");
+                responseMap.put("error", "Данная страница находится за пределами сайтов, " +
+                        "указанных в конфигурационном файле");
                 return ResponseEntity.badRequest().body(responseMap);
             }
 
-            String content = dbSaver.fetchUrlContent(request.getUrl());
+            String content = webProcessingService.fetchUrlContent(url);
+
             if (content != null && !content.trim().isEmpty()) {
-                indexService.indexPage(request.getUrl());
+                indexService.indexPage(url);
                 responseMap.put("result", true);
                 return ResponseEntity.ok(responseMap);
             } else {
@@ -98,7 +97,6 @@ public class ApiController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseMap);
         }
     }
-
 
 
     private boolean isValidUrl(String url) {
@@ -151,15 +149,13 @@ public class ApiController {
                                               Integer offset, Integer limit) {
 
         List<SearchResult> allResults = indexService.findPagesForQuery(query);
-
-        int totalCount = allResults.size();
         if (site != null && !site.isEmpty()) {
             allResults.removeIf(result -> !result.getSite().equals(site));
         }
+        int totalCount = allResults.size();
         int fromIndex = Math.max(0, offset);
         int toIndex = Math.min(fromIndex + limit, allResults.size());
         List<SearchResult> resultPage = new ArrayList<>(allResults.subList(fromIndex, toIndex));
-
         return Map.of(
                 "result", true,
                 "count", totalCount,

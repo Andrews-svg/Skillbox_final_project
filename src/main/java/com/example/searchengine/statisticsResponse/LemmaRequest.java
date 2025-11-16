@@ -1,5 +1,11 @@
 package com.example.searchengine.statisticsResponse;
 
+import lombok.Getter;
+import lombok.Setter;
+
+
+@Getter
+@Setter
 class LemmaRequest {
     private String input;
     private String siteURL;

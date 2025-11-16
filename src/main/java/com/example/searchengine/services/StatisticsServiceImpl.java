@@ -5,8 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.searchengine.config.SitesList;
-import com.example.searchengine.dao.LemmaDao;
-import com.example.searchengine.dao.PageDao;
 import com.example.searchengine.config.Site;
 import com.example.searchengine.dto.statistics.DetailedStatisticsItem;
 import com.example.searchengine.dto.statistics.StatisticsData;
@@ -28,21 +26,18 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final PageService pageService;
     private final LemmaService lemmaService;
     private final SitesList sites;
-    private final LemmaDao lemmaDao;
-    private final PageDao pageDao;
+
 
     @Autowired
     public StatisticsServiceImpl(SiteService siteService,
                                  PageService pageService,
-                                 LemmaDao lemmaDao,
                                  LemmaService lemmaService,
-                                 SitesList sites, PageDao pageDao) {
+                                 SitesList sites) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
-        this.lemmaDao = lemmaDao;
         this.sites = sites;
-        this.pageDao = pageDao;
+
         logger.info("StatisticsServiceImpl initialized.");
     }
 
@@ -63,7 +58,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         for (int i = 0; i < allSites.size(); i += batchSize) {
             List<Site> currentBatch = allSites.subList(i, Math.min(allSites.size(), i + batchSize));
 
-            Map<Integer, Integer> pagesCountMap = pageDao.countPagesGroupedBySite(currentBatch);
+            Map<Integer, Integer> pagesCountMap = pageService.countPagesGroupedBySite(currentBatch);
             Map<Integer, Integer> lemmasCountMap = lemmaService.countLemmasGroupedBySite(currentBatch);
 
             for (Site site : currentBatch) {
@@ -108,7 +103,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private StatisticsReport getTotal() {
         Integer siteNumber = siteService.countSites();
         Integer pageNumber = pageService.countPages();
-        Integer lemmaNumber = lemmaDao.countLemmas();
+        Integer lemmaNumber = lemmaService.countLemmas();
 
         boolean isIndexing = siteService.isAnySiteIndexing();
 

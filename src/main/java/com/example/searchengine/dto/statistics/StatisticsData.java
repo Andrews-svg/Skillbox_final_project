@@ -19,19 +19,4 @@ public class StatisticsData {
         this.detailed = detailed;
     }
 
-    public List<DetailedStatisticsItem> getDetailed() {
-        return this.detailed;
-    }
-
-    public StatisticsReport getTotal() {
-        return this.total;
-    }
-
-    public void setTotal(StatisticsReport total) {
-        this.total = total;
-    }
-
-    public void setDetailed(List<DetailedStatisticsItem> detailed) {
-        this.detailed = detailed;
-    }
-  }
+}

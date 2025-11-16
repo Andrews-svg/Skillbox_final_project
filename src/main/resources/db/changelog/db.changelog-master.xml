@@ -6,9 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
     <!-- Подключаем изменения -->
-    <include file="./changelog/create_site_table.xml"/>
-    <include file="./changelog/create_page_table.xml"/>
-    <include file="./changelog/create_lemma_table.xml"/>
-    <include file="./changelog/create_index_table.xml"/>
+    <include file="/db/changelog/create_site_table.xml"/>
+    <include file="/db/changelog/create_page_table.xml"/>
+    <include file="/db/changelog/create_lemma_table.xml"/>
+    <include file="/db/changelog/create_index_table.xml"/>
 
 </databaseChangeLog>

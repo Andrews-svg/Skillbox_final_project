@@ -1,26 +1,23 @@
 package com.example.searchengine.indexing;
 
-import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.models.Index;
+import com.example.searchengine.models.Lemma;
+import com.example.searchengine.models.Page;
 import com.example.searchengine.models.SearchResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 
-
-
-    @Service
+@Service
     @Transactional
     public interface IndexService {
 
-        void indexPage(String url) throws IOException,
-                InvalidSiteException, InterruptedException;
+    void indexPage(String url) throws Exception;
 
         int saveIndex(Index index);
 
@@ -40,10 +37,23 @@ import java.util.UUID;
 
         int deleteAllIndexes();
 
-        Set<String> getParsedLinks(String url) throws IOException,
-                InvalidSiteException, InterruptedException;
+        Set<String> getParsedLinks(String url) throws Exception;
 
         List<SearchResult> findPagesForQuery(String query);
+        Integer save(Index index);
+        long saveOrUpdateIndex(Index index);
+        Boolean checkIfIndexExists(Page page, Lemma lemma);
+        Index findByIdPair(Page page, Lemma lemma);
+        void update(Index index);
+        List<Index> findAll();
+        List<Index> findAll(int limit);
+
+        void delete(Index index);
+        void deleteAll();
+        void deleteByPage(Page page);
+
+        Integer count();
+
     }
 
 

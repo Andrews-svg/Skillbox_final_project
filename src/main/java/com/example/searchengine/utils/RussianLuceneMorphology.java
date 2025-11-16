@@ -17,9 +17,6 @@ public class RussianLuceneMorphology extends LuceneMorphology {
 
     private static final Logger logger = LoggerFactory.getLogger(RussianLuceneMorphology.class);
 
-    // TODO проблема: циклическая зависимость, решение: создание Lemmatizer -> интерфейса -> LemmatizerImpl
-    private final Lemmatizer internalAnalyzer;
-
 
     private final Map<String, String[]> exceptions = new HashMap<>();
 
@@ -30,7 +27,6 @@ public class RussianLuceneMorphology extends LuceneMorphology {
     private final Map<String, Integer> difficultWords = new ConcurrentHashMap<>();
 
     public RussianLuceneMorphology(Lemmatizer analyzer) throws IOException {
-        this.internalAnalyzer = analyzer;
         initializeExceptions();
     }
 

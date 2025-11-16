@@ -36,7 +36,7 @@ public class Index implements Serializable {
     private Lemma lemma;
 
     @NotNull
-    @Column(name = "search_rank", precision=10, scale=2)
+    @Column(name = "search_rank")
     private float rank;
 
 

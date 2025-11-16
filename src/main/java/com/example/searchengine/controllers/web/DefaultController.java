@@ -1,5 +1,6 @@
 package com.example.searchengine.controllers.web;
 
+import com.example.searchengine.indexing.AsyncJobService;
 import com.example.searchengine.indexing.IndexServiceImpl;
 import com.example.searchengine.indexing.IndexingServiceImpl;
 import org.slf4j.Logger;
@@ -37,6 +38,9 @@ public class DefaultController {
 
     @Autowired
     private LemmaService lemmaService;
+
+    @Autowired
+    private AsyncJobService asyncJobService;
 
     @Autowired
     private String siteUrlRegex;
@@ -148,7 +152,7 @@ public class DefaultController {
 
     private void manageStopIndexing(Model model) {
         try {
-            indexingService.stopIndexing();
+            asyncJobService.stopIndexing();
             model.addAttribute("infoMessage",
                     "Процесс индексации остановлен.");
         } catch (Exception e) {
@@ -161,9 +165,9 @@ public class DefaultController {
     private void manageStartIndexing(Model model, Integer id, Boolean isLemma) {
         try {
             if (isLemma) {
-                indexingService.startIndexing(id, true);
+                asyncJobService.startIndexing(id, true);
             } else {
-                indexingService.startIndexing(id, false);
+                asyncJobService.startIndexing(id, false);
             }
 
             model.addAttribute("infoMessage", "Процесс индексации начат.");
@@ -173,7 +177,6 @@ public class DefaultController {
                     "Ошибка при запуске процесса индексации.");
         }
     }
-
 
     private boolean isValidId(Integer id) {
         return id != null && id > 0;

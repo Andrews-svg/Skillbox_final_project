@@ -1,42 +1,42 @@
-package com.example.searchengine.utils;
+package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
 import com.example.searchengine.indexing.IndexService;
-import com.example.searchengine.services.SearcherService;
+import com.example.searchengine.utils.Lemmatizer;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.searchengine.dao.LemmaDao;
 import com.example.searchengine.models.*;
 import com.example.searchengine.dto.statistics.Data;
-import com.example.searchengine.services.PageService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-@Component
-public class Searcher {
 
-    private static final Logger logger = LoggerFactory.getLogger(Searcher.class);
+@Service
+public class SearchService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
 
     private final IndexService indexService;
     private final PageService pageService;
     private final Lemmatizer lemmatizer;
-    private final LemmaDao lemmaDao;
+    private final LemmaService lemmaService;
     private final SearcherService searcherService;
 
     @Autowired
-    public Searcher(IndexService indexService,
-                    PageService pageService,
-                    Lemmatizer lemmatizer, LemmaDao lemmaDao, SearcherService searcherService) {
+    public SearchService(IndexService indexService,
+                         PageService pageService,
+                         Lemmatizer lemmatizer, LemmaService lemmaService,
+                         SearcherService searcherService) {
         this.indexService = indexService;
         this.pageService = pageService;
         this.lemmatizer = lemmatizer;
-        this.lemmaDao = lemmaDao;
+        this.lemmaService = lemmaService;
         this.searcherService = searcherService;
     }
 
@@ -171,42 +171,34 @@ public class Searcher {
 
     public ArrayList<Lemma> inputToLemmasSortedArrayWithoutTooFrequentLemmas(String input, String siteURL) {
         List<String> basicForms = lemmatizer.getBasicFormsFromString(input);
-
         int totalPagesCount = pageService.countPages();
         double frequencyThreshold = calculateDynamicFrequencyThreshold(totalPagesCount);
         int tooFrequentCoefficient = (int)(totalPagesCount * frequencyThreshold);
-
         ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
-
         for (String form : basicForms) {
             List<Lemma> listFromDB = new ArrayList<>();
-
             if (!siteURL.isEmpty()) {
                 List<Site> sites = searcherService.findByPartialUrl(siteURL);
-
                 Optional<Site> matchingSite = sites.stream()
                         .filter(site -> site.getUrl().equals(siteURL))
                         .findFirst();
-
                 if (matchingSite.isPresent()) {
                     Site site = matchingSite.get();
-                    Optional<Lemma> lemmaOpt = Optional.ofNullable(lemmaDao.findByNameAndSiteId(form, site.getId()));
+                    Optional<Lemma> lemmaOpt = lemmaService.findByBaseFormAndSiteId(form, site.getId());
                     lemmaOpt.ifPresent(listFromDB::add);
                 } else {
                     logger.warn("Сайт с URL {} не найден", siteURL);
                     continue;
                 }
             } else {
-                listFromDB = lemmaDao.findLemmaByName(form);
+                listFromDB = lemmaService.findLemmaByName(form);
             }
-
             for (Lemma l : listFromDB) {
                 if (l.getFrequency() <= tooFrequentCoefficient && l.getFrequency() > 0) {
                     lemmasSortedList.add(l);
                 }
             }
         }
-
         Collections.sort(lemmasSortedList);
         return lemmasSortedList;
     }
