@@ -1,27 +1,33 @@
 package com.example.searchengine.models;
 
-import lombok.Getter;
-import java.util.Arrays;
-
-
-
-@Getter
 public enum Role {
     USER("USER"),
     ADMIN("ADMIN");
+
+    private final String authority;
+
 
     Role(String authority) {
         this.authority = authority;
     }
 
-    private final String authority;
+
+    public String getAuthority() {
+        return authority;
+    }
+
 
     public static Role fromString(final String authority) {
-        return Arrays.stream(values())
-                .filter(r -> r.getAuthority().equals(authority))
-                .findFirst()
-                .orElse(null);
+        if (authority != null && !authority.isEmpty()) {
+            for (Role role : values()) {
+                if (role.getAuthority().equals(authority)) {
+                    return role;
+                }
+            }
+        }
+        return null;
     }
+
 
     @Override
     public String toString() {

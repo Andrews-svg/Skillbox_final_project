@@ -25,7 +25,6 @@ import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 @Component
 public class CrawlerService {
 
@@ -34,7 +33,7 @@ public class CrawlerService {
     private static final int DEFAULT_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     private final WebProcessingService webProcessingService;
-    private final DatabaseService databaseService;
+    private final DataSaver dataSaver;
     private final SitesList sitesList;
     private final JsoupWrapper jsoupWrapper;
     private final ForkJoinPool pool;
@@ -45,16 +44,15 @@ public class CrawlerService {
 
     @Autowired
     public CrawlerService(WebProcessingService webProcessingService,
-                          DatabaseService databaseService,
+                          DataSaver dataSaver,
                           SitesList sitesList,
                           JsoupWrapper jsoupWrapper) {
         this.webProcessingService = webProcessingService;
-        this.databaseService = databaseService;
+        this.dataSaver = dataSaver;
         this.sitesList = sitesList;
         this.jsoupWrapper = jsoupWrapper;
         this.pool = new ForkJoinPool(DEFAULT_POOL_SIZE);
     }
-
 
     public HashSet<String> startParsing(String siteURL) throws Exception {
         resetState();
@@ -63,7 +61,6 @@ public class CrawlerService {
         saveData(siteURL);
         return outLinksSet;
     }
-
 
     private class ParseTask extends RecursiveAction {
         private final String url;
@@ -90,14 +87,13 @@ public class CrawlerService {
         }
     }
 
-
     private void visitPage(String url) throws IOException {
         visitedLinks.add(url);
-        Document doc = jsoupWrapper.connect(url, sitesList.getUserAgent(), sitesList.getReferrer());
+        Document doc = jsoupWrapper.connect(url, sitesList.getUserAgent(),
+                sitesList.getReferrer());
         Elements links = doc.select("a[href]");
         processLinks(links);
     }
-
 
     private void processLinks(Elements links) {
         List<Element> validLinks = links.stream()
@@ -114,17 +110,14 @@ public class CrawlerService {
         }
     }
 
-
     private void submitNextParseTask(String nextUrl) {
         pool.execute(new ParseTask(nextUrl));
     }
-
 
     private boolean isValidLink(Element link) {
         String href = link.attr("abs:href");
         return checkLink(href) && !visitedLinks.contains(href);
     }
-
 
     private boolean checkLink(String link) {
         try {
@@ -141,26 +134,23 @@ public class CrawlerService {
         }
     }
 
-
     private void saveData(String siteURL) throws IOException {
         Document doc = Jsoup.parse(fetchUrlContent(siteURL));
         String title = webProcessingService.extractTitleFromContent(doc);
-        databaseService.saveData(siteURL, title, outLinksSet);
+        dataSaver.saveData(siteURL, title, outLinksSet);
     }
-
 
     private String fetchUrlContent(String url) throws IOException {
-        Document document = jsoupWrapper.connect(url, sitesList.getUserAgent(), sitesList.getReferrer());
+        Document document = jsoupWrapper.connect(url,
+                sitesList.getUserAgent(), sitesList.getReferrer());
         return document.outerHtml();
     }
-
 
     private synchronized void resetState() {
         recursionDepth.set(0);
         visitedLinks.clear();
         outLinksSet.clear();
     }
-
 
     @PreDestroy
     public void shutdownPool() {
@@ -170,12 +160,12 @@ public class CrawlerService {
                 if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
                     pool.shutdownNow();
                     if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-                        logger.error("Пул потоков не завершил работу после принудительной остановки.");
+                        logger.error("Пул потоков не завершился вовремя.");
                     }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("Ошибка при остановке пула потоков.", e);
+                logger.error("Ошибка при завершении работы пула потоков.", e);
             }
         }
     }

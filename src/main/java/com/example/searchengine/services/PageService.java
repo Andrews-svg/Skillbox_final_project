@@ -143,8 +143,9 @@ public class PageService {
     private void determineSiteIfNecessary(Page page) {
         if (page.getSite() == null) {
             Site determinedSite = siteService.determineSiteForPage(page.getPath())
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("Не удалось определить сайт для страницы."));
+                    .map(obj -> (Site) obj)
+                    .orElseThrow(() -> new IllegalArgumentException("Не удалось определить сайт для страницы."));
+
             page.setSite(determinedSite);
         }
     }

@@ -1,5 +1,6 @@
 package com.example.searchengine.config;
 
+import com.example.searchengine.services.CustomUserDetailsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,7 +25,7 @@ public class SecurityConfig {
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private CustomUserDetailsService customUserDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,7 +52,8 @@ public class SecurityConfig {
                             .requestMatchers("/static/**", "/assets/**", "/favicon/**").permitAll()
                             .requestMatchers("/", "/login", "/auth/custom-error",
                                     "/api/statistics", "/error").permitAll()
-                            .requestMatchers("/user/profile", "/user/settings").hasAnyRole("USER", "ADMIN")
+                            .requestMatchers("/user/profile",
+                                    "/user/settings").hasAnyRole("USER", "ADMIN")
                             .requestMatchers("/admin/**").hasRole("ADMIN")
                             .anyRequest().authenticated();
 

@@ -40,14 +40,14 @@
                         <div th:if="${errorMessage}" class="alert alert-danger">
                             <p th:text="${errorMessage}"></p>
                         </div>
-                        <form action="/login" method="post">
+                        <form>
                             <label for="username">Имя пользователя:</label>
                             <input type="text" id="username" name="username" required autocomplete="username">
                             <br>
                             <label for="password">Пароль:</label>
                             <input type="password" id="password" name="password" required autocomplete="current-password">
                             <br>
-                            <button type="submit">Войти</button>
+                            <button type="submit" disabled>Войти</button>
                         </form>
                     </div>
                 </div>

@@ -140,7 +140,7 @@ public class DefaultController {
 
     private void manageIndexPage(Model model, String url) {
         try {
-            indexServiceImpl.indexPage(url);
+            asyncJobService.indexPage(url);
             model.addAttribute("infoMessage", "Запрос на индексацию принят.");
         } catch (Exception e) {
             logger.error("Error indexing page {}: {}", url, e.getMessage(), e);

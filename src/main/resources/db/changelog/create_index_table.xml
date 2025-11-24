@@ -20,8 +20,8 @@
             <column name="lemma_id" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="rank" type="FLOAT">
-                <constraints nullable="false"/>
+            <column name="search_rank" type="FLOAT">
+            <constraints nullable="false"/>
             </column>
         </createTable>
     </changeSet>

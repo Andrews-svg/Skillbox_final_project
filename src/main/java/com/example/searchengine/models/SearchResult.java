@@ -9,15 +9,13 @@ import java.util.List;
 import java.util.Objects;
 
 
-
-@Getter
-@Setter
 public class SearchResult {
 
     @NotNull
     private boolean success;
     @NotNull
     private Integer totalCount;
+
     @NotNull
     private List<Data> data;
     @NotNull
@@ -28,6 +26,39 @@ public class SearchResult {
 
     public SearchResult() {
 
+    }
+
+
+    public String getSite() {
+        return site;
+    }
+
+    public void setSite(String site) {
+        this.site = site;
+    }
+
+    public List<Data> getData() {
+        return data;
+    }
+
+    public void setData(List<Data> data) {
+        this.data = data;
+    }
+
+    public Integer getTotalCount() {
+        return totalCount;
+    }
+
+    public void setTotalCount(Integer totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
     }
 
 
@@ -45,8 +76,7 @@ public class SearchResult {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof SearchResult)) return false;
-        SearchResult other = (SearchResult) o;
+        if (!(o instanceof SearchResult other)) return false;
         return success == other.success &&
                 Objects.equals(totalCount, other.totalCount) &&
                 Objects.equals(data, other.data) &&

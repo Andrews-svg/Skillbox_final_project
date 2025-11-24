@@ -1,22 +1,17 @@
 package com.example.searchengine.config;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-@Getter
-@Setter
-@Component
+
 @ConfigurationProperties(prefix = "indexing-settings")
 public class SitesList {
 
@@ -26,6 +21,17 @@ public class SitesList {
     private String referrer;
     private String webInterfacePath;
     private String baseUrl;
+
+
+    public SitesList(String userAgent, String referrer,
+                     String webInterfacePath, String baseUrl,
+                     Map<Integer, SiteConfig> sites) {
+        this.userAgent = userAgent;
+        this.referrer = referrer;
+        this.webInterfacePath = webInterfacePath;
+        this.baseUrl = baseUrl;
+        this.sites = sites;
+    }
 
     private Map<Integer, SiteConfig> sites = new LinkedHashMap<>();
 
@@ -39,17 +45,58 @@ public class SitesList {
     public boolean isAllowedDomain(String url) {
         for (SiteConfig site : sites.values()) {
             try {
-                URL inputUrl = new URL(url);
-                URL allowedUrl = new URL(site.getUrl());
+                URI inputUri = new URI(url);
+                URI allowedUri = new URI(site.getUrl());
 
-                if (inputUrl.getHost().equalsIgnoreCase(allowedUrl.getHost())) {
+                if (inputUri.getHost().equalsIgnoreCase(allowedUri.getHost())) {
                     return true;
                 }
-            } catch (MalformedURLException e) {
-                logger.error("Ошибка парсинга URL: {}", e.getMessage());
+            } catch (URISyntaxException e) {
+                logger.error("Ошибка парсинга URI: {}", e.getMessage());
             }
         }
         return false;
+    }
+
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
+
+    public String getReferrer() {
+        return referrer;
+    }
+
+    public void setReferrer(String referrer) {
+        this.referrer = referrer;
+    }
+
+    public String getWebInterfacePath() {
+        return webInterfacePath;
+    }
+
+    public void setWebInterfacePath(String webInterfacePath) {
+        this.webInterfacePath = webInterfacePath;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public void setSites(Map<Integer, SiteConfig> sites) {
+        this.sites = sites;
     }
 
 

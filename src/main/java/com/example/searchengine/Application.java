@@ -1,15 +1,16 @@
 package com.example.searchengine;
 
+import com.example.searchengine.config.SitesList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 
 @SpringBootApplication
-@ComponentScan(basePackages = "com.example.searchengine")
+@EnableConfigurationProperties(SitesList.class)
 @EnableJpaRepositories(basePackages = "com.example.searchengine.repository")
 public class Application {
     private static final Logger logger = LoggerFactory.getLogger(Application.class);

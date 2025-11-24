@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+
 @Service
 public class SiteService {
 
@@ -70,16 +71,13 @@ public class SiteService {
     @Transactional
     public void saveSite(Site site) throws InvalidSiteException {
         validateSite(site);
-        logger.debug("Before saving site: {}", site);
         siteRepository.saveAndFlush(site);
         entityManager.refresh(site);
-
         if (site.getId() == null) {
-            logger.error("Error: site ID is null after saving.");
-            throw new IllegalStateException(
-                    "Ошибка при сохранении сайта: идентификатор не присвоен.");
+            logger.error("Ошибка: сайт сохранился без идентификатора.");
+            throw new IllegalStateException("Ошибка при сохранении сайта: идентификатор не присвоен.");
         }
-        logger.info("Website saved with ID: {}", site.getId());
+        logger.info("Сайт успешно сохранён с идентификатором: {}", site.getId());
     }
 
 
@@ -134,30 +132,22 @@ public class SiteService {
     }
 
 
-    public Optional<Site> determineSiteForPage(String pageUri) {
-        if (pageUri == null || pageUri.trim().isEmpty()) {
-            throw new IllegalArgumentException("Full URI of a page must not be empty");
+    public Optional<Object> determineSiteForPage(String path) {
+        if (path == null || path.isBlank()) {
+            return Optional.empty();
         }
-        String domain = extractDomainFromUri(pageUri);
-        return findByDomain(domain);
-    }
-
-
-    private String extractDomainFromUri(String uri) {
         try {
-            URI parsedUri = new URI(uri);
-            return parsedUri.getHost();
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid URI format provided.", e);
+            URI uri = new URI(path);
+            String host = uri.getHost();
+            for (SitesList.SiteConfig siteConfig : sitesList.getSites().values()) {
+                if (host.equalsIgnoreCase(siteConfig.getUrl())) {
+                    return Optional.of(siteConfig);
+                }
+            }
+        } catch (URISyntaxException | NullPointerException ex) {
+            logger.warn("Невозможно определить сайт для страницы: {}", path, ex);
         }
-    }
-
-
-    public Optional<Site> findByDomain(String domain) {
-        if (domain == null || domain.trim().isEmpty()) {
-            throw new IllegalArgumentException("Domain name cannot be empty");
-        }
-        return siteRepository.findByDomain(domain);
+        return Optional.empty();
     }
 
 
@@ -182,12 +172,21 @@ public class SiteService {
     }
 
 
-    private <T> T executeWithLogging(Supplier<T> action, String errorMessage) {
+    @Transactional
+    public void deletePageBySiteId(int siteId) {
+        entityManager.createQuery("DELETE FROM Page p WHERE p.site.id = :siteId")
+                .setParameter("siteId", siteId)
+                .executeUpdate();
+        logger.info("Удаление всех страниц сайта с идентификатором {} выполнено.", siteId);
+    }
+
+
+    private <T> T executeWithLogging(Supplier<T> action) {
         try {
             return action.get();
         } catch (Exception e) {
-            logger.error("{}: {}", errorMessage, e.getMessage());
-            throw new RuntimeException(errorMessage, e);
+            logger.error("{}: {}", "Failed to count sites", e.getMessage());
+            throw new RuntimeException("Failed to count sites", e);
         }
     }
 
@@ -195,8 +194,8 @@ public class SiteService {
     public Integer count() {
         return executeWithLogging(() ->
                         ((Number)entityManager.createQuery(
-                                "SELECT COUNT(s) FROM Site s").getSingleResult()).intValue(),
-                "Failed to count sites");
+                                "SELECT COUNT(s) FROM Site s").getSingleResult()).intValue()
+        );
     }
 
     public Integer countSites() {

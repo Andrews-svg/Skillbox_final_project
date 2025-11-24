@@ -1,6 +1,7 @@
 package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
+import com.example.searchengine.indexing.AdvancedIndexOperations;
 import com.example.searchengine.indexing.IndexService;
 import com.example.searchengine.utils.Lemmatizer;
 import org.jsoup.Jsoup;
@@ -27,17 +28,19 @@ public class SearchService {
     private final Lemmatizer lemmatizer;
     private final LemmaService lemmaService;
     private final SearcherService searcherService;
+    private final AdvancedIndexOperations advancedIndexOperations;
 
     @Autowired
     public SearchService(IndexService indexService,
                          PageService pageService,
                          Lemmatizer lemmatizer, LemmaService lemmaService,
-                         SearcherService searcherService) {
+                         SearcherService searcherService, AdvancedIndexOperations advancedIndexOperations) {
         this.indexService = indexService;
         this.pageService = pageService;
         this.lemmatizer = lemmatizer;
         this.lemmaService = lemmaService;
         this.searcherService = searcherService;
+        this.advancedIndexOperations = advancedIndexOperations;
     }
 
 
@@ -97,40 +100,36 @@ public class SearchService {
                 Page page = index.getPage();
                 Site site = page.getSite();
                 Lemma lemma = index.getLemma();
-
-                Data data = new Data(
-                        null,
+                Data data = new Data(null,
                         site,
                         site.getName(),
                         page.getPath(),
+                        page.getPath(),
                         findPageTitle(page.getContent()),
                         findPageSnippet(page.getContent(), lemma.getLemma()),
-                        0
-                );
-
+                        0);
                 for (Lemma currentLemma : sortedArray) {
                     Integer lemmaIndexId = currentLemma.getId();
-                    if (indexService.checkIfIndexExists(page.getId(),
-                            lemmaIndexId)) {
+                    if (indexService.checkIfIndexExists(page.getId(), lemmaIndexId)) {
                         data.setRelevance(data.getRelevance() + 1);
                     }
                 }
                 resultList.add(data);
             } catch (Exception e) {
-                logger.error("Error processing lemma index to data: {}",
-                        e.getMessage(), e);
+                logger.error("Ошибка обработки индекса леммы: {}", e.getMessage(), e);
             }
         });
         resultList.sort(Comparator.comparingDouble(Data::getRelevance).reversed());
         return resultList;
     }
 
+
     private List<Index> getLeastFrequentLemmaIndexes(List<Lemma> lemmaList) {
         if (lemmaList.isEmpty()) {
             return new ArrayList<>();
         }
         Lemma leastFrequentLemma = findLeastFrequentLemma(lemmaList);
-        return new ArrayList<>(indexService.findByLemmaId(leastFrequentLemma.getId()));
+        return new ArrayList<>(advancedIndexOperations.findByLemmaId(leastFrequentLemma.getId()));
     }
 
     private Lemma findLeastFrequentLemma(List<Lemma> lemmaList) {
@@ -184,7 +183,8 @@ public class SearchService {
                         .findFirst();
                 if (matchingSite.isPresent()) {
                     Site site = matchingSite.get();
-                    Optional<Lemma> lemmaOpt = lemmaService.findByBaseFormAndSiteId(form, site.getId());
+
+                    Optional<Lemma> lemmaOpt = lemmaService.findByLemmaAndSiteId(form, site.getId());
                     lemmaOpt.ifPresent(listFromDB::add);
                 } else {
                     logger.warn("Сайт с URL {} не найден", siteURL);

@@ -7,7 +7,6 @@ import com.example.searchengine.services.DatabaseService;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,32 +23,44 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @Setter
 @Service
-@RequiredArgsConstructor
 public class IndexingServiceImpl implements IndexingService {
 
     private static final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
-
 
     private final DatabaseService databaseService;
     private final SiteRepository siteRepository;
     private final IndexRepository indexRepository;
     private final PageRepository pageRepository;
     private final SitesList sitesList;
+    private final IndexServiceImpl indexServiceImpl;
 
     private final ConcurrentHashMap<Integer, Status> indexingStatuses = new ConcurrentHashMap<>();
     private boolean indexingInProgress = false;
 
 
+    public IndexingServiceImpl(DatabaseService databaseService, SiteRepository siteRepository,
+                               IndexRepository indexRepository, PageRepository pageRepository,
+                               SitesList sitesList, IndexServiceImpl indexServiceImpl) {
+        this.databaseService = databaseService;
+        this.siteRepository = siteRepository;
+        this.indexRepository = indexRepository;
+        this.pageRepository = pageRepository;
+        this.sitesList = sitesList;
+        this.indexServiceImpl = indexServiceImpl;
+    }
+
+
     @Override
     @PostConstruct
+    @Transactional
     public void init() {
         try {
-            List<Integer> availablePageIds = indexRepository.findAvailablePageIds();
+            List<Integer> availablePageIds = indexServiceImpl.findAllAvailablePageIds();
             logger.info("Количество доступных pageId: {}", availablePageIds.size());
 
             if (availablePageIds.isEmpty()) {
                 databaseService.ensureInitialData();
-                availablePageIds = indexRepository.findAvailablePageIds();
+                availablePageIds = indexServiceImpl.findAllAvailablePageIds();
                 logger.info("После обновления количество pageId: {}", availablePageIds.size());
             }
 

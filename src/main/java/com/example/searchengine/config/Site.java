@@ -5,8 +5,6 @@ import com.example.searchengine.models.Status;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.time.LocalDateTime;
@@ -14,8 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-@Getter
-@Setter
+
 @Entity
 @Table(name = "site")
 @Cacheable
@@ -67,7 +64,8 @@ public class Site {
         this.name = name;
     }
 
-    public Site(Integer id, Status status, LocalDateTime statusTime, String url, String name, String lastError) {
+    public Site(Integer id, Status status, LocalDateTime statusTime,
+                String url, String name, String lastError) {
         this.id = id;
         this.status = status;
         this.statusTime = statusTime;
@@ -91,5 +89,61 @@ public class Site {
 
     public void updateStatusTime() {
         this.statusTime = LocalDateTime.now();
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getStatusTime() {
+        return statusTime;
+    }
+
+    public void setStatusTime(LocalDateTime statusTime) {
+        this.statusTime = statusTime;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLastError() {
+        return lastError;
+    }
+
+    public void setLastError(String lastError) {
+        this.lastError = lastError;
+    }
+
+    public Set<Page> getPages() {
+        return pages;
+    }
+
+    public void setPages(Set<Page> pages) {
+        this.pages = pages;
     }
 }

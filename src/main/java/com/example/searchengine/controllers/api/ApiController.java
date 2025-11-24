@@ -2,10 +2,8 @@ package com.example.searchengine.controllers.api;
 
 import com.example.searchengine.config.SitesList;
 import com.example.searchengine.models.SearchResult;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,21 +18,28 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 public class ApiController {
 
-    @Autowired
-    private SitesList sitesList;
 
-    private final IndexingServiceImpl indexingService;
-    private final IndexService indexService;
+    private final SitesList sitesList;
     private final StatisticsService statisticsService;
     private final AsyncJobService asyncJobService;
-    private final WebProcessingService webProcessingService;
-
+    private final AdvancedIndexOperations advancedIndexOperations;
 
     private static final Logger logger =
             LoggerFactory.getLogger(ApiController.class);
+
+
+    public ApiController(SitesList sitesList,
+                         StatisticsService statisticsService,
+                         AsyncJobService asyncJobService,
+                         AdvancedIndexOperations advancedIndexOperations) {
+        this.sitesList = sitesList;
+        this.statisticsService = statisticsService;
+        this.asyncJobService = asyncJobService;
+        this.advancedIndexOperations = advancedIndexOperations;
+    }
+
 
 
     @GetMapping("/startIndexing")
@@ -61,36 +66,24 @@ public class ApiController {
     }
 
 
-
     @PostMapping("/indexPage")
     public ResponseEntity<Map<String, Object>> indexPage(@RequestParam String url) {
         Map<String, Object> responseMap = new HashMap<>();
-
         try {
             if (!isValidUrl(url)) {
                 responseMap.put("result", false);
                 responseMap.put("error", "Неверный формат адреса страницы.");
                 return ResponseEntity.badRequest().body(responseMap);
             }
-
             if (!sitesList.isAllowedDomain(url)) {
                 responseMap.put("result", false);
                 responseMap.put("error", "Данная страница находится за пределами сайтов, " +
                         "указанных в конфигурационном файле");
                 return ResponseEntity.badRequest().body(responseMap);
             }
-
-            String content = webProcessingService.fetchUrlContent(url);
-
-            if (content != null && !content.trim().isEmpty()) {
-                indexService.indexPage(url);
-                responseMap.put("result", true);
-                return ResponseEntity.ok(responseMap);
-            } else {
-                responseMap.put("result", false);
-                responseMap.put("error", "Пустой контент");
-                return ResponseEntity.badRequest().body(responseMap);
-            }
+            asyncJobService.indexPage(url);
+            responseMap.put("result", true);
+            return ResponseEntity.ok(responseMap);
         } catch (Exception ex) {
             responseMap.put("result", false);
             responseMap.put("error", "Возникла непредвиденная ошибка при обработке страницы.");
@@ -132,23 +125,19 @@ public class ApiController {
             @RequestParam(required = false) String site,
             @RequestParam(defaultValue = "0") Integer offset,
             @RequestParam(defaultValue = "20") Integer limit) {
-
         if (query.isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("result", false,
                             "error", "Задан пустой поисковый запрос"));
         }
-
         Map<String, Object> responseData = performSearch(query, site, offset, limit);
-
         return ResponseEntity.ok(responseData);
     }
 
 
     private Map<String, Object> performSearch(String query, String site,
                                               Integer offset, Integer limit) {
-
-        List<SearchResult> allResults = indexService.findPagesForQuery(query);
+        List<SearchResult> allResults = advancedIndexOperations.findPagesForQuery(query);
         if (site != null && !site.isEmpty()) {
             allResults.removeIf(result -> !result.getSite().equals(site));
         }
@@ -156,11 +145,7 @@ public class ApiController {
         int fromIndex = Math.max(0, offset);
         int toIndex = Math.min(fromIndex + limit, allResults.size());
         List<SearchResult> resultPage = new ArrayList<>(allResults.subList(fromIndex, toIndex));
-        return Map.of(
-                "result", true,
-                "count", totalCount,
-                "data", resultPage
-        );
+        return Map.of("result", true, "count", totalCount, "data", resultPage);
     }
 }
 

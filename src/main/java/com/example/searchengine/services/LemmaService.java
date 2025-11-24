@@ -5,7 +5,6 @@ import com.example.searchengine.models.Lemma;
 import com.example.searchengine.repository.LemmaRepository;
 import com.example.searchengine.utils.ContentProcessor;
 import com.example.searchengine.utils.Lemmatizer;
-import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class LemmaService {
 
     private static final Logger logger = LoggerFactory.getLogger(LemmaService.class);
@@ -27,6 +25,14 @@ public class LemmaService {
     private final LemmaRepository lemmaRepository;
     private final ContentProcessor contentProcessor;
     private final Lemmatizer lemmatizer;
+
+
+    public LemmaService(LemmaRepository lemmaRepository,
+                        ContentProcessor contentProcessor, Lemmatizer lemmatizer) {
+        this.lemmaRepository = lemmaRepository;
+        this.contentProcessor = contentProcessor;
+        this.lemmatizer = lemmatizer;
+    }
 
 
     @Transactional
@@ -62,6 +68,16 @@ public class LemmaService {
         List<Lemma> lemmas = lemmaRepository.findAll();
         logger.info("Всего получено лемм: {}", lemmas.size());
         return lemmas;
+    }
+
+
+    public List<Lemma> findLemmaByName(String lemma) {
+        return lemmaRepository.findAllByLemma(lemma);
+    }
+
+
+    public Optional<Lemma> findByLemmaAndSiteId(String lemma, Integer siteId) {
+        return lemmaRepository.findByLemmaAndSiteId(lemma, siteId);
     }
 
 
@@ -141,13 +157,5 @@ public class LemmaService {
 
     public Object getTotalLemmas() {
         return lemmaRepository.count();
-    }
-
-    public Optional<Lemma> findByBaseFormAndSiteId(String form, Integer id) {
-        return lemmaRepository.findByBaseFormAndSiteId(form, id);
-    }
-
-    public List<Lemma> findLemmaByName(String form) {
-        return lemmaRepository.findAllByLemma(form);
     }
 }

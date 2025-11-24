@@ -3,7 +3,7 @@ package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
 import com.example.searchengine.exceptions.InvalidSiteException;
-import com.example.searchengine.indexing.IndexServiceImpl;
+import com.example.searchengine.indexing.AdvancedIndexOperations;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Status;
 import com.example.searchengine.repository.PageRepository;
@@ -14,6 +14,8 @@ import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -38,15 +40,21 @@ public class DatabaseService {
     private final SearcherService searcherService;
     private final LemmaService lemmaService;
     private final ContentProcessor contentProcessor;
-    private final IndexServiceImpl indexServiceImpl;
+    private final AdvancedIndexOperations advancedIndexOperations;
 
-    public DatabaseService(PageRepository pageRepository,
-                           SiteRepository siteRepository,
-                           SiteService siteService, PageService pageService,
-                           WebProcessingService webProcessingService,
-                           SearcherService searcherService,
-                           LemmaService lemmaService,
-                           ContentProcessor contentProcessor, IndexServiceImpl indexServiceImpl) {
+
+    @Autowired
+    public DatabaseService(
+            PageRepository pageRepository,
+            SiteRepository siteRepository,
+            SiteService siteService,
+            PageService pageService,
+            WebProcessingService webProcessingService,
+            SearcherService searcherService,
+            LemmaService lemmaService,
+            ContentProcessor contentProcessor,
+            @Lazy AdvancedIndexOperations advancedIndexOperations
+    ) {
         this.pageRepository = pageRepository;
         this.siteRepository = siteRepository;
         this.siteService = siteService;
@@ -55,20 +63,20 @@ public class DatabaseService {
         this.searcherService = searcherService;
         this.lemmaService = lemmaService;
         this.contentProcessor = contentProcessor;
-        this.indexServiceImpl = indexServiceImpl;
+        this.advancedIndexOperations = advancedIndexOperations;
     }
 
 
     @Transactional
     public void ensureInitialData() {
-        if (!pageRepository.existsByUrl("https://example.com")) {
+        if (!siteRepository.existsByUrl("https://example.com")) {
             Optional<Site> maybeExampleSite = siteService.findByUrl("https://example.com");
             Site exampleSite;
             if (maybeExampleSite.isPresent()) {
                 exampleSite = maybeExampleSite.get();
             } else {
-                exampleSite = new Site(Status.INDEXING, LocalDateTime.now(), "https://example.com", "Example Website");
-
+                exampleSite = new Site(Status.INDEXING, LocalDateTime.now(),
+                        "https://example.com", "Example Website");
                 try {
                     siteService.saveSite(exampleSite);
                     logger.info("Сайт создан: {}", exampleSite.getUrl());
@@ -125,11 +133,10 @@ public class DatabaseService {
     }
 
 
-    @Transactional
-    public void prepareIndexing(int siteId) throws Exception {
-        Site site = siteRepository.findById(siteId)
+    public void prepareIndexing(int id) throws Exception {
+        Site site = siteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Сайт не найден"));
-        siteRepository.deletePagesForSite(siteId);
+        pageRepository.deleteBySite(site);
     }
 
 
@@ -191,7 +198,7 @@ public class DatabaseService {
             logger.warn("Сайт не найден для URL: {}", url);
             return;
         }
-        Site site = sites.get(0);
+        Site site = sites.getFirst();
         Page page = new Page(webProcessingService.getPathFromLink(url),
                 webProcessingService.fetchUrlStatusCode(url), content, site);
         site.addPage(page);
@@ -203,7 +210,7 @@ public class DatabaseService {
         lemmaService.generateLemmas(content, mapTitle, mapBody);
         Map<String, Float> mapToDB = contentProcessor.combineTwoMaps(mapTitle, mapBody);
         mapToDB.forEach((lemmaText, frequency) -> {
-            indexServiceImpl.saveLemmaAndIndex(site, page.getId(), lemmaText, frequency);
+            advancedIndexOperations.saveLemmaAndIndex(site, page.getId(), lemmaText, frequency);
         });
         logger.info("Завершена обработка URL: {}", url);
     }

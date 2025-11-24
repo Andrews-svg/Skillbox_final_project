@@ -3,21 +3,16 @@ package com.example.searchengine.models;
 import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.persistence.Index;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-@Getter
-@Setter
+
 @Entity
 @Table(
         name = "lemma",
         uniqueConstraints = @UniqueConstraint(columnNames = {"lemma", "site_id"}),
-
         indexes = {
                 @Index(name = "idx_lemma_name", columnList = "lemma"),
                 @Index(name = "idx_site_id", columnList = "site_id"),
@@ -44,16 +39,47 @@ public class Lemma implements Serializable, Comparable<Lemma> {
     private Site site;
 
 
-    public Lemma(Integer id, String lemma, int frequency, Site site) {
-        this.id = id;
-        this.lemma = lemma;
+    public Lemma(String lemmaText, int frequency, Site site) {
+        this.lemma = lemmaText;
         this.frequency = frequency;
         this.site = site;
     }
 
-    public Lemma(String lemmaText, int i, Site site, @NotNull Status status) {
+
+    public Lemma() {}
+
+
+    public Integer getId() {
+        return id;
     }
 
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getLemma() {
+        return lemma;
+    }
+
+    public void setLemma(String lemma) {
+        this.lemma = lemma;
+    }
+
+    public int getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(int frequency) {
+        this.frequency = frequency;
+    }
+
+    public Site getSite() {
+        return site;
+    }
+
+    public void setSite(Site site) {
+        this.site = site;
+    }
 
     @Override
     public int compareTo(Lemma other) {
