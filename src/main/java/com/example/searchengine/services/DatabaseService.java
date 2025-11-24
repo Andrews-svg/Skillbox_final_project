@@ -161,7 +161,6 @@ public class DatabaseService {
         }
     }
 
-
     @Transactional
     public void finishIndexing(int siteId, boolean isSuccess) {
         Status finalStatus = isSuccess ? Status.INDEXED : Status.FAILED;

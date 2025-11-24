@@ -1,8 +1,6 @@
 package com.example.searchengine.dto.statistics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.searchengine.config.Site;
@@ -53,8 +51,6 @@ public class Data implements Comparable<Data>, Serializable {
         this.snippet = snippet;
         this.relevance = relevance;
     }
-
-    // Геттеры и сеттеры
 
     public Integer getId() {
         return id;
