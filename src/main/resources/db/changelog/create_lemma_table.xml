@@ -21,7 +21,7 @@
             <column name="lemma" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="frequency" type="BIGINT">
+            <column name="frequency" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>

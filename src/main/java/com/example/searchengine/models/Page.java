@@ -21,7 +21,7 @@ public class Page {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @NotNull
-    private Integer id;
+    private long id;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     @NotNull
@@ -29,7 +29,7 @@ public class Page {
 
     @Column(nullable = false)
     @NotNull
-    private Integer code;
+    private long code;
 
     @FullTextField(analyzer = "standard")
     @Lob
@@ -37,14 +37,14 @@ public class Page {
     @NotNull
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "site_id", nullable = false)
     @NotNull
     private Site site;
 
     public Page() {}
 
-    public Page(Integer id, String path, Integer code, String content, Site site) {
+    public Page(long id, String path, long code, String content, Site site) {
         this.id = id;
         this.path = path;
         this.code = code;
@@ -52,7 +52,7 @@ public class Page {
         this.site = site;
     }
 
-    public Page(String path, Integer code, String content, Site site) {
+    public Page(String path, long code, String content, Site site) {
         this.path = path;
         this.code = code;
         this.content = content;
@@ -60,11 +60,11 @@ public class Page {
     }
 
 
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -84,7 +84,7 @@ public class Page {
         this.content = content;
     }
 
-    public Integer getCode() {
+    public long getCode() {
         return code;
     }
 

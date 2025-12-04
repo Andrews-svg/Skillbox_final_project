@@ -1,6 +1,7 @@
 package com.example.searchengine.controllers.api;
 
 import com.example.searchengine.config.SitesList;
+import com.example.searchengine.dto.statistics.response.ErrorResponseDTO;
 import com.example.searchengine.models.SearchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,9 @@ import com.example.searchengine.services.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.*;
+
 
 @RestController
 @RequestMapping("/api")
@@ -41,15 +44,24 @@ public class ApiController {
     }
 
 
-
     @GetMapping("/startIndexing")
     public ResponseEntity<Map<String, Object>> startIndexing() {
         try {
             asyncJobService.startFullIndexing();
-            return ResponseEntity.ok(Map.of("result", true));
+            return ResponseEntity.ok().body(Map.of("result", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("result",
-                    false, "error", "Индексация уже запущена"));
+            logger.error("Ошибка при запуске индексации: {}", e.getMessage(), e);
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Индексация уже запущена"
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
@@ -58,36 +70,71 @@ public class ApiController {
     public ResponseEntity<Map<String, Object>> stopIndexing() {
         try {
             asyncJobService.stopIndexing();
-            return ResponseEntity.ok(Map.of("result", true));
+            return ResponseEntity.ok().body(Map.of("result", true));
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("result",
-                    false, "error", "Индексация не запущена"));
+            logger.error("Ошибка остановки индексации: {}", e.getMessage(), e);
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Индексация не запущена"
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
 
     @PostMapping("/indexPage")
     public ResponseEntity<Map<String, Object>> indexPage(@RequestParam String url) {
-        Map<String, Object> responseMap = new HashMap<>();
         try {
             if (!isValidUrl(url)) {
-                responseMap.put("result", false);
-                responseMap.put("error", "Неверный формат адреса страницы.");
-                return ResponseEntity.badRequest().body(responseMap);
+                logger.error("Ошибка: неверный формат URL '{}'", url);
+                ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                        LocalDateTime.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Неверный формат адреса страницы."
+                );
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("result", false);
+                errorResponse.put("error", errorDto.getMessage());
+                errorResponse.put("timestamp", errorDto.getTimestamp());
+                errorResponse.put("code", errorDto.getCode());
+                return ResponseEntity.badRequest().body(errorResponse);
             }
             if (!sitesList.isAllowedDomain(url)) {
-                responseMap.put("result", false);
-                responseMap.put("error", "Данная страница находится за пределами сайтов, " +
-                        "указанных в конфигурационном файле");
-                return ResponseEntity.badRequest().body(responseMap);
+                logger.error("Ошибка: домен страницы '{}' не входит в разрешенные", url);
+                ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                        LocalDateTime.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Данная страница находится за пределами сайтов, " +
+                                "указанных в конфигурационном файле."
+                );
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("result", false);
+                errorResponse.put("error", errorDto.getMessage());
+                errorResponse.put("timestamp", errorDto.getTimestamp());
+                errorResponse.put("code", errorDto.getCode());
+                return ResponseEntity.badRequest().body(errorResponse);
             }
             asyncJobService.indexPage(url);
-            responseMap.put("result", true);
-            return ResponseEntity.ok(responseMap);
+            return ResponseEntity.ok().body(Map.of("result", true));
         } catch (Exception ex) {
-            responseMap.put("result", false);
-            responseMap.put("error", "Возникла непредвиденная ошибка при обработке страницы.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseMap);
+            logger.error("Ошибка при индексе страницы: {}", ex.getMessage(), ex);
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Возникла непредвиденная ошибка при обработке страницы."
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -103,18 +150,25 @@ public class ApiController {
 
 
     @GetMapping("/statistics")
-    public ResponseEntity<Object> getStatistics() {
+    public ResponseEntity<Map<String, Object>> getStatistics() {
         logger.info("Получение статистики...");
         try {
             StatisticsData statisticsData = statisticsService.getStatistics();
             logger.info("Получение статистики: {}", statisticsData);
-            return ResponseEntity.ok(Map.of("result", true,
-                    "statistics", statisticsData));
+            return ResponseEntity.ok().body(Map.of("result", true, "statistics", statisticsData));
         } catch (StatisticsFetchingException ex) {
-            logger.error("Ошибка при получении статистики: " +
-                    "{}", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", ex.getMessage()));
+            logger.error("Ошибка при получении статистики: {}", ex.getMessage(), ex);
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    ex.getMessage()
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -125,18 +179,42 @@ public class ApiController {
             @RequestParam(required = false) String site,
             @RequestParam(defaultValue = "0") Integer offset,
             @RequestParam(defaultValue = "20") Integer limit) {
+
         if (query.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("result", false,
-                            "error", "Задан пустой поисковый запрос"));
+            logger.error("Ошибка: задан пустой поисковый запрос");
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Задан пустой поисковый запрос"
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
-        Map<String, Object> responseData = performSearch(query, site, offset, limit);
-        return ResponseEntity.ok(responseData);
+        try {
+            Map<String, Object> responseData = performSearch(query, site, offset, limit);
+            return ResponseEntity.ok(responseData);
+        } catch (Exception ex) {
+            logger.error("Ошибка при выполнении поиска: {}", ex.getMessage(), ex);
+            ErrorResponseDTO errorDto = new ErrorResponseDTO(
+                    LocalDateTime.now(),
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Возникла непредвиденная ошибка при поиске."
+            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("result", false);
+            errorResponse.put("error", errorDto.getMessage());
+            errorResponse.put("timestamp", errorDto.getTimestamp());
+            errorResponse.put("code", errorDto.getCode());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
 
-    private Map<String, Object> performSearch(String query, String site,
-                                              Integer offset, Integer limit) {
+    private Map<String, Object> performSearch(String query, String site, Integer offset, Integer limit) {
         List<SearchResult> allResults = advancedIndexOperations.findPagesForQuery(query);
         if (site != null && !site.isEmpty()) {
             allResults.removeIf(result -> !result.getSite().equals(site));
@@ -145,7 +223,7 @@ public class ApiController {
         int fromIndex = Math.max(0, offset);
         int toIndex = Math.min(fromIndex + limit, allResults.size());
         List<SearchResult> resultPage = new ArrayList<>(allResults.subList(fromIndex, toIndex));
-        return Map.of("result", true, "count", totalCount, "data", resultPage);
+        return Map.of("count", totalCount, "data", resultPage);
     }
 }
 

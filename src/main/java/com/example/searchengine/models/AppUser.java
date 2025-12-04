@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @Entity
 @Table(name = "app_users")
 public class AppUser implements UserDetails {

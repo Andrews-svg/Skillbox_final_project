@@ -38,8 +38,10 @@ public class LemmaService {
     @Transactional
     public void saveOrUpdateLemma(Lemma lemma) {
         logger.debug("Начало процесса сохранения или обновления леммы: {}", lemma);
-        Optional<Lemma> existingLemma = lemmaRepository.findByLemmaAndSiteId(lemma.getLemma(),
-                lemma.getSite().getId());
+        Site site = lemma.getSite();
+        long siteId = site != null ? site.getId() : -1;
+        Optional<Lemma> existingLemma =
+                lemmaRepository.findOneByLemmaAndSiteId(lemma.getLemma(), siteId);
         if (existingLemma.isPresent()) {
             Lemma foundLemma = existingLemma.get();
             foundLemma.setFrequency(foundLemma.getFrequency() + 1);
@@ -53,7 +55,7 @@ public class LemmaService {
 
 
     @Cacheable(value = "lemmas", key = "#id")
-    public Optional<Lemma> findById(Integer id) {
+    public Optional<Lemma> findById(long id) {
         logger.debug("Ищу лемму по идентификатору: {}", id);
         Optional<Lemma> lemma = lemmaRepository.findById(id);
         logger.info("Результат поиска по идентификатору {}: {}",
@@ -76,8 +78,8 @@ public class LemmaService {
     }
 
 
-    public Optional<Lemma> findByLemmaAndSiteId(String lemma, Integer siteId) {
-        return lemmaRepository.findByLemmaAndSiteId(lemma, siteId);
+    public Optional<Lemma> findByLemmaAndSiteId(String lemma, long siteId) {
+        return lemmaRepository.findOneByLemmaAndSiteId(lemma, siteId);
     }
 
 
@@ -141,21 +143,23 @@ public class LemmaService {
         return relevance;
     }
 
-    public Map<Integer, Integer> countLemmasGroupedBySite(List<Site> currentBatch) {
-        Map<Integer, Integer> result = new HashMap<>();
+    public Map<Long, Long> countLemmasGroupedBySite(List<Site> currentBatch) {
+        Map<Long, Long> result = new HashMap<>();
         for (Site site : currentBatch) {
             List<Lemma> lemmas = lemmaRepository.findDistinctBySite(site);
-            int uniqueLemmasCount = lemmas.size();
+            long uniqueLemmasCount = lemmas.size();
             result.put(site.getId(), uniqueLemmasCount);
         }
         return result;
     }
 
-    public Integer countLemmas() {
-        return Math.toIntExact(lemmaRepository.count());
+
+    public long lemmasCount() {
+        return lemmaRepository.count();
     }
 
-    public Object getTotalLemmas() {
+    @Cacheable(value="lemmaCount")
+    public long getTotalLemmas() {
         return lemmaRepository.count();
     }
 }

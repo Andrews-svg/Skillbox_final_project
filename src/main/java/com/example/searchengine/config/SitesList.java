@@ -25,7 +25,7 @@ public class SitesList {
 
     public SitesList(String userAgent, String referrer,
                      String webInterfacePath, String baseUrl,
-                     Map<Integer, SiteConfig> sites) {
+                     Map<Long, SiteConfig> sites) {
         this.userAgent = userAgent;
         this.referrer = referrer;
         this.webInterfacePath = webInterfacePath;
@@ -33,10 +33,10 @@ public class SitesList {
         this.sites = sites;
     }
 
-    private Map<Integer, SiteConfig> sites = new LinkedHashMap<>();
+    private Map<Long, SiteConfig> sites = new LinkedHashMap<>();
 
 
-    public Map<Integer, SiteConfig> getSites() {
+    public Map<Long, SiteConfig> getSites() {
         logger.debug("Returning all Sites: {}", sites);
         return Collections.unmodifiableMap(sites);
     }
@@ -95,7 +95,7 @@ public class SitesList {
         this.baseUrl = baseUrl;
     }
 
-    public void setSites(Map<Integer, SiteConfig> sites) {
+    public void setSites(Map<Long, SiteConfig> sites) {
         this.sites = sites;
     }
 

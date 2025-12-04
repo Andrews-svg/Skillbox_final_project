@@ -26,7 +26,7 @@ public class Lemma implements Serializable, Comparable<Lemma> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private long id;
 
     @Column(nullable = false)
     private String lemma;
@@ -49,11 +49,11 @@ public class Lemma implements Serializable, Comparable<Lemma> {
     public Lemma() {}
 
 
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(long id) {
         this.id = id;
     }
 

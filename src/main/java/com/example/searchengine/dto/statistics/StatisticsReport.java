@@ -9,93 +9,83 @@ public class StatisticsReport {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsReport.class);
 
-    private Integer siteNumber;
-    private Integer pageNumber;
-    private Integer lemmaNumber;
+    private long sites;
+    private long pages;
+    private long lemmas;
     private boolean isIndexing;
 
-    public StatisticsReport(Integer siteNumber, Integer pageNumber, Integer lemmaNumber, Boolean isIndexing) {
-        this.siteNumber = siteNumber != null ? siteNumber : 0;
-        this.pageNumber = pageNumber != null ? pageNumber : 0;
-        this.lemmaNumber = lemmaNumber != null ? lemmaNumber : 0;
-        this.isIndexing = isIndexing != null ? isIndexing : false;
 
-        logger.info("Total object created: siteNumber={}, pageNumber={}, lemmaNumber={}, isIndexing={}",
-                siteNumber, pageNumber, lemmaNumber, isIndexing);
+    public StatisticsReport() { }
+
+
+
+    public long getSites() {
+        return sites;
     }
 
-
-    public Integer getSiteNumber() {
-        return siteNumber;
+    public void setSites(long sites) {
+        validateNonNegative(sites, "Number of sites");
+        this.sites = sites;
     }
 
-    public void setSiteNumber(Integer siteNumber) {
-        if (siteNumber < 0) {
-            throw new IllegalArgumentException("Number of sites cannot be negative.");
-        }
-        this.siteNumber = siteNumber;
+    public long getPages() {
+        return pages;
     }
 
-    public long getPageNumber() {
-        return pageNumber;
+    public void setPages(long pages) {
+        validateNonNegative(pages, "Number of pages");
+        this.pages = pages;
     }
 
-    public void setPageNumber(int pageNumber) {
-        if (pageNumber < 0) {
-            throw new IllegalArgumentException("Number of pages cannot be negative.");
-        }
-        this.pageNumber = pageNumber;
+    public long getLemmas() {
+        return lemmas;
     }
 
-    public Integer getLemmaNumber() {
-        return lemmaNumber;
-    }
-
-    public void setLemmaNumber(Integer lemmaNumber) {
-        if (lemmaNumber < 0) {
-            throw new IllegalArgumentException("Number of lemmas cannot be negative.");
-        }
-        this.lemmaNumber = lemmaNumber;
+    public void setLemmas(long lemmas) {
+        validateNonNegative(lemmas, "Number of lemmas");
+        this.lemmas = lemmas;
     }
 
     public boolean isIndexing() {
         return isIndexing;
     }
 
-    public void setIndexing(boolean indexing) {
-        isIndexing = indexing;
+    public void setIsIndexing(Boolean isIndexing) {
+        this.isIndexing = isIndexing;
     }
 
-    public int getPages() {
-        return pageNumber;
+    public void addPages(long pages) {
+        validateNonNegative(pages, "Number of pages to add");
+        this.pages += pages;
+        logger.info("Added pages: {}. New pageNumber: {}", pages, this.pages);
     }
 
-    public int getLemmas() {
-        return lemmaNumber;
+    public void addLemmas(long lemmas) {
+        validateNonNegative(lemmas, "Number of lemmas to add");
+        this.lemmas += lemmas;
+        logger.info("Added lemmas: {}. New lemmaNumber: {}", lemmas, this.lemmas);
     }
 
-    public void addPages(int pages) {
-        if (pages < 0) {
-            throw new IllegalArgumentException("Number of pages to add cannot be negative.");
+    public long totalSitesAndPages() {
+        return sites + pages;
+    }
+
+    public long totalSitesAndLemmas() {
+        return sites + lemmas;
+    }
+
+    private void validateNonNegative(long number, String fieldName) {
+        if (number < 0) {
+            throw new IllegalArgumentException(fieldName + " cannot be negative.");
         }
-        this.pageNumber += pages;
-        logger.info("Added pages: {}. New pageNumber: {}", pages, this.pageNumber);
-    }
-
-    public void addLemmas(int lemmas) {
-        if (lemmas < 0) {
-            throw new IllegalArgumentException("Number of lemmas to add cannot be negative.");
-        }
-        this.lemmaNumber += lemmas;
-        logger.info("Added lemmas: {}. New lemmaNumber: {}", lemmas, this.lemmaNumber);
     }
 
     @Override
     public String toString() {
-        return "Total{" +
-                "siteNumber=" + siteNumber +
-                ", pageNumber=" + pageNumber +
-                ", lemmaNumber=" + lemmaNumber +
+        return "StatisticsReport{" +
+                "sites=" + sites +
+                ", pages=" + pages +
+                ", lemmas=" + lemmas +
                 ", isIndexing=" + isIndexing +
                 '}';
     }

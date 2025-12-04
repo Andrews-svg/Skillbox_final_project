@@ -1,12 +1,9 @@
 package com.example.searchengine.indexing;
 
 import com.example.searchengine.models.Index;
-import com.example.searchengine.models.Lemma;
-import com.example.searchengine.models.Page;
 import com.example.searchengine.repository.IndexRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -36,7 +33,7 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public int saveIndex(Index index) {
+    public long saveIndex(Index index) {
         if (index == null) {
             log.error("Невозможно сохранить пустой индекс");
             return -1;
@@ -57,34 +54,20 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public boolean checkIfIndexExists(Integer indexId) {
+    public boolean checkIfIndexExists(long indexId) {
         return indexRepository.existsById(indexId);
     }
 
 
     @Override
-    public boolean checkIfIndexExists(Integer pageId, Integer lemmaId) {
+    public boolean checkIfIndexExists(long pageId, long lemmaId) {
         log.info("Проверка существования индекса для страницы ID: {}, леммы ID: {}", pageId, lemmaId);
         return indexRepository.existsByPageIdAndLemmaId(pageId, lemmaId);
     }
 
 
-    public Boolean checkIfIndexExists(Page page, Lemma lemma) {
-        return executeWithLogging(() -> {
-            TypedQuery<Index> query = entityManager.createQuery(
-                    "SELECT i FROM Index i WHERE i.page = :page AND i.lemma = :lemma", Index.class);
-            query.setParameter("page", page);
-            query.setParameter("lemma", lemma);
-            boolean exists = !query.getResultList().isEmpty();
-            log.info("Index exists check for (page: {}, lemma: {}): {}",
-                    page.getId(), lemma.getId(), exists);
-            return exists;
-        }, "Failed to check if index exists");
-    }
-
-
     @Override
-    public Optional<Index> findIndex(Integer id) {
+    public Optional<Index> findIndex(long id) {
         return indexRepository.findById(id);
     }
 
@@ -95,7 +78,7 @@ public class IndexServiceImpl implements IndexService {
 
 
     @Override
-    public List<Integer> findAllAvailablePageIds() {
+    public List<Long> findAllAvailablePageIds() {
         return indexRepository.findAll()
                 .stream()
                 .map(index -> index.getPage().getId())
@@ -120,30 +103,30 @@ public class IndexServiceImpl implements IndexService {
     }
 
 
-    public void deleteByPageId(Integer pageId) {
+    public void deleteByPageId(long pageId) {
         indexRepository.deleteByPageId(pageId);
     }
 
 
-    public int deleteAllIndexes() {
-        int countBeforeDeletion = (int) indexRepository.count();
+    public long deleteAllIndexes() {
+        long countBeforeDeletion = (long) indexRepository.count();
         indexRepository.deleteAll();
         return countBeforeDeletion;
     }
 
 
     @Override
-    public Integer count() {
+    public long count() {
         return Math.toIntExact(indexRepository.count());
     }
 
 
-    protected <T> T executeWithLogging(Supplier<T> action, String errorMessage) {
+    protected <T> T executeWithLogging(Supplier<T> action) {
         try {
             return action.get();
         } catch (Exception e) {
-            log.error("{}: {}", errorMessage, e.getMessage());
-            throw new RuntimeException(errorMessage, e);
+            log.error("{}: {}", "Failed to check if index exists", e.getMessage());
+            throw new RuntimeException("Failed to check if index exists", e);
         }
     }
 }

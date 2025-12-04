@@ -14,17 +14,17 @@ public class AppConfig {
     }
 
     @Bean
-    public Integer siteNumber() {
+    public long siteNumber() {
         return 5;
     }
 
     @Bean
-    public Integer pageNumber() {
+    public long pageNumber() {
         return 100;
     }
 
     @Bean
-    public Integer lemmaNumber() {
+    public long lemmaNumber() {
         return 50;
     }
 
@@ -33,13 +33,16 @@ public class AppConfig {
         return true;
     }
 
+
     @Bean
-    public StatisticsReport total(Integer siteNumber,
-                                  Integer pageNumber, Integer lemmaNumber,
-                                  Boolean isIndexing) {
-        return new StatisticsReport(siteNumber, pageNumber,
-                lemmaNumber, isIndexing);
-    }
+    public StatisticsReport total(Long siteNumber, Long pageNumber,
+                                  Long lemmaNumber, Boolean isIndexing) {
+        StatisticsReport report = new StatisticsReport();
+        report.setSites(siteNumber);
+        report.setPages(pageNumber);
+        report.setLemmas(lemmaNumber);
+        report.setIsIndexing(isIndexing);
+        return report;}
 
     @Bean
     public String siteUrlRegex() {

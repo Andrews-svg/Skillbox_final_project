@@ -57,7 +57,7 @@ public class AdvancedIndexOperations {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveLemmaAndIndex(Site site, Integer pageId, String lemmaText, float rank) {
+    public void saveLemmaAndIndex(Site site, long pageId, String lemmaText, float rank) {
         Lemma lemma = new Lemma(lemmaText, 1, site);
         lemmaRepository.save(lemma);
         Optional<Page> optionalPage = pageRepository.findById(pageId);
@@ -77,40 +77,42 @@ public class AdvancedIndexOperations {
 
     public long saveOrUpdateIndex(Index index) {
         return executeWithLogging(() -> {
-            if (!indexServiceImpl.checkIfIndexExists(index.getPage(), index.getLemma())) {
+            long pageId = index.getPage().getId();
+            long lemmaId = index.getLemma().getId();
+            if (!indexServiceImpl.checkIfIndexExists(pageId, lemmaId)) {
                 entityManager.persist(index);
                 log.info("Index saved successfully: {}", index);
                 return index.getId();
             } else {
-                Index indexFromDB = findByIdPair(index.getPage(), index.getLemma());
+                Index indexFromDB = findByIdPair(pageId, lemmaId);
                 float currentRank = index.getRank();
                 float dbRank = indexFromDB.getRank();
                 float updatedRank = currentRank + dbRank;
                 indexFromDB.setRank(updatedRank);
                 indexServiceImpl.update(indexFromDB);
-                log.info("Index saveOrUpdated successfully: {}", indexFromDB);
+                log.info("Index updated successfully: {}", indexFromDB);
                 return indexFromDB.getId();
             }
         }, "Failed to save or update index");
     }
 
-
-    public Index findByIdPair(Page page, Lemma lemma) {
+    public Index findByIdPair(long pageId, long lemmaId) {
         return executeWithLogging(() -> {
             TypedQuery<Index> query = entityManager.createQuery(
-                    "SELECT i FROM Index i WHERE i.page = :page AND i.lemma = :lemma", Index.class);
-            query.setParameter("page", page);
-            query.setParameter("lemma", lemma);
+                    "SELECT i FROM Index i WHERE i.page.id = " +
+                            ":pageId AND i.lemma.id = :lemmaId", Index.class);
+            query.setParameter("pageId", pageId);
+            query.setParameter("lemmaId", lemmaId);
             Index index = query.getSingleResult();
-            log.info("Index found by pair (page: {}, lemma: {}): {}",
-                    page.getId(), lemma.getId(), index);
+            log.info("Index found by pair (pageId: {}, lemmaId: {}): {}",
+                    pageId, lemmaId, index);
             return index;
         }, "Failed to find index by pair");
     }
 
 
 
-    public List<Index> findByLemmaId(Integer lemmaId) {
+    public List<Index> findByLemmaId(long lemmaId) {
         log.info("Поиск индексов по ID леммы: {}", lemmaId);
         Optional<Lemma> optionalLemma = lemmaRepository.findById(lemmaId);
         if (optionalLemma.isPresent()) {

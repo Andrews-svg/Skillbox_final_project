@@ -27,19 +27,20 @@ public class SearchService {
     private final PageService pageService;
     private final Lemmatizer lemmatizer;
     private final LemmaService lemmaService;
-    private final SearcherService searcherService;
+    private final SiteService siteService;
     private final AdvancedIndexOperations advancedIndexOperations;
 
     @Autowired
     public SearchService(IndexService indexService,
                          PageService pageService,
                          Lemmatizer lemmatizer, LemmaService lemmaService,
-                         SearcherService searcherService, AdvancedIndexOperations advancedIndexOperations) {
+                         SiteService siteService,
+                         AdvancedIndexOperations advancedIndexOperations) {
         this.indexService = indexService;
         this.pageService = pageService;
         this.lemmatizer = lemmatizer;
         this.lemmaService = lemmaService;
-        this.searcherService = searcherService;
+        this.siteService = siteService;
         this.advancedIndexOperations = advancedIndexOperations;
     }
 
@@ -109,7 +110,7 @@ public class SearchService {
                         findPageSnippet(page.getContent(), lemma.getLemma()),
                         0);
                 for (Lemma currentLemma : sortedArray) {
-                    Integer lemmaIndexId = currentLemma.getId();
+                    long lemmaIndexId = currentLemma.getId();
                     if (indexService.checkIfIndexExists(page.getId(), lemmaIndexId)) {
                         data.setRelevance(data.getRelevance() + 1);
                     }
@@ -170,24 +171,20 @@ public class SearchService {
 
     public ArrayList<Lemma> inputToLemmasSortedArrayWithoutTooFrequentLemmas(String input, String siteURL) {
         List<String> basicForms = lemmatizer.getBasicFormsFromString(input);
-        int totalPagesCount = pageService.countPages();
+        long totalPagesCount = pageService.getTotalPages();
         double frequencyThreshold = calculateDynamicFrequencyThreshold(totalPagesCount);
-        int tooFrequentCoefficient = (int)(totalPagesCount * frequencyThreshold);
+        long tooFrequentCoefficient = Math.round(totalPagesCount * frequencyThreshold);
         ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
         for (String form : basicForms) {
             List<Lemma> listFromDB = new ArrayList<>();
             if (!siteURL.isEmpty()) {
-                List<Site> sites = searcherService.findByPartialUrl(siteURL);
-                Optional<Site> matchingSite = sites.stream()
-                        .filter(site -> site.getUrl().equals(siteURL))
-                        .findFirst();
+                Optional<Site> matchingSite = siteService.findByExactUrl(siteURL);
                 if (matchingSite.isPresent()) {
                     Site site = matchingSite.get();
-
                     Optional<Lemma> lemmaOpt = lemmaService.findByLemmaAndSiteId(form, site.getId());
                     lemmaOpt.ifPresent(listFromDB::add);
                 } else {
-                    logger.warn("Сайт с URL {} не найден", siteURL);
+                    logger.warn("Сайт с URL {} не найден.", siteURL);
                     continue;
                 }
             } else {
@@ -204,7 +201,7 @@ public class SearchService {
     }
 
 
-    private double calculateDynamicFrequencyThreshold(int totalPagesCount) {
+    private double calculateDynamicFrequencyThreshold(long totalPagesCount) {
         return Math.log(totalPagesCount) / totalPagesCount;
     }
 }

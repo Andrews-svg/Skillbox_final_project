@@ -1,24 +1,22 @@
 package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
+import com.example.searchengine.exceptions.InvalidPageException;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.repository.PageRepository;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.HashMap;
+import java.util.*;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -26,39 +24,47 @@ import java.util.stream.Collectors;
 public class PageService {
 
     private final PageRepository pageRepository;
-    private final SiteService siteService;
     private final EntityManager entityManager;
 
     private static final Logger logger = LoggerFactory.getLogger(PageService.class);
 
     @Autowired
     public PageService(PageRepository pageRepository,
-                       SiteService siteService,
                        EntityManager entityManager) {
         this.pageRepository = pageRepository;
-        this.siteService = siteService;
         this.entityManager = entityManager;
     }
 
 
+
     @Transactional
-    public void savePage(Page page) {
-        checkMandatoryFields(page);
-        determineSiteIfNecessary(page);
-        if (!pageExists(page)) {
-            createNewPage(page);
-        } else {
-            updateExistingPage(page);
-        }
+    public void createPage(Page page) {
+        validatePage(page);
+        pageRepository.save(page);
     }
 
 
     @Transactional
-    public void saveAll(List<Page> pages) {
+    public void updatePage(Page updatedPage) {
+        validatePage(updatedPage);
+        pageRepository.save(updatedPage);
+    }
+
+
+    @Transactional
+    public void savePage(Page page) throws InvalidPageException {
+        validatePage(page);
+        pageRepository.save(page);
+    }
+
+
+    @Transactional
+    public void saveAll(List<Page> pages) throws InvalidPageException {
         int batchSize = 100;
         for (int i = 0; i < pages.size(); i++) {
-            savePage(pages.get(i));
-
+            Page page = pages.get(i);
+            validatePage(page);
+            pageRepository.save(page);
             if (i % batchSize == 0 && i > 0) {
                 entityManager.flush();
                 entityManager.clear();
@@ -67,12 +73,9 @@ public class PageService {
     }
 
 
-    public Integer validateAndSavePage(Page page) {
-        if (!isValid(page)) {
-            throw new IllegalArgumentException(
-                    "Недостаточно данных для сохранения страницы.");
-        }
-        return pageRepository.save(page).getId();
+    @Transactional
+    public void deletePage(Long pageId) {
+        pageRepository.deleteById(pageId);
     }
 
 
@@ -82,108 +85,85 @@ public class PageService {
     }
 
 
-    public Optional<Page> findById(Integer pageId) {
-        return Optional.ofNullable(entityManager.find(Page.class, pageId));
+    @Transactional(readOnly = true)
+    public Optional<Page> findPageById(Long pageId) {
+        return pageRepository.findById(pageId);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Page> findPageByPath(String path) {
+        return pageRepository.findByPath(path);
     }
 
 
     @Cacheable(value="pageCount")
-    public Integer countPages() {
-        return (int) pageRepository.count();
+    @Transactional(readOnly = true)
+    public long getTotalPages() {
+        return pageRepository.count();
     }
 
 
-    @Transactional
-    public void delete(Page entity) {
-        if (entity == null || entity.getId() == null || entity.getId() <= 0) {
-            logger.warn("Невозможно удалить страницу с неправильным ID: {}", entity);
-            return;
+    public Map<Long, Long> countPagesGroupedBySite(List<Site> sites) {
+        int maxBatchSize = 1000;
+        List<List<Site>> batches = partitionSites(sites, maxBatchSize);
+        List<Map<Long, Long>> partialResults = new ArrayList<>();
+        parallelProcess(batches, batch -> {
+            List<Page> filteredPages = pageRepository.findAllBySiteIn(batch);
+            Map<Long, Long> result = filteredPages.stream()
+                    .collect(Collectors.groupingBy(page ->
+                            page.getSite().getId(), Collectors.counting()));
+            synchronized(partialResults) {
+                partialResults.add(result);
+            }
+        });
+        return combineMaps(partialResults);
+    }
+
+
+    private List<List<Site>> partitionSites(List<Site> sites, int batchSize) {
+        List<List<Site>> partitions = new ArrayList<>();
+        for (int i = 0; i < sites.size(); i += batchSize) {
+            partitions.add(sites.subList(i, Math.min(i + batchSize, sites.size())));
         }
-        pageRepository.delete(entity);
-        logger.info("Удалена страница: {}", entity);
+        return partitions;
     }
 
 
-    @Transactional
-    public void deleteAll() {
-        pageRepository.deleteAllInBatch();
-        logger.info("Все страницы удалены успешно");
-    }
-
-
-    @Cacheable(value="sitePageCounts", key="#sites.hashCode()")
-    public Map<Integer, Integer> countPagesGroupedBySite(List<Site> sites) {
-        Set<Integer> siteIds = sites.stream().map(Site::getId).collect(Collectors.toSet());
-
-        TypedQuery<Object[]> query = entityManager.createQuery(
-                "SELECT p.site.id, COUNT(p) FROM Page p WHERE p.site.id IN (:ids) GROUP BY p.site.id",
-                Object[].class);
-        query.setParameter("ids", siteIds);
-
-        Map<Integer, Integer> result = new HashMap<>();
-        for (Object[] row : query.getResultList()) {
-            Integer siteId = ((Number) row[0]).intValue();
-            Integer count = ((Number) row[1]).intValue();
-            result.put(siteId, count);
+    private void parallelProcess(List<List<Site>> batches, Consumer<List<Site>> processor) {
+        try (ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
+            batches.forEach(batch -> pool.submit(() -> processor.accept(batch)));
+            pool.shutdown();
+            try {
+                boolean terminated = pool.awaitTermination(1, TimeUnit.MINUTES);
+                if (!terminated) {
+                    throw new TimeoutException("Timeout occurred while waiting for tasks to complete");
+                }
+            } catch (InterruptedException | TimeoutException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Processing interrupted", e);
+            }
         }
-        return result;
     }
 
 
-    private void checkMandatoryFields(Page page) {
-        if (page.getCode() == null) {
-            throw new IllegalArgumentException("Код страницы не указан!");
+    private Map<Long, Long> combineMaps(List<Map<Long, Long>> maps) {
+        return maps.stream()
+                .flatMap(map -> map.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        Long::sum));
+    }
+
+
+    private void validatePage(Page page) {
+        if (page.getSite() == null) {
+            throw new IllegalArgumentException("Ссылка на сайт обязательна!");
+        }
+        if (page.getPath() == null || page.getPath().trim().isEmpty()) {
+            throw new IllegalArgumentException("Адрес страницы обязателен!");
         }
         if (page.getContent() == null || page.getContent().trim().isEmpty()) {
-            throw new IllegalArgumentException("Содержание страницы не указано!");
+            throw new IllegalArgumentException("Контент страницы обязателен!");
         }
-    }
-
-
-    private void determineSiteIfNecessary(Page page) {
-        if (page.getSite() == null) {
-            Site determinedSite = siteService.determineSiteForPage(page.getPath())
-                    .map(obj -> (Site) obj)
-                    .orElseThrow(() -> new IllegalArgumentException("Не удалось определить сайт для страницы."));
-
-            page.setSite(determinedSite);
-        }
-    }
-
-
-    private boolean pageExists(Page page) {
-        return pageRepository.existsByPath(page.getPath());
-    }
-
-
-    private void createNewPage(Page page) {
-        try {
-            pageRepository.save(page);
-        } catch (PersistenceException | DataIntegrityViolationException e) {
-            throw new RuntimeException("Ошибка сохранения страницы.", e);
-        }
-    }
-
-
-    private void updateExistingPage(Page page) {
-        Optional<Page> existingPageOpt = pageRepository.findByPath(page.getPath());
-        if (existingPageOpt.isPresent()) {
-            Page existingPage = existingPageOpt.get();
-            existingPage.setContent(page.getContent());
-            existingPage.setCode(page.getCode());
-            pageRepository.save(existingPage);
-        }
-    }
-
-
-    private boolean isValid(Page page) {
-        return page.getPath() != null && !page.getPath().isEmpty()
-                && page.getContent() != null && !page.getContent().isEmpty()
-                && page.getSite() != null;
-    }
-
-
-    public Object getTotalPages() {
-        return pageRepository.count();
     }
 }

@@ -3,7 +3,6 @@ package com.example.searchengine.services;
 
 import com.example.searchengine.config.Site;
 import com.example.searchengine.config.SitesList;
-import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Status;
 import jakarta.transaction.Transactional;
@@ -34,10 +33,13 @@ public class WebProcessingService {
 
     private final SiteService siteService;
     private final SitesList sitesList;
+    private final SiteService siteRepository;
 
-    public WebProcessingService(SiteService siteService, SitesList sitesList) {
+    public WebProcessingService(SiteService siteService,
+                                SitesList sitesList, SiteService siteRepository) {
         this.siteService = siteService;
         this.sitesList = sitesList;
+        this.siteRepository = siteRepository;
     }
 
     @Transactional
@@ -54,16 +56,15 @@ public class WebProcessingService {
     @Transactional
     public Site resolveSiteFromLink(String link) {
         String host = extractHostFromLink(link);
-        Optional<Site> siteOpt = siteService.findByUrl(host);
+        Optional<Site> siteOpt = siteRepository.findByUrl(host);
+
         return siteOpt.orElseGet(() -> {
             Site newSite = new Site(Status.INDEXING, LocalDateTime.now(), host, host);
-
             try {
                 siteService.saveSite(newSite);
                 return newSite;
-            } catch (InvalidSiteException e) {
-                logger.error("Ошибка при создании сайта: {}", e.getMessage());
-                return null;
+            } catch (SiteService.InvalidSiteException e) {
+                throw new RuntimeException(e);
             }
         });
     }

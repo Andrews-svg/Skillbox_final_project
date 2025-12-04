@@ -17,7 +17,7 @@ public class ErrorHandler {
         this.databaseService = databaseService;
     }
 
-    public void handleError(Integer id, Throwable t) {
+    public void handleError(long id, Throwable t) {
         StringBuilder errorMsg = new StringBuilder("Ошибка индексации сайта ");
         if (t instanceof HttpStatusCodeException hse) {
             errorMsg.append(hse.getStatusCode().value())

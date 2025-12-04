@@ -5,10 +5,15 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <!-- Подключаем изменения -->
+    <!-- Базовые таблицы -->
     <include file="/db/changelog/create_site_table.xml"/>
     <include file="/db/changelog/create_page_table.xml"/>
     <include file="/db/changelog/create_lemma_table.xml"/>
     <include file="/db/changelog/create_index_table.xml"/>
+
+    <!-- Новые таблицы -->
+    <include file="/db/changelog/create_tokens_table.xml"/>
+    <include file="/db/changelog/create_user_roles_table.xml"/>
+    <include file="/db/changelog/create_app_users_table.xml"/>
 
 </databaseChangeLog>

@@ -1,6 +1,7 @@
 package com.example.searchengine.services;
 
 import com.example.searchengine.config.SitesList;
+import com.example.searchengine.exceptions.InvalidSiteException;
 import com.example.searchengine.utils.JsoupWrapper;
 import jakarta.annotation.PreDestroy;
 import org.jsoup.Jsoup;
@@ -134,7 +135,8 @@ public class CrawlerService {
         }
     }
 
-    private void saveData(String siteURL) throws IOException {
+    private void saveData(String siteURL) throws IOException,
+            InvalidSiteException, SiteService.InvalidSiteException {
         Document doc = Jsoup.parse(fetchUrlContent(siteURL));
         String title = webProcessingService.extractTitleFromContent(doc);
         dataSaver.saveData(siteURL, title, outLinksSet);

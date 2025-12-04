@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Objects;
 
+
 @Entity
 @Table(name = "search_index")
 @JsonIgnoreProperties({"hibernateLazyInitializer"})
@@ -15,7 +16,7 @@ public class Index implements Serializable {
     @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private long id;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,7 +36,7 @@ public class Index implements Serializable {
     public Index() {}
 
 
-    public Index(Integer id, Page page, Lemma lemma, float rank) {
+    public Index(long id, Page page, Lemma lemma, float rank) {
         this.id = id;
         this.page = page;
         this.lemma = lemma;
@@ -43,11 +44,11 @@ public class Index implements Serializable {
     }
 
 
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(long id) {
         this.id = id;
     }
 

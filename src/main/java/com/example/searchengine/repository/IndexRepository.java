@@ -5,24 +5,23 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.searchengine.models.Index;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface IndexRepository extends JpaRepository<Index, Integer> {
+public interface IndexRepository extends JpaRepository<Index, Long> {
 
     Optional<Index> findByPageIdAndLemmaId(
-            @Param("pageId") Integer pageId,
-            @Param("lemmaId") Integer lemmaId
+            @Param("pageId") long pageId,
+            @Param("lemmaId") long lemmaId
     );
 
     boolean existsByPageIdAndLemmaId(
-            @Param("pageId") Integer pageId,
-            @Param("lemmaId") Integer lemmaId
+            @Param("pageId") long pageId,
+            @Param("lemmaId") long lemmaId
     );
 
-    void deleteByPageId(Integer pageId);
-    void deleteByLemmaId(Integer lemmaId);
-    Integer findIdByPageId(Integer pageId);
-    Integer findIdByLemmaId(Integer lemmaId);
+    void deleteByPageId(long pageId);
+    void deleteByLemmaId(long lemmaId);
+    long findIdByPageId(long pageId);
+    long findIdByLemmaId(long lemmaId);
 }

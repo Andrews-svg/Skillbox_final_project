@@ -1,204 +1,170 @@
 package com.example.searchengine.services;
 
+import com.example.searchengine.config.Site;
+import com.example.searchengine.models.Status;
+import com.example.searchengine.repository.SiteRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.searchengine.config.SitesList;
-import com.example.searchengine.exceptions.InvalidSiteException;
-import com.example.searchengine.config.Site;
-import com.example.searchengine.models.Status;
-import com.example.searchengine.repository.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
 
 @Service
 public class SiteService {
 
     private static final Logger logger = LoggerFactory.getLogger(SiteService.class);
 
-    private final SitesList sitesList;
     private final SiteRepository siteRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
 
     @Autowired
-    public SiteService(SitesList sitesList, SiteRepository siteRepository) {
-        this.sitesList = requireNonNull(sitesList, "SitesList cannot be null");
-        this.siteRepository = requireNonNull(siteRepository, "SiteRepository cannot be null");
+    public SiteService(SiteRepository siteRepository,
+                       EntityManager entityManager) {
+        this.siteRepository = siteRepository;
+        this.entityManager = entityManager;
     }
 
 
-    private void validateSite(Site site) throws InvalidSiteException {
-        if (!isValidUrl(site.getUrl())) {
-            throw new InvalidSiteException("Некорректный адрес сайта");
-        }
+    @Transactional
+    public void createSite(Site site) {
+        validateSite(site);
+        siteRepository.save(site);
     }
 
 
-    private boolean isValidUrl(String inputUrl) {
-        try {
-            new URL(inputUrl).toURI();
-            Pattern pattern =
-                    Pattern.compile(
-                            "^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]$");
-            return pattern.matcher(inputUrl).matches();
-        } catch (Exception e) {
-            return false;
-        }
+    @Transactional
+    public void updateSite(Site updatedSite) {
+        validateSite(updatedSite);
+        siteRepository.save(updatedSite);
     }
 
 
     @Transactional
     public void saveSite(Site site) throws InvalidSiteException {
         validateSite(site);
-        siteRepository.saveAndFlush(site);
-        entityManager.refresh(site);
-        if (site.getId() == null) {
-            logger.error("Ошибка: сайт сохранился без идентификатора.");
-            throw new IllegalStateException("Ошибка при сохранении сайта: идентификатор не присвоен.");
-        }
+        siteRepository.save(site);
         logger.info("Сайт успешно сохранён с идентификатором: {}", site.getId());
     }
 
 
     @Transactional
     public void saveAll(List<Site> sites) throws InvalidSiteException {
-        for (Site site : sites) {
-            saveSite(site);
+        int batchSize = 100;
+        for (int i = 0; i < sites.size(); i++) {
+            Site site = sites.get(i);
+            validateSite(site);
+            siteRepository.save(site);
+            if (i % batchSize == 0 && i > 0) {
+                entityManager.flush();
+                entityManager.clear();
+            }
         }
     }
 
 
+    @Transactional
+    public void deleteSite(long siteId) {
+        siteRepository.deleteById(siteId);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Site> findById(long id) {
+        return siteRepository.findById(id);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Site> findSiteByUrl(String url) {
+        return siteRepository.findByUrl(url);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Site> findByUrl(String url) {
+        return siteRepository.findByUrl(url);
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<Site> findAllSites() {
+        return siteRepository.findAll();
+    }
+
+
+    @Transactional(readOnly = true)
+    public Optional<Site> findByExactUrl(String siteURL) {
+        return siteRepository.findByUrl(siteURL);
+    }
+
+
+    public Site prepareSiteForSave(String url, String name, Status status) throws InvalidSiteException {
+        if (!isValidUrl(url)) {
+            throw new InvalidSiteException("Некорректный URL сайта");
+        }
+        Site site = new Site();
+        site.setUrl(url);
+        site.setName(name);
+        site.setStatus(status);
+        site.setStatusTime(java.time.LocalDateTime.now());
+        return site;
+    }
+
+
+    private boolean isValidUrl(String inputUrl) {
+        if (inputUrl == null || inputUrl.trim().isEmpty()) {
+            return false;
+        }
+        Pattern pattern = Pattern.compile("^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+        return pattern.matcher(inputUrl).matches();
+    }
+    
+    
+    @Cacheable(value="siteCount")
+    public long getTotalSites() {
+        return siteRepository.count();
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<Site> listAllSites() {
+        return siteRepository.findAll();
+    }
+
+
+    private String generateUUID() {
+        return UUID.randomUUID().toString();
+    }
+
+
+    private void validateSite(Site site) {
+        if (site.getUrl() == null || site.getUrl().trim().isEmpty()) {
+            throw new IllegalArgumentException("Адрес сайта обязателен!");
+        }
+        if (site.getName() == null || site.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Название сайта обязано быть указано!");
+        }
+    }
+
+
+    @Transactional(readOnly = true)
     public boolean isAnySiteIndexing() {
         List<Site> indexingSites = siteRepository.findByStatus(Status.INDEXING);
         return !indexingSites.isEmpty();
     }
 
 
-    public Site fetchFullyLoadedSite(Integer siteId) {
-        TypedQuery<Site> query = entityManager.createQuery(
-                "SELECT s FROM Site s LEFT JOIN FETCH s.pages WHERE s.id = :siteId",
-                Site.class
-        ).setParameter("siteId", siteId);
-
-        Optional<Site> result = Optional.ofNullable(query.getSingleResult());
-        if (result.isEmpty()) {
-            throw new EntityNotFoundException("Сайт с идентификатором " + siteId + " не найден.");
-        }
-        return result.get();
-    }
-
-
-    @Cacheable(value = "sites", key = "#id")
-    public Optional<Site> findById(Integer id) {
-        return siteRepository.findById(id);
-    }
-
-
-    @Transactional(readOnly = true)
-    public Optional<Site> findByUrl(String url) {
-        if (isBlank(url)) {
-            throw new IllegalArgumentException("URL not allowed to be blank");
-        }
-        return siteRepository.findByUrl(url);
-    }
-
-
-    public List<Site> findAllSites() {
-        return sitesList.getSites().values().stream()
-                .map(config -> new Site(Status.INDEXING, LocalDateTime.now(),
-                        config.getUrl(), config.getName()))
-                .collect(Collectors.toList());
-    }
-
-
-    public Optional<Object> determineSiteForPage(String path) {
-        if (path == null || path.isBlank()) {
-            return Optional.empty();
-        }
-        try {
-            URI uri = new URI(path);
-            String host = uri.getHost();
-            for (SitesList.SiteConfig siteConfig : sitesList.getSites().values()) {
-                if (host.equalsIgnoreCase(siteConfig.getUrl())) {
-                    return Optional.of(siteConfig);
-                }
-            }
-        } catch (URISyntaxException | NullPointerException ex) {
-            logger.warn("Невозможно определить сайт для страницы: {}", path, ex);
-        }
-        return Optional.empty();
-    }
-
-
-    public Optional<Integer> getSiteId(String siteUrl) {
-        if (siteUrl == null || siteUrl.isBlank()) {
-            return Optional.empty();
-        }
-        return siteRepository.findByUrl(siteUrl).map(Site::getId);
-    }
-
-
-    public int getTotalSites() {
-        return Math.toIntExact(siteRepository.count());
-    }
-
-
-    @Transactional
-    @CacheEvict(value = "sites", key = "#site.id")
-    public void delete(Site site) {
-        siteRepository.delete(site);
-        logger.info("Deleted site: {}", site);
-    }
-
-
-    @Transactional
-    public void deletePageBySiteId(int siteId) {
-        entityManager.createQuery("DELETE FROM Page p WHERE p.site.id = :siteId")
-                .setParameter("siteId", siteId)
-                .executeUpdate();
-        logger.info("Удаление всех страниц сайта с идентификатором {} выполнено.", siteId);
-    }
-
-
-    private <T> T executeWithLogging(Supplier<T> action) {
-        try {
-            return action.get();
-        } catch (Exception e) {
-            logger.error("{}: {}", "Failed to count sites", e.getMessage());
-            throw new RuntimeException("Failed to count sites", e);
+    public static class InvalidSiteException extends Exception {
+        public InvalidSiteException(String message) {
+            super(message);
         }
     }
 
-
-    public Integer count() {
-        return executeWithLogging(() ->
-                        ((Number)entityManager.createQuery(
-                                "SELECT COUNT(s) FROM Site s").getSingleResult()).intValue()
-        );
-    }
-
-    public Integer countSites() {
-        return Math.toIntExact(siteRepository.count());
-    }
 }

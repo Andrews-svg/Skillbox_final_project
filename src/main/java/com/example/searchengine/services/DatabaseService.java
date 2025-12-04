@@ -70,7 +70,7 @@ public class DatabaseService {
     @Transactional
     public void ensureInitialData() {
         if (!siteRepository.existsByUrl("https://example.com")) {
-            Optional<Site> maybeExampleSite = siteService.findByUrl("https://example.com");
+            Optional<Site> maybeExampleSite = siteRepository.findByUrl("https://example.com");
             Site exampleSite;
             if (maybeExampleSite.isPresent()) {
                 exampleSite = maybeExampleSite.get();
@@ -80,15 +80,12 @@ public class DatabaseService {
                 try {
                     siteService.saveSite(exampleSite);
                     logger.info("Сайт создан: {}", exampleSite.getUrl());
-                } catch (InvalidSiteException ise) {
-                    logger.error("Ошибка ensureInitialData() при создании сайта: {}", ise.getMessage());
-                    return;
+                } catch (SiteService.InvalidSiteException e) {
+                    throw new RuntimeException(e);
                 }
             }
-
             Page initialPage = new Page("/", 200,
                     "Пример содержания для индексации", exampleSite);
-
             pageRepository.save(initialPage);
             logger.info("Первая страница создана: {}", initialPage.getPath());
         }
@@ -96,7 +93,7 @@ public class DatabaseService {
 
 
     @Transactional
-    public void updateSiteStatus(int siteId, Status newStatus, String errorMessage) {
+    public void updateSiteStatus(long siteId, Status newStatus, String errorMessage) {
         Optional<Site> siteOptional = siteRepository.findById(siteId);
         if (siteOptional.isPresent()) {
             Site site = siteOptional.get();
@@ -118,7 +115,6 @@ public class DatabaseService {
     public void persistLink(String link) {
         String path = webProcessingService.parsePathFromLink(link);
         Site site = webProcessingService.resolveSiteFromLink(link);
-
         if (site != null && webProcessingService.validateLink(link)) {
             Page page = new Page(path, 200, "", site);
             pageRepository.save(page);
@@ -133,7 +129,7 @@ public class DatabaseService {
     }
 
 
-    public void prepareIndexing(int id) throws Exception {
+    public void prepareIndexing(long id) throws Exception {
         Site site = siteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Сайт не найден"));
         pageRepository.deleteBySite(site);
@@ -162,14 +158,14 @@ public class DatabaseService {
     }
 
     @Transactional
-    public void finishIndexing(int siteId, boolean isSuccess) {
+    public void finishIndexing(long siteId, boolean isSuccess) {
         Status finalStatus = isSuccess ? Status.INDEXED : Status.FAILED;
         updateSiteStatus(siteId, finalStatus, "");
     }
 
 
     @Transactional
-    public void indexSite(int siteId) throws Exception {
+    public void indexSite(long siteId) throws Exception {
         prepareIndexing(siteId);
         Site site = siteRepository.findById(siteId).orElseThrow(() ->
                 new IllegalArgumentException("Сайт не найден"));
@@ -186,7 +182,7 @@ public class DatabaseService {
 
 
     @Transactional
-    public void addPagesToDatabase(String url) throws IOException, InvalidSiteException {
+    public void addPagesToDatabase(String url) throws IOException, SiteService.InvalidSiteException {
         String content = webProcessingService.fetchUrlContent(url);
         if (StringUtils.isBlank(content)) {
             logger.error("Не удалось получить контент страницы: {}", url);
@@ -216,7 +212,8 @@ public class DatabaseService {
 
 
     @Transactional
-    public void saveData(String url, String title, Set<String> outLinksSet) throws IOException {
+    public void saveData(String url, String title, Set<String> outLinksSet)
+            throws IOException, InvalidSiteException, SiteService.InvalidSiteException {
         if (url == null || url.isEmpty()) {
             logger.warn("Переданный URL пуст или null");
             return;
@@ -232,24 +229,17 @@ public class DatabaseService {
             logger.info("Обновлена страница с URL: {}", url);
             return;
         }
-        Optional<Site> existingSiteOpt = Optional.ofNullable(cachedSites.computeIfAbsent(url,
-                k -> siteService.findByUrl(url).orElse(null)));
+        Optional<Site> existingSiteOpt = siteRepository.findByUrl(url);
         Site site;
         if (existingSiteOpt.isPresent()) {
             site = existingSiteOpt.get();
         } else {
             site = new Site(Status.INDEXING, LocalDateTime.now(), url, title);
-            try {
-                siteService.saveSite(site);
-            } catch (InvalidSiteException e) {
-                logger.error("Ошибка при сохранении сайта: {}", e.getMessage(), e);
-            }
+            siteService.saveSite(site);
         }
         Page page = new Page(webProcessingService.parsePathFromLink(url),
                 200, webProcessingService.fetchUrlContent(url), site);
-        site.addPage(page);
         pageService.savePage(page);
-
         logger.info("Данные о странице '{}' успешно сохранены с ID: {}", url, page.getId());
     }
 }

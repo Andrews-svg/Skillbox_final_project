@@ -11,51 +11,39 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-
-
 @Entity
 @Table(name = "site")
 @Cacheable
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Site {
 
-
-    @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
+    private long id;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     private Status status;
 
-
     @NotNull
     @Column(nullable = false)
     private LocalDateTime statusTime;
-
 
     @NotBlank(message = "URL cannot be blank.")
     @Column(nullable = false, unique = true, length = 255)
     private String url;
 
-
     @NotBlank(message = "Name cannot be blank.")
     @Column(nullable = false, length = 255)
     private String name;
 
-
-    @Column(length = 65535)
+    @Column(length = 2048)
     private String lastError;
-
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
     private Set<Page> pages = new HashSet<>();
 
-
     public Site() {}
-
 
     public Site(Status status, LocalDateTime statusTime, String url, String name) {
         this.status = status;
@@ -64,7 +52,7 @@ public class Site {
         this.name = name;
     }
 
-    public Site(Integer id, Status status, LocalDateTime statusTime,
+    public Site(long id, Status status, LocalDateTime statusTime,
                 String url, String name, String lastError) {
         this.id = id;
         this.status = status;
@@ -74,6 +62,12 @@ public class Site {
         this.lastError = lastError;
     }
 
+    public Site(String name, String url) {
+        this.name = name;
+        this.url = url;
+        this.status = Status.INDEXING;
+        this.statusTime = LocalDateTime.now();
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -87,15 +81,20 @@ public class Site {
         page.setSite(this);
     }
 
+
+    public boolean isPersisted() {
+        return getId() > 0;
+    }
+
     public void updateStatusTime() {
         this.statusTime = LocalDateTime.now();
     }
 
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(long id) {
         this.id = id;
     }
 

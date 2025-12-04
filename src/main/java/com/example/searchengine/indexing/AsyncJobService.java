@@ -87,24 +87,25 @@ public class AsyncJobService {
     @Transactional
     @Async
     public void startFullIndexing() {
-        Map<Integer, SitesList.SiteConfig> configuredSites = sitesList.getSites();
+        Map<Long, SitesList.SiteConfig> configuredSites = sitesList.getSites();
 
-        for (Map.Entry<Integer, SitesList.SiteConfig> entry : configuredSites.entrySet()) {
-            Integer siteKey = entry.getKey();
+        for (Map.Entry<Long, SitesList.SiteConfig> entry : configuredSites.entrySet()) {
+            Long siteKey = entry.getKey();
             SitesList.SiteConfig siteConfig = entry.getValue();
             Optional<Site> existingSiteOptional = siteRepository.findByUrl(siteConfig.getUrl());
             existingSiteOptional.ifPresent(databaseService::deleteEntireSiteData);
             Site newSite = indexingServiceImpl.generateNewSite(siteConfig.getUrl());
             siteRepository.save(newSite);
-            Integer newSiteId = newSite.getId();
+            long newSiteId = newSite.getId();
             startIndexing(newSiteId, false);
         }
         logger.info("Запущена полная индексация всех сайтов.");
     }
 
+
     @Transactional
     @Async
-    public void startIndexing(Integer id, boolean isLemma) {
+    public void startIndexing(long id, boolean isLemma) {
         if (!indexingServiceImpl.canStartIndexing(id)) {
             return;
         }
@@ -142,7 +143,7 @@ public class AsyncJobService {
 
 
     @Transactional
-    public void processIndexingTask(Integer id) {
+    public void processIndexingTask(long id) {
         try {
             Optional<Site> siteOptional = siteRepository.findById(id);
             if (siteOptional.isEmpty()) {
