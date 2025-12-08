@@ -41,7 +41,7 @@ public class AppConfig {
         report.setSites(siteNumber);
         report.setPages(pageNumber);
         report.setLemmas(lemmaNumber);
-        report.setIsIndexing(isIndexing);
+        report.setIndexing(isIndexing);
         return report;}
 
     @Bean

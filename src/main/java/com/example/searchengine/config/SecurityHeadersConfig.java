@@ -55,10 +55,10 @@ public class SecurityHeadersConfig {
 
             String contentSecurityPolicy =
                     "default-src 'self'; " +
-                            "script-src 'self'; " +
-                            "style-src 'self'; " +
-                            "img-src 'self' data:; " +
-                            "font-src 'self';";
+                    "script-src 'self' 'unsafe-inline'; " +
+                    "style-src 'self' 'unsafe-inline'; " +
+                    "img-src 'self' data:; " +
+                    "font-src 'self';";
             response.setHeader("Content-Security-Policy", contentSecurityPolicy);
 
             logger.trace("Filtered request: {}", request.getRequestURL());

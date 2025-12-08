@@ -14,10 +14,7 @@ public class StatisticsReport {
     private long lemmas;
     private boolean isIndexing;
 
-
-    public StatisticsReport() { }
-
-
+    public StatisticsReport() {}
 
     public long getSites() {
         return sites;
@@ -50,7 +47,7 @@ public class StatisticsReport {
         return isIndexing;
     }
 
-    public void setIsIndexing(Boolean isIndexing) {
+    public void setIndexing(boolean isIndexing) {
         this.isIndexing = isIndexing;
     }
 

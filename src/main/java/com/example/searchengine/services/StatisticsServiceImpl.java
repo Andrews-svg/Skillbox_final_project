@@ -102,7 +102,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         report.setSites(sitesCount);
         report.setPages(pagesCount);
         report.setLemmas(lemmasCount);
-        report.setIsIndexing(isIndexing);
+        report.setIndexing(isIndexing);
         logger.debug("Общая статистика: " +
                         "sitesCount={}, pagesCount={}, " +
                         "lemmasCount={}, isIndexing={}",

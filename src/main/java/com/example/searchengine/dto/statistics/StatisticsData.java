@@ -18,5 +18,4 @@ public class StatisticsData {
         this.total = total;
         this.detailed = detailed;
     }
-
 }

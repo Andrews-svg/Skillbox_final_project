@@ -31,15 +31,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         logger.info("Начало настройки SecurityFilterChain");
 
-        RequestMatcher[] ignoredPaths = {
-                new AntPathRequestMatcher("/static/**"),
-                new AntPathRequestMatcher("/assets/**"),
-                new AntPathRequestMatcher("/favicon/**"),
-                new AntPathRequestMatcher("/api/public/**"),
-                new AntPathRequestMatcher("/healthcheck"),
-                new AntPathRequestMatcher("/login")
-        };
-        OrRequestMatcher orRequestMatcher = new OrRequestMatcher(ignoredPaths);
+        OrRequestMatcher orRequestMatcher = getOrRequestMatcher();
 
         http
                 .csrf(csrf -> csrf
@@ -49,6 +41,7 @@ public class SecurityConfig {
                     logger.debug("Настройка разрешений для URL-адресов");
 
                     authz
+                            .requestMatchers("/resources/**").permitAll()
                             .requestMatchers("/static/**", "/assets/**", "/favicon/**").permitAll()
                             .requestMatchers("/", "/login", "/auth/custom-error",
                                     "/api/statistics", "/error").permitAll()
@@ -72,6 +65,19 @@ public class SecurityConfig {
 
         logger.info("SecurityFilterChain успешно настроен");
         return http.build();
+    }
+
+    private static OrRequestMatcher getOrRequestMatcher() {
+        RequestMatcher[] ignoredPaths = {
+                new AntPathRequestMatcher("/resources/**"),
+                new AntPathRequestMatcher("/static/**"),
+                new AntPathRequestMatcher("/assets/**"),
+                new AntPathRequestMatcher("/favicon/**"),
+                new AntPathRequestMatcher("/api/public/**"),
+                new AntPathRequestMatcher("/healthcheck"),
+                new AntPathRequestMatcher("/login")
+        };
+        return new OrRequestMatcher(ignoredPaths);
     }
 
     @Bean
