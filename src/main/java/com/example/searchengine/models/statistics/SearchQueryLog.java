@@ -1,4 +1,4 @@
-package com.example.searchengine.models;
+package com.example.searchengine.models.statistics;
 
 import jakarta.persistence.*;
 import jakarta.persistence.Index;

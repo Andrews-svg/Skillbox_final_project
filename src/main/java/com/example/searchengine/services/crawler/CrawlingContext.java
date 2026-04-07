@@ -1,4 +1,4 @@
-package com.example.searchengine.services;
+package com.example.searchengine.services.crawler;
 
 
 import org.springframework.context.annotation.Scope;
@@ -19,7 +19,6 @@ public class CrawlingContext {
 
     public void addPaginationLinks(Long siteId, List<String> links) {
         if (links == null || links.isEmpty()) return;
-
         paginationLinks.computeIfAbsent(siteId, k -> new ConcurrentLinkedQueue<>())
                 .addAll(links);
     }
@@ -45,4 +44,5 @@ public class CrawlingContext {
     public void clearAll() {
         paginationLinks.clear();
     }
+
 }

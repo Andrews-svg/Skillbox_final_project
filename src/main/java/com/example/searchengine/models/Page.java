@@ -1,79 +1,72 @@
 package com.example.searchengine.models;
 
-import com.example.searchengine.config.Site;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
+import java.util.HashSet;
+import java.util.Set;
 
-@Indexed
 @Entity
-@Access(AccessType.FIELD)
 @Table(name = "page", indexes = {
-        @jakarta.persistence.Index(name = "idx_path", columnList = "path(255)")
+        @jakarta.persistence.Index(name = "idx_path", columnList = "path")
 })
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Page {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @NotNull
-    private long id;
+    private Long id;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT NOT NULL")
     @NotNull
     private String path;
 
     @Column(nullable = false)
     @NotNull
-    private long code;
+    private int code;
 
-    @FullTextField(analyzer = "standard")
-    @Lob
-    @Column(nullable = false)
+    @Column(columnDefinition = "MEDIUMTEXT NOT NULL")
     @NotNull
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     @NotNull
     private Site site;
 
+    @OneToMany(mappedBy = "page", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Index> indices = new HashSet<>();
+
     public Page() {}
 
-    public Page(long id, String path, long code, String content, Site site) {
-        this.id = id;
+    public Page(String path, int code, String content, Site site) {
         this.path = path;
         this.code = code;
         this.content = content;
         this.site = site;
     }
 
-    public Page(String path, long code, String content, Site site) {
-        this.path = path;
-        this.code = code;
-        this.content = content;
-        this.site = site;
-    }
-
-
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public Site getSite() {
-        return site;
+    public String getPath() {
+        return path;
     }
 
-    public void setSite(Site site) {
-        this.site = site;
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public void setCode(int code) {
+        this.code = code;
     }
 
     public String getContent() {
@@ -84,19 +77,29 @@ public class Page {
         this.content = content;
     }
 
-    public long getCode() {
-        return code;
+    public Site getSite() {
+        return site;
     }
 
-    public void setCode(Integer code) {
-        this.code = code;
+    public void setSite(Site site) {
+        this.site = site;
     }
 
-    public String getPath() {
-        return path;
+    public Set<Index> getIndices() {
+        return indices;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setIndices(Set<Index> indices) {
+        this.indices = indices;
+    }
+
+    public void addIndex(Index index) {
+        indices.add(index);
+        index.setPage(this);
+    }
+
+    public void removeIndex(Index index) {
+        indices.remove(index);
+        index.setPage(null);
     }
 }

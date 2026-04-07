@@ -6,11 +6,12 @@ import com.example.searchengine.dto.statistics.responses.DetailedStatisticsItem;
 import com.example.searchengine.dto.statistics.responses.StatisticsData;
 import com.example.searchengine.dto.statistics.responses.TotalStatistics;
 import com.example.searchengine.services.indexing.IndexingService;
+import com.example.searchengine.services.indexing.IndexingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.ZoneOffset;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,16 +23,16 @@ public class StatisticsService {
     private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
-    private final IndexingService indexingService;
+    private final IndexingState indexingState;
 
     public StatisticsService(SiteService siteService,
                              PageService pageService,
                              LemmaService lemmaService,
-                             IndexingService indexingService) {
+                             IndexingService indexingService, IndexingState indexingState) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
-        this.indexingService = indexingService;
+        this.indexingState = indexingState;
         logger.info("StatisticsService initialized");
     }
 
@@ -40,7 +41,7 @@ public class StatisticsService {
         logger.debug("Начало сбора статистики");
         TotalStatistics total = getTotalStatistics();
         List<DetailedStatisticsItem> detailed = getDetailedStatistics();
-        StatisticsData result = new StatisticsData(true, total, detailed);
+        StatisticsData result = new StatisticsData(total, detailed);
         logger.info("Статистика собрана: сайтов={}, страниц={}, лемм={}, индексация={}",
                 total.getSites(), total.getPages(), total.getLemmas(), total.isIndexing());
         return result;
@@ -51,8 +52,7 @@ public class StatisticsService {
         long sitesCount = siteService.getTotalSites();
         long pagesCount = pageService.getTotalPages();
         long lemmasCount = lemmaService.getTotalLemmas();
-        boolean isIndexing = indexingService.isIndexingInProgress();
-
+        boolean isIndexing = indexingState.isActive();
         return new TotalStatistics(sitesCount, pagesCount, lemmasCount, isIndexing);
     }
 
@@ -83,12 +83,13 @@ public class StatisticsService {
         long pages = pageService.countBySite(site);
         long lemmas = lemmaService.countBySite(site);
         String status = site.getStatus() != null ? site.getStatus().name() : Status.FAILED.name();
-        long statusTime = convertStatusTimeToSeconds(site);
+        Long statusTime = site.getStatusTime() != null
+                ? Timestamp.valueOf(site.getStatusTime()).getTime()
+                : null;
         String error = site.getLastError();
         if (error != null && error.trim().isEmpty()) {
             error = null;
         }
-
         return new DetailedStatisticsItem(
                 site.getUrl(),
                 site.getName(),
@@ -98,19 +99,5 @@ public class StatisticsService {
                 pages,
                 lemmas
         );
-    }
-
-
-    private long convertStatusTimeToSeconds(Site site) {
-        if (site.getStatusTime() == null) {
-            return 0L;
-        }
-        try {
-            return site.getStatusTime().toEpochSecond(ZoneOffset.UTC);
-        } catch (Exception e) {
-            logger.warn("Не удалось конвертировать время для сайта {}: {}",
-                    site.getUrl(), e.getMessage());
-            return 0L;
-        }
     }
 }

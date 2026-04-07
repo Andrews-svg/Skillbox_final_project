@@ -1,161 +1,95 @@
 package com.example.searchengine.services;
 
-import com.example.searchengine.config.Site;
+import com.example.searchengine.models.Index;
 import com.example.searchengine.models.Lemma;
-import com.example.searchengine.repository.LemmaRepository;
-import com.example.searchengine.utils.ContentProcessor;
-import com.example.searchengine.utils.Lemmatizer;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
+import com.example.searchengine.models.Page;
+import com.example.searchengine.models.Site;
+import com.example.searchengine.repositories.LemmaRepository;
+import com.example.searchengine.services.indexing.IndexService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class LemmaService {
 
     private static final Logger logger = LoggerFactory.getLogger(LemmaService.class);
 
-    private final LemmaRepository lemmaRepository;
-    private final ContentProcessor contentProcessor;
-    private final Lemmatizer lemmatizer;
+    @Autowired
+    private LemmaRepository lemmaRepository;
+
+    @Autowired
+    private IndexService indexService;
 
 
-    public LemmaService(LemmaRepository lemmaRepository,
-                        ContentProcessor contentProcessor, Lemmatizer lemmatizer) {
-        this.lemmaRepository = lemmaRepository;
-        this.contentProcessor = contentProcessor;
-        this.lemmatizer = lemmatizer;
+    @Transactional
+    public Lemma saveOrIncrement(String lemmaText, Site site) {
+        lemmaRepository.upsert(lemmaText, site.getId());
+        return lemmaRepository.findByLemmaAndSite(lemmaText, site)
+                .orElseThrow(() -> new RuntimeException("Лемма не найдена: " + lemmaText));
     }
 
 
     @Transactional
-    public void saveOrUpdateLemma(Lemma lemma) {
-        logger.debug("Начало процесса сохранения или обновления леммы: {}", lemma);
-        Site site = lemma.getSite();
-        long siteId = site != null ? site.getId() : -1;
-        Optional<Lemma> existingLemma =
-                lemmaRepository.findOneByLemmaAndSiteId(lemma.getLemma(), siteId);
-        if (existingLemma.isPresent()) {
-            Lemma foundLemma = existingLemma.get();
-            foundLemma.setFrequency(foundLemma.getFrequency() + 1);
-            lemmaRepository.save(foundLemma);
-            logger.info("Лемма успешно обновлена: {}", foundLemma);
+    public void decrementFrequency(Lemma lemma) {
+        Lemma freshLemma = lemmaRepository.findById(lemma.getId())
+                .orElseThrow(() -> new RuntimeException("Лемма не найдена: " + lemma.getId()));
+
+        if (freshLemma.getFrequency() > 1) {
+            freshLemma.setFrequency(freshLemma.getFrequency() - 1);
+            lemmaRepository.save(freshLemma);
         } else {
-            lemmaRepository.save(lemma);
-            logger.info("Новая лемма успешно создана: {}", lemma);
+            lemmaRepository.delete(freshLemma);
         }
     }
 
 
-    @Cacheable(value = "lemmas", key = "#id")
-    public Optional<Lemma> findById(long id) {
-        logger.debug("Ищу лемму по идентификатору: {}", id);
-        Optional<Lemma> lemma = lemmaRepository.findById(id);
-        logger.info("Результат поиска по идентификатору {}: {}",
-                id, lemma.isPresent() ? "найдено" : "не найдено");
-        return lemma;
-    }
-
-
-    @Cacheable(value = "lemmas", key = "'all'")
-    public List<Lemma> findAll() {
-        logger.debug("Запрашиваю полный список всех лемм");
-        List<Lemma> lemmas = lemmaRepository.findAll();
-        logger.info("Всего получено лемм: {}", lemmas.size());
-        return lemmas;
-    }
-
-
-    public List<Lemma> findLemmaByName(String lemma) {
-        return lemmaRepository.findAllByLemma(lemma);
-    }
-
-
-    public Optional<Lemma> findByLemmaAndSiteId(String lemma, long siteId) {
-        return lemmaRepository.findOneByLemmaAndSiteId(lemma, siteId);
-    }
-
-
-    @CacheEvict(value = "lemmas", key = "#lemma.id")
-    public void delete(Lemma lemma) {
-        logger.debug("Удаляю лемму: {}", lemma);
-        lemmaRepository.delete(lemma);
-        logger.info("Лемма успешно удалена: {}", lemma);
-    }
-
-
-    @CacheEvict(value = "lemmas", allEntries = true)
-    public void deleteAll() {
-        logger.debug("Начинаю массовое удаление всех лемм");
-        lemmaRepository.deleteAll();
-        logger.info("Все леммы успешно удалены");
-    }
-
-
-    public void processContent(String content, Map<String,
-            Float> mapTitle, Map<String, Float> mapBody) {
-        logger.debug("Обрабатываю контент страницы: {}",
-                content.substring(0, Math.min(content.length(), 100)));
-        contentProcessor.processContent(content, mapTitle, mapBody);
-        logger.info("Контент успешно обработан");
-    }
-
-
-    public Map<String, Float> delegateCombineMaps(Map<String, Float> mapTitle,
-                                          Map<String, Float> mapBody) {
-        logger.debug("Объединяю карты частот лемм");
-        Map<String, Float> combinedMap = contentProcessor.combineMaps(mapTitle, mapBody);
-        logger.info("Карты объединены успешно");
-        return combinedMap;
-    }
-
-
-    public void generateLemmas(String content, Map<String, Float> mapTitle,
-                               Map<String, Float> mapBody) {
-        Document doc = Jsoup.parse(content);
-        Elements titleElements = doc.select("title");
-        Elements bodyElements = doc.select("body");
-        if (!titleElements.isEmpty()) {
-            String titleText = Objects.requireNonNull(titleElements.first()).text();
-            Map<String, Integer> titleFreqMap = lemmatizer.lemmasFrequencyMapFromString(titleText);
-            titleFreqMap.forEach((key, value) -> mapTitle.put(key, value.floatValue()));
-        }
-        if (!bodyElements.isEmpty()) {
-            String bodyText = Objects.requireNonNull(bodyElements.first()).text();
-            Map<String, Integer> bodyFreqMap = lemmatizer.lemmasFrequencyMapFromString(bodyText);
-            bodyFreqMap.forEach((key, value) -> mapBody.put(key, value.floatValue() * 0.8f));
+    @Transactional
+    public void decrementAllForPage(Page page) {
+        List<Index> indexes = indexService.findByPage(page);
+        for (Index index : indexes) {
+            decrementFrequency(index.getLemma());
         }
     }
 
 
-    public double computeRelevance(String content, String query) {
-        logger.debug("Рассчитываю релевантность страницы: {}",
-                content.substring(0, Math.min(content.length(), 100)));
-        double relevance = contentProcessor.computeRelevance(content, query);
-        logger.info("Релевантность рассчитана: {}", relevance);
-        return relevance;
-    }
-
-    public Map<Long, Long> countLemmasGroupedBySite(List<Site> currentBatch) {
-        List<Long> siteIds = currentBatch.stream().map(Site::getId).collect(Collectors.toList());
-        return lemmaRepository.countLemmasGroupedBySiteIdsWithConversion(siteIds);
+    @Transactional(readOnly = true)
+    public Optional<Lemma> findByLemmaAndSite(String lemmaText, Site site) {
+        return lemmaRepository.findByLemmaAndSite(lemmaText, site);
     }
 
 
-    public long lemmasCount() {
-        return lemmaRepository.count();
+    @Transactional(readOnly = true)
+    public List<Lemma> findAllByLemmaInAndSite(Set<String> lemmas, Site site) {
+        return lemmaRepository.findAllByLemmaInAndSite(lemmas, site);
     }
 
-    @Cacheable(value="lemmaCount")
+
+    @Transactional(readOnly = true)
+    public List<Lemma> findAllBySite(Site site) {
+        return lemmaRepository.findBySite(site);
+    }
+
+
+    @Transactional
+    public void deleteAllBySite(Site site) {
+        lemmaRepository.deleteBySite(site);
+    }
+
+
+    @Transactional(readOnly = true)
+    public long countBySite(Site site) {
+        return lemmaRepository.countBySite(site);
+    }
+
+
+    @Transactional(readOnly = true)
     public long getTotalLemmas() {
         return lemmaRepository.count();
     }

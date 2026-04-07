@@ -3,72 +3,39 @@ package com.example.searchengine.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 
-
+@Component
 @ConfigurationProperties(prefix = "indexing-settings")
 public class SitesList {
+    private static final Logger logger = LoggerFactory.getLogger(SitesList.class);
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private String userAgent;
-    private String referrer;
-    private String webInterfacePath;
-    private String baseUrl;
+    private String userAgent = "HeliontSearchBot/1.0";
+    private String referrer = "https://www.google.com";
+    private String baseUrl = "http://localhost:8080";
+    private List<SiteConfig> sites = new ArrayList<>();
 
 
-    public SitesList(String userAgent, String referrer,
-                     String webInterfacePath, String baseUrl,
-                     Map<Long, SiteConfig> sites) {
-        this.userAgent = userAgent;
-        this.referrer = referrer;
-        this.webInterfacePath = webInterfacePath;
-        this.baseUrl = baseUrl;
-        this.sites = sites;
+    public SitesList() {
+        logger.debug("SitesList initialized with default values");
     }
 
-    private Map<Long, SiteConfig> sites = new LinkedHashMap<>();
-
-
-    public Map<Long, SiteConfig> getSites() {
-        logger.debug("Returning all Sites: {}", sites);
-        return Collections.unmodifiableMap(sites);
-    }
-
-
-    public boolean isAllowedDomain(String url) {
-        for (SiteConfig site : sites.values()) {
-            try {
-                URI inputUri = new URI(url);
-                URI allowedUri = new URI(site.getUrl());
-
-                if (inputUri.getHost().equalsIgnoreCase(allowedUri.getHost())) {
-                    return true;
-                }
-            } catch (URISyntaxException e) {
-                logger.error("Ошибка парсинга URI: {}", e.getMessage());
-            }
-        }
-        return false;
-    }
-
-
-    public Logger getLogger() {
-        return logger;
-    }
 
     public String getUserAgent() {
         return userAgent;
     }
 
     public void setUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.trim().isEmpty()) {
+            throw new IllegalArgumentException("userAgent cannot be null or empty");
+        }
         this.userAgent = userAgent;
+        logger.debug("User-Agent set to: {}", userAgent);
     }
 
     public String getReferrer() {
@@ -77,14 +44,7 @@ public class SitesList {
 
     public void setReferrer(String referrer) {
         this.referrer = referrer;
-    }
-
-    public String getWebInterfacePath() {
-        return webInterfacePath;
-    }
-
-    public void setWebInterfacePath(String webInterfacePath) {
-        this.webInterfacePath = webInterfacePath;
+        logger.debug("Referrer set to: {}", referrer);
     }
 
     public String getBaseUrl() {
@@ -93,16 +53,63 @@ public class SitesList {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+        logger.debug("Base URL set to: {}", baseUrl);
     }
 
-    public void setSites(Map<Long, SiteConfig> sites) {
-        this.sites = sites;
+
+    public List<SiteConfig> getSites() {
+        return Collections.unmodifiableList(sites);
+    }
+
+    public void setSites(List<SiteConfig> sites) {
+        if (sites == null) {
+            this.sites = new ArrayList<>();
+        } else {
+            this.sites = new ArrayList<>(sites);
+        }
+        logger.debug("Loaded {} sites for indexing", this.sites.size());
+    }
+
+
+    public int getSiteCount() {
+        return sites.size();
+    }
+
+
+    public boolean hasSites() {
+        return !sites.isEmpty();
+    }
+
+
+    public SiteConfig getSite(int index) {
+        if (index < 0 || index >= sites.size()) {
+            throw new IndexOutOfBoundsException(
+                    String.format("Site index %d out of bounds [0, %d)", index, sites.size())
+            );
+        }
+        return sites.get(index);
+    }
+
+
+    public void addSite(SiteConfig site) {
+        if (site == null) {
+            throw new IllegalArgumentException("Site cannot be null");
+        }
+        sites.add(site);
+        logger.debug("Added site: {}", site);
+    }
+
+
+    public void clearSites() {
+        sites.clear();
+        logger.debug("Cleared all sites");
     }
 
 
     public static class SiteConfig {
         private String name;
         private String url;
+
 
         public SiteConfig() {}
 
@@ -111,12 +118,16 @@ public class SitesList {
             this.url = url;
         }
 
+
         public String getName() {
             return name;
         }
 
         public void setName(String name) {
-            this.name = name;
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Site name cannot be null or empty");
+            }
+            this.name = name.trim();
         }
 
         public String getUrl() {
@@ -124,7 +135,30 @@ public class SitesList {
         }
 
         public void setUrl(String url) {
-            this.url = url;
+            if (url == null || url.trim().isEmpty()) {
+                throw new IllegalArgumentException("Site URL cannot be null or empty");
+            }
+            this.url = url.trim();
         }
+
+
+        public boolean isValid() {
+            return name != null && !name.isEmpty() &&
+                    url != null && !url.isEmpty() &&
+                    (url.startsWith("http://") || url.startsWith("https://"));
+        }
+
+        @Override
+        public String toString() {
+            return String.format("SiteConfig{name='%s', url='%s'}", name, url);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "SitesList{sites=%d, userAgent='%s', baseUrl='%s'}",
+                sites.size(), userAgent, baseUrl
+        );
     }
 }

@@ -1,0 +1,189 @@
+/* ===== СТИЛИ ДЛЯ ГЛАЗКОВ ИЗ ПРИМЕРА ===== */
+.password_input_container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.password_input_container button {
+    cursor: pointer;
+    position: absolute;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    top: 0;
+    right: 0;
+    background-color: transparent;
+    border: none;
+    color: #777;
+    z-index: 10;
+    width: 40px;
+    padding: 0;
+}
+
+.password_input_container button:hover {
+    color: #667eea;
+}
+
+.password_input_container input {
+    outline: none;
+    font-size: 14px;
+    padding: 10px 40px 10px 12px;  /* правый отступ для кнопки */
+    width: 100%;
+    background-color: transparent;
+    border: #777 solid 1px;
+    border-radius: 4px;
+    color: #555;
+    box-sizing: border-box;
+    height: 42px;
+}
+
+.password_input_container label {
+    position: absolute;
+    margin: 0 5px;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: -1;
+    background-color: #fff;
+    padding: 0 5px;
+    color: #aaa;
+    font-size: 14px;
+    transition: .3s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.password_input_container input:focus + label,
+.password_input_container input:not(:placeholder-shown) + label {
+    top: 0;
+    font-size: 11px;
+    z-index: 1;
+    color: #667eea;
+}
+
+.password_input_container input:focus {
+    border-color: #667eea;
+}
+
+.password_input_container button svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+/* ===== ОСНОВНЫЕ СТИЛИ АУТЕНТИФИКАЦИИ ===== */
+
+/* Контейнер для поля с глазком (оставляем для совместимости) */
+.password-field {
+    position: relative;
+    width: 100%;
+}
+
+/* Поле ввода с отступом под иконку */
+.password-field .form-control {
+    padding-right: 45px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Кнопка-глазик */
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 18px;
+    transition: color 0.2s ease;
+    z-index: 10;
+    background: transparent;
+    border: none;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle:hover {
+    color: #667eea;
+}
+
+.password-toggle:active {
+    opacity: 0.7;
+}
+
+/* Активное состояние (когда пароль виден) */
+.password-toggle.active {
+    color: #667eea;
+}
+
+/* ===== СТИЛИ ДЛЯ ВАЛИДАЦИИ ===== */
+
+/* Сообщение об ошибке - по умолчанию СКРЫТО */
+.invalid-feedback {
+    display: none;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    padding-left: 5px;
+}
+
+/* Поле с ошибкой - красная обводка */
+.is-invalid {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+}
+
+.is-invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Показываем сообщение об ошибке только когда у поля есть класс is-invalid */
+.is-invalid ~ .invalid-feedback,
+.is-invalid + .invalid-feedback,
+.password-field .is-invalid ~ .invalid-feedback,
+.password_input_container .is-invalid ~ .invalid-feedback {
+    display: block;
+    margin-top: 5px;
+}
+
+/* Для случая, когда поле обернуто в password-field */
+.password-field .is-invalid,
+.password_input_container .is-invalid {
+    border-color: #dc3545 !important;
+}
+
+/* =----- АНИМАЦИИ ДЛЯ ПЛАВНОСТИ ----- */
+.password-toggle, .form-control, .password_input_container input {
+    transition: all 0.2s ease;
+}
+
+/* =----- ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ФОРМ ----- */
+.text-muted {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 5px;
+}
+
+/* Группа полей с глазками */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-group label i {
+    margin-right: 5px;
+    color: #667eea;
+}

@@ -1,4 +1,4 @@
-package com.example.searchengine.controllers.admin;
+package com.example.searchengine.controllers.auth;
 
 import com.example.searchengine.dto.JwtDto.TokenPair;
 import com.example.searchengine.dto.registration.RegistrationDTO;
@@ -25,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -46,19 +47,22 @@ public class AuthController {
     private final JwtTokenService jwtTokenService;
     private final EmailService emailService;
     private final UserActivityService userActivityService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthController(UserServiceImpl userServiceImpl,
                           UserQueryServiceImpl userQueryServiceImpl,
                           AuthenticationManager authenticationManager,
                           JwtTokenService jwtTokenService,
                           EmailService emailService,
-                          UserActivityService userActivityService) {
+                          UserActivityService userActivityService,
+                          PasswordEncoder passwordEncoder) {
         this.userServiceImpl = userServiceImpl;
         this.userQueryServiceImpl = userQueryServiceImpl;
         this.authenticationManager = authenticationManager;
         this.jwtTokenService = jwtTokenService;
         this.emailService = emailService;
         this.userActivityService = userActivityService;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -142,7 +146,6 @@ public class AuthController {
             user.put("id", appUser.getId());
             user.put("username", appUser.getUsername());
             user.put("email", appUser.getEmail());
-            user.put("firstName", appUser.getFirstName());
             user.put("lastName", appUser.getLastName());
             user.put("lastLoginAt", appUser.getLastLoginAt());
             response.put("user", user);
@@ -201,6 +204,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("result", false, "error", "Имя пользователя занято!"));
         }
+        if (userQueryServiceImpl.existsByEmail(regDTO.getEmail())) {
+            log.warn("Email уже занят: {} с IP: {}", regDTO.getEmail(), ipAddress);
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("result", false, "error", "Email уже зарегистрирован!"));
+        }
         if (!regDTO.getPassword().equals(regDTO.getConfirmPassword())) {
             log.warn("Пароли не совпадают для пользователя {} с IP: {}", username, ipAddress);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -209,13 +217,14 @@ public class AuthController {
         try {
             AppUser appUser = new AppUser();
             appUser.setUsername(regDTO.getUsername());
-            appUser.setFirstName(regDTO.getFirstName());
             appUser.setLastName(regDTO.getLastName());
             appUser.setEmail(regDTO.getEmail());
             appUser.setPassword(regDTO.getPassword());
+
             String activationToken = TokenUtils.generateActivationToken();
             appUser.setActivationToken(activationToken);
             appUser.setStatus(AccountStatus.UNCONFIRMED);
+
             userServiceImpl.registerNewUser(appUser);
             emailService.sendActivationEmail(appUser);
             userActivityService.logRegistration(

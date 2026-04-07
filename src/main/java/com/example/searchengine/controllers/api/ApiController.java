@@ -1,140 +1,144 @@
 package com.example.searchengine.controllers.api;
 
-import  com.example.searchengine.config.SitesList;
-import com.example.searchengine.dto.statistics.responses.ErrorResponseDTO;
-import com.example.searchengine.models.SearchResult;
+import com.example.searchengine.config.SitesList;
+import com.example.searchengine.dto.search.SearchResponse;
+import com.example.searchengine.dto.statistics.responses.StatisticsResponse;
+import com.example.searchengine.dto.statistics.responses.StatisticsData;
+import com.example.searchengine.services.*;
+import com.example.searchengine.services.indexing.IndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.searchengine.exceptions.*;
-import com.example.searchengine.indexing.*;
-import com.example.searchengine.dto.statistics.responses.StatisticsData;
-import com.example.searchengine.services.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Map;
 
 
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
 
     private final SitesList sitesList;
     private final StatisticsService statisticsService;
-    private final AsyncJobService asyncJobService;
-    private final AdvancedIndexOperations advancedIndexOperations;
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(ApiController.class);
-
+    private final SiteValidator siteValidator;
+    private final IndexingService indexingService;
+    private final SearchService searchService;
 
     public ApiController(SitesList sitesList,
                          StatisticsService statisticsService,
-                         AsyncJobService asyncJobService,
-                         AdvancedIndexOperations advancedIndexOperations) {
+                         SiteValidator siteValidator,
+                         IndexingService indexingService,
+                         SearchService searchService) {
         this.sitesList = sitesList;
         this.statisticsService = statisticsService;
-        this.asyncJobService = asyncJobService;
-        this.advancedIndexOperations = advancedIndexOperations;
+        this.siteValidator = siteValidator;
+        this.indexingService = indexingService;
+        this.searchService = searchService;
     }
 
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<Map<String, Object>> startIndexing() {
+    public ResponseEntity<?> startIndexing() {
         try {
-            asyncJobService.startFullIndexing();
-            return ResponseEntity.ok().body(Map.of("result", true));
-        } catch (Exception e) {
-            logger.error("Ошибка при запуске индексации: {}", e.getMessage(), e);
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.BAD_REQUEST.value(),
-                    "Индексация уже запущена"
+            indexingService.startFullIndexing();
+            return ResponseEntity.ok(Map.of("result", true));
+        } catch (IllegalStateException e) {
+            logger.error("Ошибка запуска индексации: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false, "error", "Индексация уже запущена")
             );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<Map<String, Object>> stopIndexing() {
+    public ResponseEntity<?> stopIndexing() {
         try {
-            asyncJobService.stopIndexing();
-            return ResponseEntity.ok().body(Map.of("result", true));
+            indexingService.stopIndexing();
+            return ResponseEntity.ok(Map.of("result", true));
         } catch (IllegalStateException e) {
-            logger.error("Ошибка остановки индексации: {}", e.getMessage(), e);
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.BAD_REQUEST.value(),
-                    "Индексация не запущена"
+            logger.error("Ошибка остановки индексации: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false, "error", "Индексация не запущена")
             );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
 
     @PostMapping("/indexPage")
-    public ResponseEntity<Map<String, Object>> indexPage(@RequestParam String url) {
-        try {
-            if (!isValidUrl(url)) {
-                logger.error("Ошибка: неверный формат URL '{}'", url);
-                ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                        LocalDateTime.now(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Неверный формат адреса страницы."
-                );
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("result", false);
-                errorResponse.put("error", errorDto.getMessage());
-                errorResponse.put("timestamp", errorDto.getTimestamp());
-                errorResponse.put("code", errorDto.getCode());
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-            if (!sitesList.isAllowedDomain(url)) {
-                logger.error("Ошибка: домен страницы '{}' не входит в разрешенные", url);
-                ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                        LocalDateTime.now(),
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Данная страница находится за пределами сайтов, " +
-                                "указанных в конфигурационном файле."
-                );
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("result", false);
-                errorResponse.put("error", errorDto.getMessage());
-                errorResponse.put("timestamp", errorDto.getTimestamp());
-                errorResponse.put("code", errorDto.getCode());
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-            asyncJobService.indexPage(url);
-            return ResponseEntity.ok().body(Map.of("result", true));
-        } catch (Exception ex) {
-            logger.error("Ошибка при индексе страницы: {}", ex.getMessage(), ex);
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    "Возникла непредвиденная ошибка при обработке страницы."
+    public ResponseEntity<?> indexPage(@RequestParam String url) {
+        if (!isValidUrl(url)) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false, "error", "Неверный формат адреса страницы")
             );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+        if (!siteValidator.isAllowedDomain(url, sitesList)) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false,
+                            "error", "Данная страница находится за пределами сайтов, " +
+                                    "указанных в конфигурационном файле")
+            );
+        }
+        try {
+            boolean success = indexingService.indexPage(url);
+            if (success) {
+                return ResponseEntity.ok(Map.of("result", true));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                        Map.of("result", false, "error", "Не удалось проиндексировать страницу")
+                );
+            }
+        } catch (Exception e) {
+            logger.error("Ошибка индексации страницы {}: {}", url, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("result", false, "error", "Внутренняя ошибка сервера")
+            );
+        }
+    }
+
+
+    @GetMapping("/statistics")
+    public ResponseEntity<StatisticsResponse> getStatistics() {
+        try {
+            StatisticsData statisticsData = statisticsService.getStatistics();
+            return ResponseEntity.ok(new StatisticsResponse(true, statisticsData));
+        } catch (Exception e) {
+            logger.error("Ошибка получения статистики: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+    @GetMapping("/search")
+    public ResponseEntity<?> search(
+            @RequestParam String query,
+            @RequestParam(required = false) String site,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "20") int limit) {
+
+        if (query == null || query.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false, "error", "Задан пустой поисковый запрос")
+            );
+        }
+        try {
+            SearchResponse response = searchService.search(query, site, offset, limit);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.error("Ошибка поиска: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    Map.of("result", false, "error", e.getMessage())
+            );
+        } catch (Exception e) {
+            logger.error("Внутренняя ошибка поиска: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("result", false, "error", "Внутренняя ошибка сервера")
+            );
         }
     }
 
@@ -142,94 +146,11 @@ public class ApiController {
     private boolean isValidUrl(String url) {
         try {
             URI uri = new URI(url);
-            return uri.getScheme() != null && uri.getHost() != null;
+            return uri.getScheme() != null &&
+                    uri.getHost() != null &&
+                    (uri.getScheme().equals("http") || uri.getScheme().equals("https"));
         } catch (URISyntaxException e) {
             return false;
         }
     }
-
-
-    @GetMapping("/statistics")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> getStatistics() {
-        logger.info("Получение статистики...");
-        try {
-            StatisticsData statisticsData = statisticsService.getStatistics();
-            logger.info("Получение статистики: {}", statisticsData);
-            return ResponseEntity.ok().body(Map.of("result", true, "statistics", statisticsData));
-        } catch (StatisticsFetchingException ex) {
-            logger.error("Ошибка при получении статистики: {}", ex.getMessage(), ex);
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    ex.getMessage()
-            );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-
-    @GetMapping("/search")
-    public ResponseEntity<Map<String, Object>> search(
-            @RequestParam String query,
-            @RequestParam(required = false) String site,
-            @RequestParam(defaultValue = "0") Integer offset,
-            @RequestParam(defaultValue = "20") Integer limit) {
-
-        if (query.isEmpty()) {
-            logger.error("Ошибка: задан пустой поисковый запрос");
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.BAD_REQUEST.value(),
-                    "Задан пустой поисковый запрос"
-            );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-        try {
-            Map<String, Object> responseData = performSearch(query, site, offset, limit);
-            return ResponseEntity.ok(responseData);
-        } catch (Exception ex) {
-            logger.error("Ошибка при выполнении поиска: {}", ex.getMessage(), ex);
-            ErrorResponseDTO errorDto = new ErrorResponseDTO(
-                    LocalDateTime.now(),
-                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    "Возникла непредвиденная ошибка при поиске."
-            );
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("result", false);
-            errorResponse.put("error", errorDto.getMessage());
-            errorResponse.put("timestamp", errorDto.getTimestamp());
-            errorResponse.put("code", errorDto.getCode());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-
-    private Map<String, Object> performSearch(String query, String site, Integer offset, Integer limit) {
-        List<SearchResult> allResults = advancedIndexOperations.findPagesForQuery(query);
-        if (site != null && !site.isEmpty()) {
-            allResults.removeIf(result -> !result.getSite().equals(site));
-        }
-        int totalCount = allResults.size();
-        int fromIndex = Math.max(0, offset);
-        int toIndex = Math.min(fromIndex + limit, allResults.size());
-        List<SearchResult> resultPage = new ArrayList<>(allResults.subList(fromIndex, toIndex));
-        return Map.of("count", totalCount, "data", resultPage);
-    }
 }
-
-
-
-
-
-

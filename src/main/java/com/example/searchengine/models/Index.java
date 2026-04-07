@@ -1,54 +1,40 @@
 package com.example.searchengine.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-
-import java.io.Serializable;
 import java.util.Objects;
 
-
 @Entity
-@Table(name = "search_index")
-@JsonIgnoreProperties({"hibernateLazyInitializer"})
-public class Index implements Serializable {
+@Table(name = "`index`")
+public class Index {
 
-    @NotNull
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id", nullable = false)
     private Page page;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lemma_id", nullable = false)
     private Lemma lemma;
 
-    @NotNull
-    @Column(name = "search_rank")
+    @Column(name = "`rank`", nullable = false)
     private float rank;
-
 
     public Index() {}
 
-
-    public Index(long id, Page page, Lemma lemma, float rank) {
-        this.id = id;
+    public Index(Page page, Lemma lemma, float rank) {
         this.page = page;
         this.lemma = lemma;
         this.rank = rank;
     }
 
-
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -76,29 +62,24 @@ public class Index implements Serializable {
         this.rank = rank;
     }
 
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Index index)) return false;
-        return Float.compare(index.rank, rank) == 0 &&
-                Objects.equals(id, index.id) &&
-                Objects.equals(page, index.page) &&
-                Objects.equals(lemma, index.lemma);
+        return Objects.equals(id, index.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, page, lemma, rank);
+        return Objects.hash(id);
     }
-
 
     @Override
     public String toString() {
         return "Index{" +
                 "id=" + id +
-                ", page=" + page.getId() +
-                ", lemma=" + lemma.getId() +
+                ", pageId=" + (page != null ? page.getId() : null) +
+                ", lemmaId=" + (lemma != null ? lemma.getId() : null) +
                 ", rank=" + rank +
                 '}';
     }

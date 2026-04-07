@@ -1,257 +1,280 @@
 package com.example.searchengine.services.indexing;
 
-import com.example.searchengine.repositories.LemmaRepository;
-import com.example.searchengine.repositories.PageRepository;
-import com.example.searchengine.repositories.SiteRepository;
-import com.example.searchengine.services.data.DatabaseService;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import com.example.searchengine.config.SitesList;
 import com.example.searchengine.models.Site;
 import com.example.searchengine.models.Status;
-import com.example.searchengine.repositories.IndexRepository;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.example.searchengine.services.*;
+import com.example.searchengine.services.crawler.CrawlerService;
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-public class IndexingServiceImpl implements IndexingService {
+public class IndexingService {
 
-    private static final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(IndexingService.class);
 
-    private final DatabaseService databaseService;
-    private final SiteRepository siteRepository;
-    private final IndexRepository indexRepository;
-    private final PageRepository pageRepository;
+    private final SiteService siteService;
+    private final PageService pageService;
+    private final LemmaService lemmaService;
+    private final IndexService indexService;
+    private final CrawlerService crawlerService;
     private final SitesList sitesList;
-    private final IndexServiceImpl indexServiceImpl;
-    private final LemmaRepository lemmaRepository;
+    private final IndexingState indexingState;
 
-    private final ConcurrentHashMap<Long, Status> indexingStatuses = new ConcurrentHashMap<>();
-    private boolean indexingInProgress = false;
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final ExecutorService indexingExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true);
+        t.setName("indexing-starter");
+        return t;
+    });
 
-    public IndexingServiceImpl(DatabaseService databaseService, SiteRepository siteRepository,
-                               IndexRepository indexRepository, PageRepository pageRepository,
-                               SitesList sitesList, IndexServiceImpl indexServiceImpl,
-                               LemmaRepository lemmaRepository) {
-        this.databaseService = databaseService;
-        this.siteRepository = siteRepository;
-        this.indexRepository = indexRepository;
-        this.pageRepository = pageRepository;
+    public IndexingService(SiteService siteService,
+                           PageService pageService,
+                           LemmaService lemmaService,
+                           IndexService indexService,
+                           CrawlerService crawlerService,
+                           SitesList sitesList, IndexingState indexingState) {
+        this.siteService = siteService;
+        this.pageService = pageService;
+        this.lemmaService = lemmaService;
+        this.indexService = indexService;
+        this.crawlerService = crawlerService;
         this.sitesList = sitesList;
-        this.indexServiceImpl = indexServiceImpl;
-        this.lemmaRepository = lemmaRepository;
+        this.indexingState = indexingState;
     }
 
 
-    @Override
-    @Transactional
-    public void init() {
+    @PreDestroy
+    public void destroy() {
+        logger.info("=== ЗАВЕРШЕНИЕ РАБОТЫ, ОСТАНАВЛИВАЕМ ВСЕ ПОТОКЫ ===");
+        if (indexingState.isActive()) {
+            try {
+                stopIndexing();
+            } catch (Exception e) {
+                logger.warn("Ошибка при остановке индексации: {}", e.getMessage());
+            }
+        }
+        indexingExecutor.shutdownNow();
         try {
-            logger.info("=== Инициализация поискового движка ===");
-            List<SitesList.SiteConfig> configuredSites = sitesList.getSites();
-            if (configuredSites.isEmpty()) {
-                logger.warn("В конфигурации нет сайтов для индексации!");
+            if (!indexingExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                logger.warn("Executor не завершился за 10 секунд");
+            }
+        } catch (InterruptedException e) {
+            logger.warn("Прерывание при ожидании завершения executor");
+            Thread.currentThread().interrupt();
+        }
+        logger.info("=== ВСЕ ПОТОКИ ОСТАНОВЛЕНЫ ===");
+    }
+
+
+
+    public synchronized void startFullIndexing() {
+        if (indexingState.isActive()) {
+            throw new IllegalStateException("Индексация уже запущена");
+        }
+        if (indexingExecutor.isShutdown()) {
+            throw new IllegalStateException("Executor сервис остановлен");
+        }
+        indexingState.setActive(true);
+        logger.info("=== ЗАПУСК ПОЛНОЙ ИНДЕКСАЦИИ ===");
+        List<SitesList.SiteConfig> configs = sitesList.getSites();
+        if (configs.isEmpty()) {
+            indexingState.setActive(false);
+            throw new IllegalStateException("В конфигурации нет сайтов для индексации");
+        }
+        AtomicInteger completedCount = new AtomicInteger(0);
+        int totalSites = configs.size();
+        for (SitesList.SiteConfig config : configs) {
+            indexingExecutor.submit(() -> {
+                if (!indexingState.isActive()) {
+                    logger.info("Индексация прервана для сайта: {}", config.getUrl());
+                    return;
+                }
+                try {
+                    indexSite(config);
+                } catch (Exception e) {
+                    logger.error("Ошибка при индексации сайта {}: {}",
+                            config.getUrl(), e.getMessage(), e);
+                } finally {
+                    if (completedCount.incrementAndGet() == totalSites) {
+                        indexingState.setActive(false);
+                        logger.info("=== ВСЕ САЙТЫ ЗАВЕРШИЛИ ИНДЕКСАЦИЮ ===");
+                    }
+                }
+            });
+        }
+        logger.info("Запущена индексация {} сайтов", configs.size());
+    }
+
+
+    private void indexSite(SitesList.SiteConfig config) {
+        logger.info("🔥🔥🔥 indexSite() ВЫЗВАН для сайта: {}", config.getUrl());
+        logger.info("Параметры: url={}, name={}", config.getUrl(), config.getName());
+        Site site = null;
+        try {
+            logger.info("1. Поиск сайта в БД: {}", config.getUrl());
+            site = siteService.findByUrl(config.getUrl())
+                    .orElseGet(() -> {
+                        logger.info("   Сайт не найден, создаем новый: {}", config.getUrl());
+                        return siteService.createNewSite(config.getUrl(), config.getName());
+                    });
+            logger.info("   Сайт получен: id={}, status={}, name={}",
+                    site.getId(), site.getStatus(), site.getName());
+            logger.info("2. Очистка старых данных для сайта: {}", config.getUrl());
+            clearSiteData(site);
+            logger.info("3. Установка статуса INDEXING для сайта: {}", config.getUrl());
+            siteService.updateStatus(site, Status.INDEXING);
+            logger.info("4. ВЫЗОВ crawlerService.crawlSite() для {}", site.getUrl());
+            logger.info("   Время перед вызовом: {}", System.currentTimeMillis());
+            try {
+                crawlerService.crawlSite(site);
+                logger.info("5. crawlerService.crawlSite() ЗАВЕРШЕН для {}", site.getUrl());
+            } catch (Exception e) {
+                logger.error("💥 ИСКЛЮЧЕНИЕ в crawlerService.crawlSite() для {}:", site.getUrl(), e);
+                throw e;
+            }
+            logger.info("6. Время после вызова: {}", System.currentTimeMillis());
+            if (indexingState.isActive()) {
+                long pageCount = pageService.countBySite(site);
+                logger.info("7. Индексация активна. Найдено страниц: {}", pageCount);
+                siteService.updateStatus(site, Status.INDEXED);
+                logger.info("✅ Сайт успешно проиндексирован: {} ({} страниц)",
+                        site.getUrl(), pageCount);
             } else {
-                logger.info("В конфигурации настроено {} сайтов", configuredSites.size());
+                logger.info("⛔ Индексация сайта {} прервана пользователем", site.getUrl());
             }
-            long totalSites = siteRepository.count();
-            long totalPages = pageRepository.count();
-            long totalLemmas = lemmaRepository.count();
-            logger.info("Текущее состояние БД:");
-            logger.info("  - Сайтов: {}", totalSites);
-            logger.info("  - Страниц: {}", totalPages);
-            logger.info("  - Лемм: {}", totalLemmas);
-            if (totalSites > 0) {
-                List<Site> dbSites = siteRepository.findAll();
-                logger.info("Сайты в БД:");
-                dbSites.forEach(site ->
-                        logger.info("  - {} (статус: {})", site.getUrl(), site.getStatus())
-                );
-            }
-            syncSitesWithConfig();
-            if (totalPages == 0 && totalLemmas == 0) {
-                logger.info("База данных пуста. Готов к индексации реальных сайтов.");
-            }
-            logger.info("=== Инициализация завершена ===");
         } catch (Exception e) {
-            logger.error("Критическая ошибка при инициализации движка: {}", e.getMessage(), e);
+            logger.error("❌❌❌ ИСКЛЮЧЕНИЕ в indexSite для сайта {}: {}",
+                    config.getUrl(), e.getMessage());
+            logger.error("Тип исключения: {}", e.getClass().getName());
+            logger.error("Стек ошибки:", e);
+            if (site != null) {
+                try {
+                    logger.info("Попытка обновить статус сайта с ошибкой");
+                    siteService.updateStatusWithError(site,
+                            "Ошибка индексации: " + e.getMessage());
+                } catch (Exception ex) {
+                    logger.warn("Не удалось обновить статус ошибки: {}", ex.getMessage());
+                }
+            }
+        } finally {
+            logger.info("8. Finally блок для сайта: {}", config.getUrl());
+            logger.info("========== indexSite() ЗАВЕРШЕН для {} ==========", config.getUrl());
         }
     }
 
 
-    @Transactional
-    private void syncSitesWithConfig() {
+    private void clearSiteData(Site site) {
         try {
-            List<SitesList.SiteConfig> configuredSites = sitesList.getSites();
-            List<Site> sitesToAdd = new ArrayList<>();
-            for (SitesList.SiteConfig config : configuredSites) {
-                Optional<Site> existing = siteRepository.findByUrl(config.getUrl());
-                if (existing.isEmpty()) {
-                    Site newSite = new Site();
-                    newSite.setName(config.getName());
-                    newSite.setUrl(config.getUrl());
-                    newSite.setStatus(Status.FAILED);
-                    newSite.setStatusTime(java.time.LocalDateTime.now());
-                    newSite.setLastError("Сайт добавлен в конфигурации, но еще не индексирован");
-                    sitesToAdd.add(newSite);
-                    logger.info("Добавлен новый сайт из конфига: {}", config.getUrl());
-                }
-            }
-            if (!sitesToAdd.isEmpty()) {
-                siteRepository.saveAll(sitesToAdd);
-            }
-            List<Site> allDBSites = siteRepository.findAll();
-            List<Site> sitesToDeactivate = new ArrayList<>();
-            for (Site dbSite : allDBSites) {
-                boolean existsInConfig = configuredSites.stream()
-                        .anyMatch(config -> config.getUrl().equals(dbSite.getUrl()));
-                if (!existsInConfig) {
-                    logger.warn("Сайт {} есть в БД, но отсутствует в конфигурации", dbSite.getUrl());
-                    dbSite.setStatus(Status.FAILED);
-                    dbSite.setLastError("Сайт удален из конфигурации");
-                    dbSite.setStatusTime(java.time.LocalDateTime.now());
-                    sitesToDeactivate.add(dbSite);
-                }
-            }
-            if (!sitesToDeactivate.isEmpty()) {
-                siteRepository.saveAll(sitesToDeactivate);
-                logger.info("Деактивировано {} сайтов, " +
-                        "отсутствующих в конфигурации", sitesToDeactivate.size());
-            }
-            logger.info("Синхронизация конфигурации и БД завершена");
+            logger.debug("Очистка данных сайта: {}", site.getUrl());
+            pageService.deleteAllBySite(site);
+            lemmaService.deleteAllBySite(site);
+            indexService.deleteAllBySite(site);
         } catch (Exception e) {
-            logger.error("Ошибка при синхронизации сайтов с конфигурацией: {}", e.getMessage(), e);
+            logger.warn("Ошибка при очистке данных сайта {}: {}",
+                    site.getUrl(), e.getMessage());
         }
     }
 
 
-    @Override
-    @Transactional
-    public boolean canStartIndexing(long id) {
-        if (id <= 0) {
-            logger.warn("Недопустимый ID: {}", id);
+    public boolean indexPage(String url) {
+        try {
+            logger.info("📥 Ручная индексация страницы: {}", url);
+            SitesList.SiteConfig config = sitesList.getSites().stream()
+                    .filter(s -> url.startsWith(s.getUrl()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Страница не принадлежит ни одному из сайтов в конфигурации"));
+            Site site = siteService.findByUrl(config.getUrl())
+                    .orElseGet(() ->
+                            siteService.createNewSite(config.getUrl(), config.getName()));
+            String path = extractPath(url, site.getUrl());
+            pageService.findByPathAndSite(path, site).ifPresent(page -> {
+                logger.info("Удаляем старую версию страницы: {}", path);
+                try {
+                    indexService.deleteByPage(page);
+                    lemmaService.decrementAllForPage(page);
+                    pageService.delete(page);
+                } catch (Exception e) {
+                    logger.warn("Ошибка при удалении старой версии: {}", e.getMessage());
+                }
+            });
+            long startTime = System.currentTimeMillis();
+            boolean success = crawlerService.indexPage(site, url);
+            long duration = System.currentTimeMillis() - startTime;
+            if (success) {
+                logger.info("✅ Страница успешно проиндексирована за {} мс: {}", duration, url);
+            } else {
+                logger.warn("❌ Не удалось проиндексировать страницу: {}", url);
+            }
+            return success;
+        } catch (IllegalArgumentException e) {
+            logger.error("Ошибка: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            logger.error("Ошибка индексации страницы {}: {}", url, e.getMessage(), e);
             return false;
         }
-        if (indexingStatuses.putIfAbsent(id, Status.INDEXING) != null) {
-            logger.warn("Индексация уже активна для ID: {}", id);
-            return false;
+    }
+
+
+    private String extractPath(String fullUrl, String baseUrl) {
+        String path = fullUrl.substring(baseUrl.length());
+        if (!path.startsWith("/")) {
+            path = "/" + path;
         }
-        logger.info("Индексирование успешно начато для ID: {}", id);
-        return true;
-    }
-
-    @Override
-    @Transactional
-    public String getSiteUrlForId(long id) {
-        Optional<Site> siteOptional = siteRepository.findById(id);
-        return siteOptional.map(Site::getUrl).orElse(null);
-    }
-
-
-    @Override
-    @Transactional
-    public Site generateNewSite(String url) {
-        Site newSite = new Site();
-        newSite.setUrl(url);
-        newSite.setStatus(Status.INDEXING);
-        newSite.setStatusTime(LocalDateTime.now());
-        return newSite;
-    }
-
-
-    @Override
-    public void setIndexingStarted() {
-        indexingInProgress = true;
-        logger.info("Глобальная индексация начата (indexingInProgress = true)");
-    }
-
-
-    @Override
-    public boolean isIndexingInProgress() {
-        return indexingInProgress ||
-                indexingStatuses.values().stream()
-                        .anyMatch(status -> status == Status.INDEXING);
-    }
-
-
-    @Override
-    public void setIndexingStopped() {
-        indexingInProgress = false;
-        indexingStatuses.clear();
-        logger.info("Глобальная индексация остановлена");
-    }
-
-
-    public void updateSiteIndexingStatus(long siteId, Status status) {
-        if (status == Status.INDEXING) {
-            indexingStatuses.put(siteId, status);
-            logger.debug("Добавлен статус INDEXING для сайта ID: {}", siteId);
-        } else {
-            indexingStatuses.remove(siteId);
-            logger.debug("Удален статус INDEXING для сайта ID: {}", siteId);
+        if (path.contains("?")) {
+            path = path.substring(0, path.indexOf("?"));
         }
+        if (path.contains("#")) {
+            path = path.substring(0, path.indexOf("#"));
+        }
+        return path;
     }
 
 
-    public int getActiveIndexingCount() {
-        return (int) indexingStatuses.values().stream()
-                .filter(status -> status == Status.INDEXING)
-                .count();
+    public synchronized void stopIndexing() {
+        if (!indexingState.isActive()) {
+            throw new IllegalStateException("Индексация не запущена");
+        }
+        logger.info("=== ОСТАНОВКА ИНДЕКСАЦИИ ПО ЗАПРОСУ ПОЛЬЗОВАТЕЛЯ ===");
+        indexingState.setActive(false);
+        try {
+            crawlerService.stopAllCrawling();
+        } catch (Exception e) {
+            logger.warn("Ошибка при остановке краулера: {}", e.getMessage());
+        }
+        try {
+            indexingExecutor.shutdownNow();
+        } catch (Exception e) {
+            logger.warn("Ошибка при остановке executor: {}", e.getMessage());
+        }
+        try {
+            siteService.findAll().stream()
+                    .filter(site -> site.getStatus() == Status.INDEXING)
+                    .forEach(site -> {
+                        siteService.updateStatusWithError(
+                                site, "Индексация остановлена пользователем");
+                    });
+        } catch (Exception e) {
+            logger.warn("Ошибка при обновлении статусов: {}", e.getMessage());
+        }
+        logger.info("✅ Индексация остановлена");
     }
 
 
-
-    public DatabaseService getDatabaseService() {
-        return databaseService;
-    }
-
-    public SiteRepository getSiteRepository() {
-        return siteRepository;
-    }
-
-    public IndexRepository getIndexRepository() {
-        return indexRepository;
-    }
-
-    public PageRepository getPageRepository() {
-        return pageRepository;
-    }
-
-    public SitesList getSitesList() {
-        return sitesList;
-    }
-
-    public IndexServiceImpl getIndexServiceImpl() {
-        return indexServiceImpl;
-    }
-
-    public ConcurrentHashMap<Long, Status> getIndexingStatuses() {
-        return indexingStatuses;
-    }
-
-    public void setIndexingInProgress(boolean indexingInProgress) {
-        this.indexingInProgress = indexingInProgress;
-    }
-
-    public EntityManager getEntityManager() {
-        return entityManager;
-    }
-
-    public void setEntityManager(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
-
-    @Override
-    public void logInfo(String message, Object... args) {
-        logger.info(message, args);
+    public void onPageIndexed(Site site) {
+        try {
+            siteService.updateStatusTime(site);
+        } catch (Exception e) {
+            logger.warn("Ошибка при обновлении времени: {}", e.getMessage());
+        }
     }
 }

@@ -11,15 +11,18 @@
             --admin-dark: #1a1a1a;
             --admin-sidebar: #2d2d2d;
         }
+
         body {
             background: #f4f4f4;
             font-family: 'Segoe UI', sans-serif;
             margin: 0;
         }
+
         .admin-wrapper {
             display: flex;
             min-height: 100vh;
         }
+
         /* Боковая панель */
         .admin-sidebar {
             width: 280px;
@@ -29,23 +32,28 @@
             height: 100vh;
             overflow-y: auto;
         }
+
         .admin-sidebar-header {
             padding: 20px;
             background: var(--admin-dark);
             border-bottom: 1px solid #404040;
         }
+
         .admin-sidebar-header h3 {
             margin: 0;
             color: white;
             font-size: 1.5rem;
         }
+
         .admin-sidebar-header small {
             color: #aaa;
             font-size: 0.85rem;
         }
+
         .admin-nav {
             padding: 15px 0;
         }
+
         .admin-nav-item {
             padding: 12px 25px;
             color: #ccc;
@@ -55,19 +63,23 @@
             text-decoration: none;
             border-left: 3px solid transparent;
         }
+
         .admin-nav-item:hover {
             background: #404040;
             color: white;
         }
+
         .admin-nav-item.active {
             background: var(--admin-primary);
             color: white;
             border-left-color: white;
         }
+
         .coming-soon {
             opacity: 0.5;
             pointer-events: none;
         }
+
         .status-badge {
             background: #ffc107;
             color: #000;
@@ -76,12 +88,14 @@
             font-size: 0.7rem;
             margin-left: 10px;
         }
+
         /* Основной контент */
         .admin-content {
             flex: 1;
             margin-left: 280px;
             padding: 20px;
         }
+
         .content-header {
             display: flex;
             justify-content: space-between;
@@ -92,11 +106,13 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
+
         .mode-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
         }
+
         .mode-dot {
             width: 10px;
             height: 10px;
@@ -104,6 +120,7 @@
             background: #28a745;
             display: inline-block;
         }
+
         .module-card {
             background: white;
             border-radius: 8px;
@@ -112,10 +129,12 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             border: 1px solid #eee;
         }
+
         .module-card.clickable {
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .module-card.clickable:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
@@ -172,8 +191,8 @@
             </div>
         </div>
 
-        <!-- СЮДА ПОДСТАВЛЯЮТСЯ ФРАГМЕНТЫ -->
-        <div th:replace="${content}"></div>
+        <!-- СЮДА БУДУТ ВСТАВЛЯТЬСЯ ФРАГМЕНТЫ ЧЕРЕЗ JS -->
+        <div data-admin-content></div>
     </div>
 </div>
 

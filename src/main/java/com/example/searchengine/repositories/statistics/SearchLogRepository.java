@@ -1,6 +1,6 @@
-package com.example.searchengine.repositories;
+package com.example.searchengine.repositories.statistics;
 
-import com.example.searchengine.models.SearchQueryLog;
+import com.example.searchengine.models.statistics.SearchQueryLog;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

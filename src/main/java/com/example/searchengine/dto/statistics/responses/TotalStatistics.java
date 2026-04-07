@@ -1,20 +1,29 @@
-package com.example.searchengine.dto.statistics.reports;
+package com.example.searchengine.dto.statistics.responses;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StatisticsReport {
-
-    private static final Logger logger = LoggerFactory.getLogger(StatisticsReport.class);
+public class TotalStatistics {
+    private static final Logger logger = LoggerFactory.getLogger(TotalStatistics.class);
 
     private long sites;
     private long pages;
     private long lemmas;
-    private boolean isIndexing;
+    private boolean indexing;
 
-    public StatisticsReport() {}
+    public TotalStatistics() {}
+
+
+    public TotalStatistics(long sites, long pages, long lemmas, boolean indexing) {
+        setSites(sites);
+        setPages(pages);
+        setLemmas(lemmas);
+        this.indexing = indexing;
+        logger.info("Created TotalStatistics: {} sites, {} pages, {} lemmas, indexing: {}",
+                sites, pages, lemmas, indexing);
+    }
 
     public long getSites() {
         return sites;
@@ -44,11 +53,11 @@ public class StatisticsReport {
     }
 
     public boolean isIndexing() {
-        return isIndexing;
+        return indexing;
     }
 
-    public void setIndexing(boolean isIndexing) {
-        this.isIndexing = isIndexing;
+    public void setIndexing(boolean indexing) {
+        this.indexing = indexing;
     }
 
     public void addPages(long pages) {
@@ -79,11 +88,11 @@ public class StatisticsReport {
 
     @Override
     public String toString() {
-        return "StatisticsReport{" +
+        return "TotalStatistics{" +
                 "sites=" + sites +
                 ", pages=" + pages +
                 ", lemmas=" + lemmas +
-                ", isIndexing=" + isIndexing +
+                ", indexing=" + indexing +
                 '}';
     }
 }
