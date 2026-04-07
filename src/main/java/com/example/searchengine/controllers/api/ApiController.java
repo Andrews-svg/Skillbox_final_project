@@ -1,7 +1,7 @@
 package com.example.searchengine.controllers.api;
 
-import com.example.searchengine.config.SitesList;
-import com.example.searchengine.dto.statistics.response.ErrorResponseDTO;
+import  com.example.searchengine.config.SitesList;
+import com.example.searchengine.dto.statistics.responses.ErrorResponseDTO;
 import com.example.searchengine.models.SearchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.searchengine.exceptions.*;
 import com.example.searchengine.indexing.*;
-import com.example.searchengine.dto.statistics.StatisticsData;
+import com.example.searchengine.dto.statistics.responses.StatisticsData;
 import com.example.searchengine.services.*;
 
 import java.net.URI;
@@ -150,6 +150,7 @@ public class ApiController {
 
 
     @GetMapping("/statistics")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getStatistics() {
         logger.info("Получение статистики...");
         try {

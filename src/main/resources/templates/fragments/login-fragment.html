@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="login-content">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-lock"></i>
+                <h2>Вход в систему</h2>
+                <p>Введите ваши учетные данные</p>
+            </div>
+
+            <div class="auth-body">
+                <!-- Блок для сообщений -->
+                <div class="global-alert" id="loginAlert" style="display: none;"></div>
+
+                <!-- Демо-данные для разработки -->
+                <div class="demo-credentials">
+                    <p><i class="fas fa-info-circle"></i> <strong>Демо-доступ:</strong></p>
+                    <p><i class="fas fa-user"></i> Логин: <code>user</code> / <code>admin</code></p>
+                    <p><i class="fas fa-key"></i> Пароль: <code>password</code></p>
+                </div>
+
+                <!-- Форма входа -->
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-user"></i>
+                            Имя пользователя
+                        </label>
+                        <input type="text"
+                               name="username"
+                               class="form-control"
+                               placeholder="Введите логин"
+                               required
+                               autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-key"></i>
+                            Пароль
+                        </label>
+                        <input type="password"
+                               name="password"
+                               class="form-control"
+                               placeholder="Введите пароль"
+                               required>
+                    </div>
+
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" name="remember-me" id="rememberMe">
+                        <label for="rememberMe">Запомнить меня</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Войти
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Нет аккаунта?
+                    </p>
+                    <a href="#" onclick="App.switchTab('register'); return false;">
+                        <i class="fas fa-user-plus"></i>
+                        Зарегистрироваться
+                    </a>
+                    <p style="margin-top: 15px;">
+                        <a href="#" style="font-size: 13px;" onclick="alert('Функция восстановления пароля будет добавлена позже'); return false;">
+                            <i class="fas fa-question-circle"></i>
+                            Забыли пароль?
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

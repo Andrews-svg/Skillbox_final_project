@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="11-add-foreign-keys" author="midl">
+
+        <!-- user_roles: связь с app_users -->
+        <addForeignKeyConstraint
+                constraintName="fk_user_roles_user"
+                baseTableName="user_roles"
+                baseColumnNames="user_id"
+                referencedTableName="app_users"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- user_roles: связь с roles -->
+        <addForeignKeyConstraint
+                constraintName="fk_user_roles_role"
+                baseTableName="user_roles"
+                baseColumnNames="role_id"
+                referencedTableName="roles"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- page: связь с site -->
+        <addForeignKeyConstraint
+                constraintName="fk_page_site"
+                baseTableName="page"
+                baseColumnNames="site_id"
+                referencedTableName="site"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- lemma: связь с site -->
+        <addForeignKeyConstraint
+                constraintName="fk_lemma_site"
+                baseTableName="lemma"
+                baseColumnNames="site_id"
+                referencedTableName="site"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- index: связь с page -->
+        <addForeignKeyConstraint
+                constraintName="fk_index_page"
+                baseTableName="`index`"
+                baseColumnNames="page_id"
+                referencedTableName="page"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- index: связь с lemma -->
+        <addForeignKeyConstraint
+                constraintName="fk_index_lemma"
+                baseTableName="`index`"
+                baseColumnNames="lemma_id"
+                referencedTableName="lemma"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- user_activity_log: связь с app_users -->
+        <addForeignKeyConstraint
+                constraintName="fk_activity_user"
+                baseTableName="user_activity_log"
+                baseColumnNames="user_id"
+                referencedTableName="app_users"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- search_query_logs: связь с app_users -->
+        <addForeignKeyConstraint
+                constraintName="fk_search_user"
+                baseTableName="search_query_logs"
+                baseColumnNames="user_id"
+                referencedTableName="app_users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"/>
+
+    </changeSet>
+
+</databaseChangeLog>

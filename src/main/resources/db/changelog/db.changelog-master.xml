@@ -3,17 +3,18 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- Базовые таблицы -->
-    <include file="/db/changelog/create_site_table.xml"/>
-    <include file="/db/changelog/create_page_table.xml"/>
-    <include file="/db/changelog/create_lemma_table.xml"/>
-    <include file="/db/changelog/create_index_table.xml"/>
-
-    <!-- Новые таблицы -->
-    <include file="/db/changelog/create_tokens_table.xml"/>
-    <include file="/db/changelog/create_user_roles_table.xml"/>
-    <include file="/db/changelog/create_app_users_table.xml"/>
+    <include file="01-create-roles-table.xml" relativeToChangelogFile="true"/>
+    <include file="02-create-app-users-table.xml" relativeToChangelogFile="true"/>
+    <include file="03-create-sites-table.xml" relativeToChangelogFile="true"/>
+    <include file="04-create-pages-table.xml" relativeToChangelogFile="true"/>
+    <include file="05-create-lemmas-table.xml" relativeToChangelogFile="true"/>
+    <include file="06-create-index-table.xml" relativeToChangelogFile="true"/>
+    <include file="07-create-user-activity-log-table.xml" relativeToChangelogFile="true"/>
+    <include file="08-create-search-queries-table.xml" relativeToChangelogFile="true"/>
+    <include file="09-create-user-roles-table.xml" relativeToChangelogFile="true"/>
+    <include file="10-insert-roles-data.xml" relativeToChangelogFile="true"/>
+    <include file="11-add-foreign-keys.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

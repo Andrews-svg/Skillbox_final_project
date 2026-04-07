@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="registration-content">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-user-plus"></i>
+                <h2>Регистрация</h2>
+                <p>Создайте новый аккаунт</p>
+            </div>
+
+            <div class="auth-body">
+                <!-- Блок для сообщений -->
+                <div class="global-alert" id="regAlert" style="display: none;"></div>
+
+                <!-- Форма регистрации -->
+                <form id="registrationForm">
+                    <!-- Первая строка: Имя и Фамилия -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <i class="fas fa-user"></i>
+                                Имя
+                            </label>
+                            <input type="text"
+                                   name="firstName"
+                                   class="form-control"
+                                   placeholder="Иван"
+                                   required
+                                   maxlength="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <i class="fas fa-user"></i>
+                                Фамилия
+                            </label>
+                            <input type="text"
+                                   name="lastName"
+                                   class="form-control"
+                                   placeholder="Иванов"
+                                   required
+                                   maxlength="50">
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-envelope"></i>
+                            Email
+                        </label>
+                        <input type="email"
+                               name="email"
+                               class="form-control"
+                               placeholder="example@mail.com"
+                               required
+                               maxlength="100">
+                    </div>
+
+                    <!-- Имя пользователя с проверкой доступности -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-user-tag"></i>
+                            Имя пользователя
+                        </label>
+                        <input type="text"
+                               name="username"
+                               id="reg-username"
+                               class="form-control"
+                               placeholder="john_doe"
+                               required
+                               minlength="3"
+                               maxlength="50"
+                               pattern="[a-zA-Z0-9_]+"
+                               title="Только латинские буквы, цифры и подчеркивание">
+                        <span class="username-status" id="usernameStatus"></span>
+                    </div>
+
+                    <!-- Пароль -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-key"></i>
+                            Пароль
+                        </label>
+                        <input type="password"
+                               name="password"
+                               id="reg-password"
+                               class="form-control"
+                               placeholder="Минимум 8 символов"
+                               required
+                               minlength="8">
+                    </div>
+
+                    <!-- Подтверждение пароля -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-key"></i>
+                            Подтверждение пароля
+                        </label>
+                        <input type="password"
+                               name="confirmPassword"
+                               id="reg-confirm"
+                               class="form-control"
+                               placeholder="Повторите пароль"
+                               required>
+                    </div>
+
+                    <!-- Требования к паролю -->
+                    <div class="password-requirements">
+                        <p><i class="fas fa-shield-alt"></i> Требования к паролю:</p>
+                        <ul>
+                            <li id="req-length">
+                                <i class="fas fa-circle"></i> Минимум 8 символов
+                            </li>
+                            <li id="req-upper">
+                                <i class="fas fa-circle"></i> Хотя бы одна заглавная буква
+                            </li>
+                            <li id="req-lower">
+                                <i class="fas fa-circle"></i> Хотя бы одна строчная буква
+                            </li>
+                            <li id="req-digit">
+                                <i class="fas fa-circle"></i> Хотя бы одна цифра
+                            </li>
+                            <li id="req-special">
+                                <i class="fas fa-circle"></i> Хотя бы один спецсимвол (!@#$%^&*)
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Согласие с условиями -->
+                    <div class="terms" style="margin: 20px 0;">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <label for="agreeTerms">
+                            Я принимаю <a href="#" onclick="alert(
+                            'Условия использования будут добавлены позже'); return false;">условия использования</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        <i class="fas fa-user-check"></i>
+                        Зарегистрироваться
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Уже есть аккаунт?
+                    </p>
+                    <a href="#" onclick="App.switchTab('login'); return false;">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Войти в систему
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Валидация при загрузке фрагмента
+        (function() {
+            const usernameInput = document.getElementById('reg-username');
+            const passwordInput = document.getElementById('reg-password');
+            const confirmInput = document.getElementById('reg-confirm');
+            const usernameStatus = document.getElementById('usernameStatus');
+            const agreeTerms = document.getElementById('agreeTerms');
+            const submitBtn = document.getElementById('submitBtn');
+
+            let usernameTimeout;
+            let isUsernameAvailable = false;
+            let isPasswordValid = false;
+            let doPasswordsMatch = false;
+            let isTermsAgreed = false;
+
+            // Проверка доступности имени пользователя
+            if (usernameInput) {
+                usernameInput.addEventListener('input', function() {
+                    clearTimeout(usernameTimeout);
+                    const username = this.value.trim();
+
+                    if (username.length < 3) {
+                        if (usernameStatus) usernameStatus.innerHTML = '';
+                        isUsernameAvailable = false;
+                        updateSubmitButton();
+                        return;
+                    }
+
+                    usernameStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    usernameTimeout = setTimeout(() => {
+                        fetch('/api/auth/check-username/' + encodeURIComponent(username))
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.available) {
+                                    usernameStatus.innerHTML =
+                                    '<i class="fas fa-check-circle" style="color: #276749;"></i>';
+                                    usernameStatus.className = 'username-status available';
+                                    isUsernameAvailable = true;
+                                } else {
+                                    usernameStatus.innerHTML =
+                                     '<i class="fas fa-times-circle" style="color: #c53030;"></i>';
+                                    usernameStatus.className = 'username-status unavailable';
+                                    isUsernameAvailable = false;
+                                }
+                                updateSubmitButton();
+                            })
+                            .catch(() => {
+                                usernameStatus.innerHTML = '';
+                                isUsernameAvailable = false;
+                                updateSubmitButton();
+                            });
+                    }, 500);
+                });
+            }
+
+            // Проверка пароля
+            function validatePassword() {
+                const password = passwordInput.value;
+
+                // Проверка длины
+                const lengthValid = password.length >= 8;
+                document.getElementById('req-length').innerHTML = lengthValid
+                    ? '<i class="fas fa-check-circle" style="color: #276749;"></i> Минимум 8 символов'
+                    : '<i class="fas fa-circle"></i> Минимум 8 символов';
+
+                // Проверка заглавной буквы
+                const upperValid = /[A-Z]/.test(password);
+                document.getElementById('req-upper').innerHTML = upperValid
+                    ? '<i class="fas fa-check-circle" style="color: #276749;"></i> Хотя бы одна заглавная буква'
+                    : '<i class="fas fa-circle"></i> Хотя бы одна заглавная буква';
+
+                // Проверка строчной буквы
+                const lowerValid = /[a-z]/.test(password);
+                document.getElementById('req-lower').innerHTML = lowerValid
+                    ? '<i class="fas fa-check-circle" style="color: #276749;"></i> Хотя бы одна строчная буква'
+                    : '<i class="fas fa-circle"></i> Хотя бы одна строчная буква';
+
+                // Проверка цифры
+                const digitValid = /[0-9]/.test(password);
+                document.getElementById('req-digit').innerHTML = digitValid
+                    ? '<i class="fas fa-check-circle" style="color: #276749;"></i> Хотя бы одна цифра'
+                    : '<i class="fas fa-circle"></i> Хотя бы одна цифра';
+
+                // Проверка спецсимвола
+                const specialValid = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+                document.getElementById('req-special').innerHTML = specialValid
+                    ? '<i class="fas fa-check-circle" style="color: #276749;"></i> Хотя бы один спецсимвол'
+                    : '<i class="fas fa-circle"></i> Хотя бы один спецсимвол';
+
+                isPasswordValid = lengthValid && upperValid && lowerValid && digitValid && specialValid;
+                checkPasswordsMatch();
+                updateSubmitButton();
+            }
+
+            // Проверка совпадения паролей
+            function checkPasswordsMatch() {
+                const password = passwordInput.value;
+                const confirm = confirmInput.value;
+
+                if (confirm.length > 0) {
+                    if (password === confirm) {
+                        confirmInput.classList.remove('is-invalid');
+                        doPasswordsMatch = true;
+                    } else {
+                        confirmInput.classList.add('is-invalid');
+                        doPasswordsMatch = false;
+                    }
+                } else {
+                    confirmInput.classList.remove('is-invalid');
+                    doPasswordsMatch = false;
+                }
+                updateSubmitButton();
+            }
+
+            // Обновление состояния кнопки
+            function updateSubmitButton() {
+                const isValid = isUsernameAvailable && isPasswordValid && doPasswordsMatch && isTermsAgreed;
+                if (submitBtn) {
+                    submitBtn.disabled = !isValid;
+                }
+            }
+
+            if (passwordInput) {
+                passwordInput.addEventListener('input', validatePassword);
+            }
+
+            if (confirmInput) {
+                confirmInput.addEventListener('input', checkPasswordsMatch);
+            }
+
+            if (agreeTerms) {
+                agreeTerms.addEventListener('change', function() {
+                    isTermsAgreed = this.checked;
+                    updateSubmitButton();
+                });
+            }
+        })();
+    </script>
+</div>
+</body>
+</html>
