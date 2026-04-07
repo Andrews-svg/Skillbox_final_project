@@ -1,82 +1,431 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+
+    <!-- Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .auth-header i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .auth-header h2 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .auth-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+
+        .auth-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group > label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group > label i {
+            margin-right: 5px;
+            color: #667eea;
+        }
+
+        /* ===== СТИЛИ ДЛЯ КОНТЕЙНЕРА ПАРОЛЯ ===== */
+        .password_input_container {
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+
+        .password_input_container input {
+            outline: none;
+            font-size: 16px;
+            padding: 12px 15px;
+            width: 100%;
+            background-color: #fff;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            color: #333;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .password_input_container input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .password_input_container input.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .password_input_container label {
+            position: absolute;
+            margin: 0 5px;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: -1;
+            background-color: #fff;
+            padding: 0 5px;
+            color: #aaa;
+            font-size: 14px;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+
+        .password_input_container input:focus + label,
+        .password_input_container input:not(:placeholder-shown) + label {
+            top: 0;
+            font-size: 12px;
+            z-index: 1;
+            color: #667eea;
+        }
+
+        .password_input_container input:focus + label {
+            color: #667eea;
+        }
+
+        .password_input_container button {
+            cursor: pointer;
+            position: absolute;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            top: 0;
+            right: 0;
+            background-color: transparent;
+            border: none;
+            color: #667eea;
+            padding: 0 15px;
+            z-index: 2;
+        }
+
+        .password_input_container button:hover {
+            opacity: 0.8;
+        }
+
+        .password_input_container button svg {
+            width: 20px;
+            height: 20px;
+            stroke: #667eea;
+        }
+        /* ===== КОНЕЦ СТИЛЕЙ ДЛЯ ПАРОЛЯ ===== */
+
+        .btn {
+            display: inline-block;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e1e1;
+        }
+
+        .auth-footer p {
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .auth-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .global-alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .global-alert.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .global-alert.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+    </style>
+</head>
 <body>
-<div th:fragment="login-content">
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <i class="fas fa-lock"></i>
-                <h2>Вход в систему</h2>
-                <p>Введите ваши учетные данные</p>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-lock"></i>
+            <h2>Вход в систему</h2>
+            <p>Введите ваши учетные данные</p>
+        </div>
+
+        <div class="auth-body">
+            <div class="global-alert" id="loginAlert" style="display: none;"></div>
+
+            <div class="demo-credentials">
+                <p><i class="fas fa-info-circle"></i> <strong>Демо:</strong> user:password, admin:admin123</p>
             </div>
 
-            <div class="auth-body">
-                <!-- Блок для сообщений -->
-                <div class="global-alert" id="loginAlert" style="display: none;"></div>
-
-                <!-- Демо-данные для разработки -->
-                <div class="demo-credentials">
-                    <p><i class="fas fa-info-circle"></i> <strong>Демо-доступ:</strong></p>
-                    <p><i class="fas fa-user"></i> Логин: <code>user</code> / <code>admin</code></p>
-                    <p><i class="fas fa-key"></i> Пароль: <code>password</code></p>
-                </div>
-
-                <!-- Форма входа -->
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label>
-                            <i class="fas fa-user"></i>
-                            Имя пользователя
-                        </label>
-                        <input type="text"
+            <form id="loginForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Имя пользователя</label>
+                    <div class="password_input_container">
+                        <input placeholder=" "
+                               type="text"
                                name="username"
+                               id="login-username"
                                class="form-control"
-                               placeholder="Введите логин"
-                               required
-                               autofocus>
+                               required autofocus>
+                        <label for="login-username">Введите логин</label>
                     </div>
-
-                    <div class="form-group">
-                        <label>
-                            <i class="fas fa-key"></i>
-                            Пароль
-                        </label>
-                        <input type="password"
-                               name="password"
-                               class="form-control"
-                               placeholder="Введите пароль"
-                               required>
-                    </div>
-
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" name="remember-me" id="rememberMe">
-                        <label for="rememberMe">Запомнить меня</label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Войти
-                    </button>
-                </form>
-
-                <div class="auth-footer">
-                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
-                        Нет аккаунта?
-                    </p>
-                    <a href="#" onclick="App.switchTab('register'); return false;">
-                        <i class="fas fa-user-plus"></i>
-                        Зарегистрироваться
-                    </a>
-                    <p style="margin-top: 15px;">
-                        <a href="#" style="font-size: 13px;" onclick="alert('Функция восстановления пароля будет добавлена позже'); return false;">
-                            <i class="fas fa-question-circle"></i>
-                            Забыли пароль?
-                        </a>
-                    </p>
                 </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Пароль</label>
+                    <div class="password_input_container">
+                        <input placeholder=" "
+                               type="password"
+                               name="password"
+                               id="login-password"
+                               class="form-control"
+                               required>
+                        <label for="login-password">Введите пароль</label>
+                    </div>
+                </div>
+
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" name="remember-me" id="rememberMe">
+                    <label for="rememberMe">Запомнить меня</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Нет аккаунта? <a href="#" onclick="App.switchTab('register'); return false;">Зарегистрироваться</a></p>
+                <p><a href="#" onclick="alert('Функция восстановления пароля будет добавлена'); return false;">Забыли пароль?</a></p>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ===== ДАННЫЕ ДЛЯ ГЛАЗКОВ =====
+        const eyeData = {
+            password: {
+                type: 'text',
+                img: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>`
+            },
+            text: {
+                type: 'password',
+                img: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>`
+            }
+        };
+
+        // ===== ФУНКЦИЯ СОЗДАНИЯ ГЛАЗКОВ =====
+        function createEyeButtons() {
+            console.log('👁️ Login: создание глазков');
+            let createdCount = 0;
+
+            document.querySelectorAll('.password_input_container').forEach(container => {
+                if (container.querySelector('.password-toggle-btn')) return;
+
+                const input = container.querySelector('input[type="password"]');
+                if (!input) return;
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'password-toggle-btn';
+                button.innerHTML = eyeData.text.img;
+                button.style.cssText = `
+                    cursor: pointer;
+                    position: absolute;
+                    height: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    top: 0;
+                    right: 0;
+                    background: transparent;
+                    border: none;
+                    padding: 0 15px;
+                    z-index: 10;
+                `;
+
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const currentType = input.type;
+                    const newData = eyeData[currentType];
+                    input.type = newData.type;
+                    this.innerHTML = newData.img;
+                });
+
+                container.appendChild(button);
+                createdCount++;
+            });
+
+            if (createdCount > 0) {
+                console.log(`✅ Login: глазки созданы (${createdCount} шт.)`);
+            }
+            return createdCount;
+        }
+
+        // ===== УДАЛЕНИЕ СТАРЫХ ГЛАЗКОВ =====
+        function removeOldEyes() {
+            document.querySelectorAll('.password-toggle-btn').forEach(btn => btn.remove());
+        }
+
+        // ===== ОБРАБОТЧИК ФОРМЫ =====
+        function setupLoginForm() {
+            const form = document.getElementById('loginForm');
+            if (!form) return;
+
+            form.removeEventListener('submit', handleSubmit);
+            form.addEventListener('submit', handleSubmit);
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            console.log('🔐 Login: отправка формы');
+
+            const username = document.getElementById('login-username')?.value;
+            const password = document.getElementById('login-password')?.value;
+
+            if (!username || !password) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            if (window.Auth && typeof window.Auth.loginUser === 'function') {
+                window.Auth.loginUser({ username, password })
+                    .done(() => console.log('✅ Успешный вход'))
+                    .fail((err) => console.error('❌ Ошибка входа', err));
+            } else {
+                console.log('Демо-режим: вход с', username, password);
+                alert('Демо: вход выполнен');
+            }
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ ФРАГМЕНТА =====
+        function initLoginFragment() {
+            console.log('🔐 LoginFragment: инициализация');
+
+            removeOldEyes();
+            createEyeButtons();
+
+            // 👇 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ - СЛУШАТЕЛЬ ПЕРЕКЛЮЧЕНИЯ
+            document.addEventListener('fragmentLoaded', function onFragmentLoad() {
+                console.log('👁️ fragmentLoaded -> пересоздаём глазки');
+                removeOldEyes();
+                createEyeButtons();
+            });
+
+            setupLoginForm();
+        }
+
+        // ===== ЗАПУСК =====
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLoginFragment);
+        } else {
+            initLoginFragment();
+        }
+    })();
+</script>
+
 </body>
 </html>

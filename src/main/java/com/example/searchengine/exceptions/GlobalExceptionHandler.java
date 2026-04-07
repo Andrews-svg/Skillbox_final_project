@@ -1,6 +1,6 @@
 package com.example.searchengine.exceptions;
 
-import com.example.searchengine.dto.statistics.response.ErrorResponseDTO;
+import com.example.searchengine.dto.statistics.responses.ErrorResponse;
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,14 +40,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ClientAbortException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     @ResponseBody
-    public ErrorResponseDTO handleClientAbortException(ClientAbortException ex) {
+    public ErrorResponse handleClientAbortException(ClientAbortException ex) {
         if (isManualRestartInProgress()) {
             return null;
         }
 
 
         logger.error("Ошибка обработки запроса:", ex);
-        return new ErrorResponseDTO(
+        return new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "Сервис временно недоступен."
@@ -58,8 +58,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ResponseBody
-    public ErrorResponseDTO handleNotFound(CustomNotFoundException ex) {
-        return new ErrorResponseDTO(
+    public ErrorResponse handleNotFound(CustomNotFoundException ex) {
+        return new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage()
@@ -69,8 +69,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IndexingStartFailureException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    public ErrorResponseDTO handleIndexingStartFailure(IndexingStartFailureException ex) {
-        return new ErrorResponseDTO(
+    public ErrorResponse handleIndexingStartFailure(IndexingStartFailureException ex) {
+        return new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ex.getMessage()
@@ -81,9 +81,9 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
     @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ErrorResponseDTO handleGenericErrors(Exception ex) {
+    public ErrorResponse handleGenericErrors(Exception ex) {
         logger.error("Внутренняя ошибка сервера:", ex);
-        return new ErrorResponseDTO(
+        return new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Произошла внутренняя ошибка сервера: " + ex.getMessage()

@@ -1,76 +1,154 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Общие аппендеры -->
+    <!-- ==================== ПЕРЕМЕННЫЕ ==================== -->
+    <property name="LOGS_DIR" value="./logs" />
 
-    <!-- Основной общий аппендер для всех уровней логирования -->
-    <appender name="COMMON_APPENDER" class="ch.qos.logback.core.FileAppender">
-        <file>logs/app.log</file>
+    <!-- ==================== DEV АППЕНДЕРЫ ==================== -->
+    <appender name="DEV_APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/dev/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/dev/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Аппендер для логов уровня ERROR -->
-    <appender name="ERROR_APPENDER" class="ch.qos.logback.core.FileAppender">
-        <file>logs/error.log</file>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+    <appender name="DEV_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/dev/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
         </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/dev/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Профиль DEV -->
+    <!-- ==================== TEST АППЕНДЕРЫ ==================== -->
+    <appender name="TEST_APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/test/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/test/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="TEST_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/test/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/test/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== PROD АППЕНДЕРЫ ==================== -->
+    <appender name="PROD_APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/prod/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/prod/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="PROD_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/prod/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/prod/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== SQL АППЕНДЕР (общий) ==================== -->
+    <appender name="SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/sql.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS_DIR}/sql.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== SQL ЛОГГЕРЫ ==================== -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="SQL_FILE" />
+    </logger>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="SQL_FILE" />
+    </logger>
+
+    <!-- ==================== ПРОФИЛЬ DEV ==================== -->
     <springProfile name="dev">
-
-        <!-- Логирование обычных сообщений в dev профиль -->
-        <appender name="DEV_APPENDER" class="ch.qos.logback.core.FileAppender">
-            <file>logs/dev-app.log</file>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            </encoder>
-        </appender>
-
-        <!-- Настройка корневого логгера для профиля DEV -->
         <root level="DEBUG">
-            <appender-ref ref="DEV_APPENDER" />
-            <appender-ref ref="ERROR_APPENDER" />
+            <appender-ref ref="DEV_APP_FILE" />
+            <appender-ref ref="DEV_ERROR_FILE" />
         </root>
+        <logger name="com.example.searchengine" level="DEBUG" additivity="false">
+            <appender-ref ref="DEV_APP_FILE" />
+            <appender-ref ref="DEV_ERROR_FILE" />
+        </logger>
     </springProfile>
 
-    <!-- Профиль TEST -->
+    <!-- ==================== ПРОФИЛЬ TEST ==================== -->
     <springProfile name="test">
-        <appender name="TEST_APPENDER" class="ch.qos.logback.core.FileAppender">
-            <file>logs/test-app.log</file>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            </encoder>
-        </appender>
-
-        <!-- Настройка корневого логгера для профиля TEST -->
-        <root level="DEBUG">
-            <appender-ref ref="TEST_APPENDER" />
-            <appender-ref ref="ERROR_APPENDER" />
+        <root level="WARN">
+            <appender-ref ref="TEST_APP_FILE" />
+            <appender-ref ref="TEST_ERROR_FILE" />
         </root>
+        <logger name="com.example.searchengine" level="DEBUG" additivity="false">
+            <appender-ref ref="TEST_APP_FILE" />
+            <appender-ref ref="TEST_ERROR_FILE" />
+        </logger>
+        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <appender-ref ref="SQL_FILE" />
+        </logger>
     </springProfile>
 
-    <!-- Профиль PROD -->
+    <!-- ==================== ПРОФИЛЬ PROD ==================== -->
     <springProfile name="prod">
-        <appender name="PROD_APPENDER" class="ch.qos.logback.core.FileAppender">
-            <file>logs/prod-app.log</file>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            </encoder>
-        </appender>
+        <root level="WARN">
+            <appender-ref ref="PROD_APP_FILE" />
+            <appender-ref ref="PROD_ERROR_FILE" />
+        </root>
+        <logger name="com.example.searchengine" level="INFO" additivity="false">
+            <appender-ref ref="PROD_APP_FILE" />
+            <appender-ref ref="PROD_ERROR_FILE" />
+        </logger>
+        <logger name="org.hibernate.SQL" level="WARN" additivity="false">
+            <appender-ref ref="SQL_FILE" />
+        </logger>
+    </springProfile>
 
-        <!-- Настройка корневого логгера для профиля PROD -->
+    <!-- ==================== ПРОФИЛЬ ПО УМОЛЧАНИЮ ==================== -->
+    <springProfile name="default">
         <root level="DEBUG">
-            <appender-ref ref="PROD_APPENDER" />
-            <appender-ref ref="ERROR_APPENDER" />
+            <appender-ref ref="DEV_APP_FILE" />
+            <appender-ref ref="DEV_ERROR_FILE" />
         </root>
     </springProfile>
 

@@ -1,8 +1,10 @@
-package com.example.searchengine.services;
+package com.example.searchengine.services.crawler;
 
 import com.example.searchengine.config.CrawlerConfig;
 import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Site;
+import com.example.searchengine.services.LemmaService;
+import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.indexing.IndexService;
 import com.example.searchengine.services.indexing.IndexingState;
 import com.example.searchengine.utils.Lemmatizer;
@@ -14,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,6 +33,7 @@ public class PageProcessor {
     private final UrlFilter urlFilter;
     private final IndexingState indexingState;
     private final SeleniumFetcher seleniumFetcher;
+    private final WatchdogService watchdogService;
 
     public PageProcessor(PageService pageService,
                          LemmaService lemmaService,
@@ -38,7 +42,8 @@ public class PageProcessor {
                          CrawlerConfig crawlerConfig,
                          UrlFilter urlFilter,
                          IndexingState indexingState,
-                         SeleniumFetcher seleniumFetcher) {
+                         SeleniumFetcher seleniumFetcher,
+                         WatchdogService watchdogService) {
         this.pageService = pageService;
         this.lemmaService = lemmaService;
         this.indexService = indexService;
@@ -47,11 +52,14 @@ public class PageProcessor {
         this.urlFilter = urlFilter;
         this.indexingState = indexingState;
         this.seleniumFetcher = seleniumFetcher;
+        this.watchdogService = watchdogService;
     }
 
-
     public Optional<Page> processPage(Site site, String pageUrl) {
+        watchdogService.notifyActivity();
         long startTime = System.currentTimeMillis();
+        boolean useBrowser = seleniumFetcher.shouldUseBrowser(pageUrl);
+        logger.info("🔍 shouldUseBrowser для {} = {}", pageUrl, useBrowser);
         try {
             if (!indexingState.isActive()) {
                 logger.debug("Индексация остановлена, пропускаем {}", pageUrl);
@@ -72,7 +80,7 @@ public class PageProcessor {
                 return Optional.empty();
             }
             Document doc;
-            if (seleniumFetcher.shouldUseBrowser(pageUrl)) {
+            if (useBrowser) {
                 doc = seleniumFetcher.fetchWithBrowser(pageUrl);
                 if (doc == null) {
                     return Optional.empty();
@@ -81,8 +89,6 @@ public class PageProcessor {
                 logger.debug(">>> Заголовок страницы: {}", doc.title());
                 logger.debug(">>> Размер HTML: {} байт", doc.html().length());
                 logger.debug(">>> Количество ссылок на странице: {}", doc.select("a[href]").size());
-                boolean hasProducts = doc.html().contains("product") || doc.html().contains("catalog") || doc.html().contains("товар") || doc.html().contains("каталог");
-                logger.debug(">>> Есть признаки товаров: {}", hasProducts);
             } else {
                 Connection.Response response = Jsoup.connect(pageUrl)
                         .userAgent(USER_AGENT)
@@ -138,7 +144,8 @@ public class PageProcessor {
             }
             Map<String, Integer> textLemmas = lemmatizer.getLemmasFrequency(text);
             Map<String, Integer> titleLemmas = lemmatizer.getLemmasFrequency(title);
-            titleLemmas.forEach((lemma, count) -> textLemmas.merge(lemma, count * 2, Integer::sum));
+            titleLemmas.forEach((lemma, count) ->
+                    textLemmas.merge(lemma, count * 2, Integer::sum));
             int lemmaCount = 0;
             for (Map.Entry<String, Integer> entry : textLemmas.entrySet()) {
                 if (!indexingState.isActive()) {
@@ -150,11 +157,13 @@ public class PageProcessor {
                     indexService.save(page, lemma, entry.getValue());
                     lemmaCount++;
                 } catch (Exception e) {
-                    logger.error("Ошибка при сохранении леммы '{}': {}", entry.getKey(), e.getMessage());
+                    logger.error("Ошибка при сохранении леммы '{}': {}",
+                            entry.getKey(), e.getMessage());
                 }
             }
             long duration = System.currentTimeMillis() - startTime;
-            logger.info("✅ Страница обработана: {} ({} лемм, {} мс)", normalizedPath, lemmaCount, duration);
+            logger.info("✅ Страница обработана: {} ({} лемм, {} мс)",
+                    normalizedPath, lemmaCount, duration);
             return Optional.of(page);
         } catch (IOException e) {
             logger.error("❌ Ошибка загрузки {}: {}", pageUrl, e.getMessage());
@@ -164,7 +173,8 @@ public class PageProcessor {
             logger.error("⛔ Прервана загрузка {}", pageUrl);
             return Optional.empty();
         } catch (Exception e) {
-            logger.error("🔥 Неожиданная ошибка при обработке {}: {}", pageUrl, e.getMessage(), e);
+            logger.error("🔥 Неожиданная ошибка при обработке {}: {}",
+                    pageUrl, e.getMessage(), e);
             return Optional.empty();
         }
     }

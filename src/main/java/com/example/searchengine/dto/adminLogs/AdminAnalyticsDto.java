@@ -1,4 +1,4 @@
-package com.example.searchengine.dto;
+package com.example.searchengine.dto.adminLogs;
 
 import java.util.List;
 import java.util.Map;

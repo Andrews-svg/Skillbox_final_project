@@ -1,4 +1,4 @@
-package com.example.searchengine.dto.statisticsResponse;
+package com.example.searchengine.dto.statistics.responses;
 
 public class SuccessResponse {
     private final boolean result;

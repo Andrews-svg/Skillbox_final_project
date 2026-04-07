@@ -11,12 +11,12 @@
                 <h5 class="text-primary">🔵 РЕЖИМ: ОДИН САЙТ</h5>
                 <hr>
                 <p><strong>Глубина обхода:</strong> 10 уровней</p>
-                <p><strong>Таймаут:</strong> 20 секунд</p>
+                <p><strong>Тайм-аут:</strong> 20 секунд</p>
                 <p><strong>Потоков:</strong> 24 (максимальная скорость)</p>
                 <p><strong>Задержка:</strong> 500-1500 мс</p>
                 <p><strong>Watchdog:</strong> 30 сек бездействия</p>
                 <p><small class="text-muted">Идеально для глубокой индексации одного ресурса</small></p>
-                <button class="btn btn-primary" onclick="setSingleMode()">АКТИВИРОВАТЬ РЕЖИМ</button>
+                <button class="btn btn-primary" id="singleModeBtn">АКТИВИРОВАТЬ РЕЖИМ</button>
             </div>
         </div>
 
@@ -25,35 +25,16 @@
                 <h5 class="text-warning">🟡 РЕЖИМ: НЕСКОЛЬКО САЙТОВ</h5>
                 <hr>
                 <p><strong>Глубина обхода:</strong> 5 уровней</p>
-                <p><strong>Таймаут:</strong> 30 секунд</p>
+                <p><strong>Тайм-аут:</strong> 30 секунд</p>
                 <p><strong>Потоков:</strong> 8 на каждый сайт</p>
                 <p><strong>Задержка:</strong> 1000-3000 мс</p>
                 <p><strong>Watchdog:</strong> 2 минуты бездействия</p>
                 <p><small class="text-muted">Для параллельной индексации нескольких ресурсов</small></p>
-                <button class="btn btn-warning" onclick="setMultiMode()">АКТИВИРОВАТЬ РЕЖИМ</button>
+                <button class="btn btn-warning" id="multiModeBtn">АКТИВИРОВАТЬ РЕЖИМ</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    function setSingleMode() {
-        fetch('/admin/mode/single', {method: 'POST'})
-            .then(response => response.text())
-            .then(data => {
-                alert(data);
-                location.reload();
-            });
-    }
-
-    function setMultiMode() {
-        fetch('/admin/mode/multi', {method: 'POST'})
-            .then(response => response.text())
-            .then(data => {
-                alert(data);
-                location.reload();
-            });
-    }
-</script>
 </body>
 </html>

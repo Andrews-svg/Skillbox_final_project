@@ -1,46 +1,42 @@
-package com.example.searchengine.config;
+package com.example.searchengine.models;
 
-import com.example.searchengine.models.Page;
-import com.example.searchengine.models.Status;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "site")
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Site {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "ENUM('INDEXING', 'INDEXED', 'FAILED')")
     private Status status;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "status_time", nullable = false)
     private LocalDateTime statusTime;
 
-    @NotBlank(message = "URL cannot be blank.")
-    @Column(nullable = false, unique = true, length = 255)
+    @NotBlank
+    @Column(nullable = false, length = 255)
     private String url;
 
-    @NotBlank(message = "Name cannot be blank.")
+    @NotBlank
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(length = 2048)
+    @Column(columnDefinition = "TEXT")
     private String lastError;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Page> pages = new HashSet<>();
 
     public Site() {}
@@ -50,16 +46,6 @@ public class Site {
         this.statusTime = statusTime;
         this.url = url;
         this.name = name;
-    }
-
-    public Site(long id, Status status, LocalDateTime statusTime,
-                String url, String name, String lastError) {
-        this.id = id;
-        this.status = status;
-        this.statusTime = statusTime;
-        this.url = url;
-        this.name = name;
-        this.lastError = lastError;
     }
 
     public Site(String name, String url) {
@@ -81,20 +67,15 @@ public class Site {
         page.setSite(this);
     }
 
-
-    public boolean isPersisted() {
-        return getId() > 0;
-    }
-
     public void updateStatusTime() {
         this.statusTime = LocalDateTime.now();
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -106,6 +87,7 @@ public class Site {
         this.status = status;
     }
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Europe/Moscow")
     public LocalDateTime getStatusTime() {
         return statusTime;
     }

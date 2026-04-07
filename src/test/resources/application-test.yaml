@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password: ''
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: false
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+      format_sql: true
+      use_sql_comments: true
+      generate_statistics: false
+      session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 100
+      id.new_generator_mappings: true
+      order_inserts: true
+      order_updates: true
+      jdbc.time_zone: UTC
+      cache.use_second_level_cache: false
+  thymeleaf:
+    mode: LEGACYHTML5
+    cache: false
+  mvc.contentnegotiation.favor-path-extension: true
+  mvc.contentnegotiation.ignore-accept-header: true
+  mvc.contentnegotiation.media-types.css: text/css
+  mvc.contentnegotiation.media-types.js: application/javascript
+  server.port: 0
+  mail.host: localhost
+  mail.port: 1025
+  mail.protocol: smtp
+  mail.default-encoding: UTF-8
+  application.upload-dir: "/tmp/uploads"
+  logging.level.root: DEBUG
+  logging.level.org.hibernate.SQL: DEBUG
+  logging.level.org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+  logging.level.org.springframework: DEBUG
+  logging.level.org.springframework.security: DEBUG
+  logging.provider: logback
+  logging.file.name: test-app.log
+  logging.file.path: logs

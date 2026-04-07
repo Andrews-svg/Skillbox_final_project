@@ -1,209 +1,210 @@
 package com.example.searchengine.services;
 
-import com.example.searchengine.config.Site;
-import com.example.searchengine.indexing.AdvancedIndexOperations;
-import com.example.searchengine.indexing.IndexService;
+import com.example.searchengine.models.*;
+import com.example.searchengine.dto.search.SearchData;
+import com.example.searchengine.dto.search.SearchResponse;
+import com.example.searchengine.services.indexing.IndexService;
 import com.example.searchengine.utils.Lemmatizer;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.safety.Safelist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.searchengine.models.*;
-import com.example.searchengine.dto.statistics.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-
+import java.util.stream.Collectors;
 
 @Service
 public class SearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
+    private static final int SNIPPET_WORDS_BEFORE = 7;
+    private static final int SNIPPET_WORDS_AFTER = 7;
+    private static final int MAX_SNIPPET_LENGTH = 300;
 
-    private final IndexService indexService;
-    private final PageService pageService;
-    private final Lemmatizer lemmatizer;
     private final LemmaService lemmaService;
+    private final IndexService indexService;
     private final SiteService siteService;
-    private final AdvancedIndexOperations advancedIndexOperations;
+    private final Lemmatizer lemmatizer;
 
-    @Autowired
-    public SearchService(IndexService indexService,
-                         PageService pageService,
-                         Lemmatizer lemmatizer, LemmaService lemmaService,
+    public SearchService(LemmaService lemmaService,
+                         IndexService indexService,
                          SiteService siteService,
-                         AdvancedIndexOperations advancedIndexOperations) {
-        this.indexService = indexService;
-        this.pageService = pageService;
-        this.lemmatizer = lemmatizer;
+                         Lemmatizer lemmatizer) {
         this.lemmaService = lemmaService;
+        this.indexService = indexService;
         this.siteService = siteService;
-        this.advancedIndexOperations = advancedIndexOperations;
+        this.lemmatizer = lemmatizer;
     }
 
 
-
-    public SearchResult search(
-            String query, String siteURL, int offset, int limit) {
+    public SearchResponse search(String query, String siteUrl, int offset, int limit) {
         if (query == null || query.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "The 'query' parameter cannot be null or empty");
+            throw new IllegalArgumentException("Задан пустой поисковый запрос");
         }
-        if (siteURL == null || siteURL.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "The 'siteURL' parameter cannot be null or empty");
+        logger.info("Поисковый запрос: '{}', сайт: {}", query, siteUrl != null ? siteUrl : "все");
+        Set<String> lemmaSet = lemmatizer.getUniqueLemmas(query);
+        if (lemmaSet.isEmpty()) {
+            logger.info("Не удалось извлечь леммы из запроса: {}", query);
+            return SearchResponse.success(0, Collections.emptyList());
         }
-        logger.info("Starting search with query: '{}' and siteURL: '{}'", query, siteURL);
-
-        ArrayList<Data> dataList = searchStringToDataArray(query, siteURL);
-        Integer totalResults = (int) dataList.size();
-
-        List<Data> paginatedResults = dataList.stream()
+        List<Site> sites = getSitesForSearch(siteUrl);
+        if (sites.isEmpty()) {
+            return SearchResponse.success(0, Collections.emptyList());
+        }
+        List<SearchData> allResults = new ArrayList<>();
+        for (Site site : sites) {
+            allResults.addAll(searchInSite(lemmaSet, site));
+        }
+        allResults.sort((a, b) ->
+                Double.compare(b.getRelevance(), a.getRelevance()));
+        int total = allResults.size();
+        List<SearchData> paginated = allResults.stream()
                 .skip(offset)
                 .limit(limit)
-                .toList();
-
-        return new SearchResult(true, totalResults, paginatedResults);
+                .collect(Collectors.toList());
+        logger.info("Найдено результатов: {}, показано: {}", total, paginated.size());
+        return SearchResponse.success(total, paginated);
     }
 
 
-    public ArrayList<Data> searchStringToDataArray(String searchInput,
-                                                   String siteURL) {
-        logger.info("Starting search with input: '{}' and siteURL: '{}'",
-                searchInput, siteURL);
-
-        try {
-            ArrayList<Lemma> sortedArray =
-                    inputToLemmasSortedArrayWithoutTooFrequentLemmas(searchInput, siteURL);
-            if (sortedArray.isEmpty()) {
-                logger.warn("No valid search terms were extracted from the input.");
-                return new ArrayList<>();
+    private List<Site> getSitesForSearch(String siteUrl) {
+        if (siteUrl != null && !siteUrl.isEmpty()) {
+            Optional<Site> site = siteService.findByUrl(siteUrl);
+            if (site.isEmpty()) {
+                logger.warn("Сайт с URL {} не найден", siteUrl);
+                return Collections.emptyList();
             }
-            List<Index> leastFrequentLemmaIndexes =
-                    getLeastFrequentLemmaIndexes(sortedArray);
-            return lemmaIndexesToData(leastFrequentLemmaIndexes, sortedArray);
-        } catch (RuntimeException e) {
-            logger.error("An error occurred during the search process: {}",
-                    e.getMessage(), e);
-            return new ArrayList<>();
+            if (site.get().getStatus() != Status.INDEXED) {
+                logger.warn("Сайт {} еще не проиндексирован (статус: {})",
+                        siteUrl, site.get().getStatus());
+                return Collections.emptyList();
+            }
+            return List.of(site.get());
+        } else {
+            return siteService.findAll().stream()
+                    .filter(s -> s.getStatus() == Status.INDEXED)
+                    .collect(Collectors.toList());
         }
     }
 
 
-    public ArrayList<Data> lemmaIndexesToData(List<Index> leastFrequentLemmaIndexes,
-                                              ArrayList<Lemma> sortedArray) {
-        ArrayList<Data> resultList = new ArrayList<>();
-        leastFrequentLemmaIndexes.forEach(index -> {
-            try {
-                Page page = index.getPage();
-                Site site = page.getSite();
-                Lemma lemma = index.getLemma();
-                Data data = new Data(null,
-                        site,
-                        site.getName(),
-                        page.getPath(),
-                        page.getPath(),
-                        findPageTitle(page.getContent()),
-                        findPageSnippet(page.getContent(), lemma.getLemma()),
-                        0);
-                for (Lemma currentLemma : sortedArray) {
-                    long lemmaIndexId = currentLemma.getId();
-                    if (indexService.checkIfIndexExists(page.getId(), lemmaIndexId)) {
-                        data.setRelevance(data.getRelevance() + 1);
-                    }
-                }
-                resultList.add(data);
-            } catch (Exception e) {
-                logger.error("Ошибка обработки индекса леммы: {}", e.getMessage(), e);
-            }
-        });
-        resultList.sort(Comparator.comparingDouble(Data::getRelevance).reversed());
-        return resultList;
-    }
-
-
-    private List<Index> getLeastFrequentLemmaIndexes(List<Lemma> lemmaList) {
-        if (lemmaList.isEmpty()) {
-            return new ArrayList<>();
+    private List<SearchData> searchInSite(Set<String> lemmaSet, Site site) {
+        List<Lemma> lemmas = lemmaService.findAllByLemmaInAndSite(lemmaSet, site);
+        if (lemmas.isEmpty()) {
+            return Collections.emptyList();
         }
-        Lemma leastFrequentLemma = findLeastFrequentLemma(lemmaList);
-        return new ArrayList<>(advancedIndexOperations.findByLemmaId(leastFrequentLemma.getId()));
-    }
-
-    private Lemma findLeastFrequentLemma(List<Lemma> lemmaList) {
-        return lemmaList.stream()
-                .min(Comparator.comparingDouble(Lemma::getFrequency))
-                .orElse(null);
-    }
-
-    public String findPageTitle(String htmlContent) {
-        Document doc = Jsoup.parse(htmlContent);
-        Element titleElement = doc.selectFirst("title");
-        return titleElement != null ? titleElement.text() : "";
-    }
-
-    public String findPageSnippet(String pageContent, String leastFrequentLemma) {
-        try {
-            String cleanContent = Jsoup.clean(pageContent, Safelist.none());
-            String[] words = cleanContent.split("\\s+");
-
-            for (int i = 0; i < words.length; i++) {
-                if (words[i].contains(leastFrequentLemma)) {
-                    int start = Math.max(i - 5, 0);
-                    int end = Math.min(i + 5, words.length);
-                    StringBuilder snippet = new StringBuilder();
-                    for (int j = start; j < end; j++) {
-                        snippet.append(words[j]).append(' ');
-                    }
-                    return snippet.toString().trim();
+        List<Lemma> sortedLemmas = lemmas.stream()
+                .sorted(Comparator.comparingInt(Lemma::getFrequency))
+                .collect(Collectors.toList());
+        Lemma firstLemma = sortedLemmas.get(0);
+        List<Index> indexes = indexService.findByLemmaAndSite(firstLemma, site);
+        Set<Page> pages = indexes.stream()
+                .map(Index::getPage)
+                .collect(Collectors.toSet());
+        for (int i = 1; i < sortedLemmas.size(); i++) {
+            Lemma lemma = sortedLemmas.get(i);
+            Set<Page> pagesWithLemma = indexService.findByLemmaAndSite(lemma, site).stream()
+                    .map(Index::getPage)
+                    .collect(Collectors.toSet());
+            pages.retainAll(pagesWithLemma);
+            if (pages.isEmpty()) break;
+        }
+        Map<Page, Double> absoluteRelevance = new HashMap<>();
+        for (Page page : pages) {
+            double totalRank = 0.0;
+            for (Lemma lemma : sortedLemmas) {
+                Optional<Index> index = indexService.findByPageAndLemma(page, lemma);
+                if (index.isPresent()) {
+                    totalRank += index.get().getRank();
                 }
             }
+            absoluteRelevance.put(page, totalRank);
+        }
+        double maxRelevance = absoluteRelevance.values().stream()
+                .max(Double::compare)
+                .orElse(1.0);
+        List<SearchData> results = new ArrayList<>();
+        for (Page page : pages) {
+            double relevance = absoluteRelevance.get(page) / maxRelevance;
+            SearchData data = new SearchData();
+            data.setSite(site.getUrl());
+            data.setSiteName(site.getName());
+            data.setUri(page.getPath());
+            data.setTitle(extractTitle(page.getContent()));
+            data.setSnippet(generateSnippet(page.getContent(), sortedLemmas));
+            data.setRelevance(relevance);
+            results.add(data);
+        }
+        return results;
+    }
+
+
+    private String extractTitle(String html) {
+        try {
+            Document doc = Jsoup.parse(html);
+            String title = doc.title();
+            return !title.isEmpty() ? title : "Без заголовка";
         } catch (Exception e) {
-            logger.error("Ошибка при поиске фрагмента страницы: {}",
-                    e.getMessage(), e);
+            return "Без заголовка";
         }
-        return "...";
     }
 
 
-    public ArrayList<Lemma> inputToLemmasSortedArrayWithoutTooFrequentLemmas(String input, String siteURL) {
-        List<String> basicForms = lemmatizer.getBasicFormsFromString(input);
-        long totalPagesCount = pageService.getTotalPages();
-        double frequencyThreshold = calculateDynamicFrequencyThreshold(totalPagesCount);
-        long tooFrequentCoefficient = Math.round(totalPagesCount * frequencyThreshold);
-        ArrayList<Lemma> lemmasSortedList = new ArrayList<>();
-        for (String form : basicForms) {
-            List<Lemma> listFromDB = new ArrayList<>();
-            if (!siteURL.isEmpty()) {
-                Optional<Site> matchingSite = siteService.findByExactUrl(siteURL);
-                if (matchingSite.isPresent()) {
-                    Site site = matchingSite.get();
-                    Optional<Lemma> lemmaOpt = lemmaService.findByLemmaAndSiteId(form, site.getId());
-                    lemmaOpt.ifPresent(listFromDB::add);
+    private String generateSnippet(String html, List<Lemma> lemmas) {
+        try {
+            Document doc = Jsoup.parse(html);
+            String text = doc.body().text();
+            String[] words = text.replaceAll("\\s+", " ").split(" ");
+            Set<String> lemmaTexts = lemmas.stream()
+                    .map(l -> l.getLemma().toLowerCase())
+                    .collect(Collectors.toSet());
+            int bestPos = findBestSnippetPosition(words, lemmaTexts);
+            if (bestPos == -1) {
+                return text.length() > MAX_SNIPPET_LENGTH
+                        ? text.substring(0, MAX_SNIPPET_LENGTH) + "..."
+                        : text;
+            }
+            int start = Math.max(0, bestPos - SNIPPET_WORDS_BEFORE);
+            int end = Math.min(words.length, bestPos + SNIPPET_WORDS_AFTER + 1);
+            StringBuilder snippet = new StringBuilder();
+            if (start > 0) snippet.append("... ");
+            for (int i = start; i < end; i++) {
+                String word = words[i];
+                String wordLower = word.toLowerCase();
+                boolean match = lemmaTexts.stream()
+                        .anyMatch(wordLower::contains);
+                if (match) {
+                    snippet.append("<b>").append(word).append("</b> ");
                 } else {
-                    logger.warn("Сайт с URL {} не найден.", siteURL);
-                    continue;
-                }
-            } else {
-                listFromDB = lemmaService.findLemmaByName(form);
-            }
-            for (Lemma l : listFromDB) {
-                if (l.getFrequency() <= tooFrequentCoefficient && l.getFrequency() > 0) {
-                    lemmasSortedList.add(l);
+                    snippet.append(word).append(" ");
                 }
             }
+            if (end < words.length) snippet.append("...");
+            return snippet.toString().trim();
+        } catch (Exception e) {
+            return "Содержимое страницы недоступно...";
         }
-        Collections.sort(lemmasSortedList);
-        return lemmasSortedList;
     }
 
 
-    private double calculateDynamicFrequencyThreshold(long totalPagesCount) {
-        return Math.log(totalPagesCount) / totalPagesCount;
+    private int findBestSnippetPosition(String[] words, Set<String> lemmaTexts) {
+        int bestPos = -1;
+        int maxMatches = 0;
+        for (int i = 0; i < words.length; i++) {
+            int matches = 0;
+            for (int j = i; j < Math.min(words.length, i + SNIPPET_WORDS_AFTER * 2); j++) {
+                String wordLower = words[j].toLowerCase();
+                if (lemmaTexts.stream().anyMatch(wordLower::contains)) {
+                    matches++;
+                }
+            }
+            if (matches > maxMatches) {
+                maxMatches = matches;
+                bestPos = i;
+            }
+            if (maxMatches >= 2) break;
+        }
+        return bestPos;
     }
 }
-
-

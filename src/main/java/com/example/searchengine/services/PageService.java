@@ -1,169 +1,121 @@
 package com.example.searchengine.services;
 
-import com.example.searchengine.config.Site;
-import com.example.searchengine.exceptions.InvalidPageException;
-import jakarta.persistence.EntityManager;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.transaction.annotation.Transactional;
+import com.example.searchengine.models.Page;
+import com.example.searchengine.models.Site;
+import com.example.searchengine.repositories.PageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.searchengine.models.Page;
-import com.example.searchengine.repository.PageRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PageService {
 
-    private final PageRepository pageRepository;
-    private final EntityManager entityManager;
-
     private static final Logger logger = LoggerFactory.getLogger(PageService.class);
+    private final PageRepository pageRepository;
 
-    @Autowired
-    public PageService(PageRepository pageRepository,
-                       EntityManager entityManager) {
+    public PageService(PageRepository pageRepository) {
         this.pageRepository = pageRepository;
-        this.entityManager = entityManager;
     }
 
 
-
     @Transactional
-    public void createPage(Page page) {
+    public Page save(Page page) {
         validatePage(page);
-        pageRepository.save(page);
+        Page saved = pageRepository.save(page);
+        logger.debug("Страница сохранена: {} (сайт: {})",
+                saved.getPath(), saved.getSite().getUrl());
+        return saved;
     }
 
 
     @Transactional
-    public void updatePage(Page updatedPage) {
-        validatePage(updatedPage);
-        pageRepository.save(updatedPage);
+    public List<Page> saveAll(List<Page> pages) {
+        pages.forEach(this::validatePage);
+        List<Page> saved = pageRepository.saveAll(pages);
+        logger.debug("Сохранено {} страниц", saved.size());
+        return saved;
     }
 
 
     @Transactional
-    public void savePage(Page page) throws InvalidPageException {
-        validatePage(page);
-        pageRepository.save(page);
+    public void delete(Page page) {
+        pageRepository.delete(page);
+        logger.debug("Страница удалена: {}", page.getPath());
     }
 
 
     @Transactional
-    public void saveAll(List<Page> pages) throws InvalidPageException {
-        int batchSize = 100;
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            validatePage(page);
-            pageRepository.save(page);
-            if (i % batchSize == 0 && i > 0) {
-                entityManager.flush();
-                entityManager.clear();
-            }
-        }
-    }
-
-
-    @Transactional
-    public void deletePage(Long pageId) {
+    public void deleteById(long pageId) {
         pageRepository.deleteById(pageId);
+        logger.debug("Страница с id {} удалена", pageId);
+    }
+
+
+    @Transactional
+    public void deleteAllBySite(Site site) {
+        pageRepository.deleteBySite(site);
+        logger.debug("Все страницы сайта {} удалены", site.getUrl());
     }
 
 
     @Transactional(readOnly = true)
-    public Optional<Page> findByPath(String path) {
-        return pageRepository.findByPath(path);
+    public Optional<Page> findByPathAndSite(String path, Site site) {
+        return pageRepository.findByPathAndSite(path, site);
     }
 
 
     @Transactional(readOnly = true)
-    public Optional<Page> findPageById(Long pageId) {
-        return pageRepository.findById(pageId);
+    public Optional<Page> findById(long id) {
+        return pageRepository.findById(id);
     }
 
 
     @Transactional(readOnly = true)
-    public Optional<Page> findPageByPath(String path) {
-        return pageRepository.findByPath(path);
+    public List<Page> findAllBySite(Site site) {
+        return pageRepository.findBySite(site);
     }
 
 
-    @Cacheable(value="pageCount")
     @Transactional(readOnly = true)
-    public long getTotalPages() {
-        return pageRepository.count();
+    public long countBySite(Site site) {
+        return pageRepository.countBySite(site);
     }
 
 
-    public Map<Long, Long> countPagesGroupedBySite(List<Site> sites) {
-        int maxBatchSize = 1000;
-        List<List<Site>> batches = partitionSites(sites, maxBatchSize);
-        List<Map<Long, Long>> partialResults = new ArrayList<>();
-        parallelProcess(batches, batch -> {
-            List<Page> filteredPages = pageRepository.findAllBySiteIn(batch);
-            Map<Long, Long> result = filteredPages.stream()
-                    .collect(Collectors.groupingBy(page ->
-                            page.getSite().getId(), Collectors.counting()));
-            synchronized(partialResults) {
-                partialResults.add(result);
-            }
-        });
-        return combineMaps(partialResults);
-    }
-
-
-    private List<List<Site>> partitionSites(List<Site> sites, int batchSize) {
-        List<List<Site>> partitions = new ArrayList<>();
-        for (int i = 0; i < sites.size(); i += batchSize) {
-            partitions.add(sites.subList(i, Math.min(i + batchSize, sites.size())));
-        }
-        return partitions;
-    }
-
-
-    private void parallelProcess(List<List<Site>> batches, Consumer<List<Site>> processor) {
-        try (ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
-            batches.forEach(batch -> pool.submit(() -> processor.accept(batch)));
-            pool.shutdown();
-            try {
-                boolean terminated = pool.awaitTermination(1, TimeUnit.MINUTES);
-                if (!terminated) {
-                    throw new TimeoutException("Timeout occurred while waiting for tasks to complete");
-                }
-            } catch (InterruptedException | TimeoutException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Processing interrupted", e);
-            }
-        }
-    }
-
-
-    private Map<Long, Long> combineMaps(List<Map<Long, Long>> maps) {
-        return maps.stream()
-                .flatMap(map -> map.entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
-                        Long::sum));
+    @Transactional(readOnly = true)
+    public boolean existsByPathAndSite(String path, Site site) {
+        return pageRepository.existsByPathAndSite(path, site);
     }
 
 
     private void validatePage(Page page) {
         if (page.getSite() == null) {
-            throw new IllegalArgumentException("Ссылка на сайт обязательна!");
+            throw new IllegalArgumentException("Сайт страницы не может быть null");
         }
         if (page.getPath() == null || page.getPath().trim().isEmpty()) {
-            throw new IllegalArgumentException("Адрес страницы обязателен!");
+            throw new IllegalArgumentException("Путь страницы не может быть пустым");
+        }
+        if (!page.getPath().startsWith("/")) {
+            throw new IllegalArgumentException("Путь страницы должен начинаться со слеша");
         }
         if (page.getContent() == null || page.getContent().trim().isEmpty()) {
-            throw new IllegalArgumentException("Контент страницы обязателен!");
+            throw new IllegalArgumentException("Контент страницы не может быть пустым");
         }
+        if (page.getCode() < 100 || page.getCode() > 599) {
+            throw new IllegalArgumentException("Некорректный HTTP код: " + page.getCode());
+        }
+    }
+
+
+    public long getTotalPages() {
+        return pageRepository.count();
+    }
+
+    public long countAll() {
+        return pageRepository.count();
     }
 }

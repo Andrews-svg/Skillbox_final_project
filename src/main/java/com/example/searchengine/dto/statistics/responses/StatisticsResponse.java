@@ -1,6 +1,4 @@
-package com.example.searchengine.dto.statisticsResponse;
-
-import com.example.searchengine.dto.statistics.responses.StatisticsData;
+package com.example.searchengine.dto.statistics.responses;
 
 
 public class StatisticsResponse {

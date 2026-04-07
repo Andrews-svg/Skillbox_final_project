@@ -94,7 +94,7 @@ public class Lemmatizer {
         String[] words = cleaned.split("\\s+");
         Set<String> lemmas = new HashSet<>();
         for (String word : words) {
-            if (word.isEmpty() || word.length() < 2) continue;
+            if (word.length() < 2) continue;
             if (isServiceWord(word)) continue;
             String lemma = getNormalForm(word);
             if (lemma != null) {

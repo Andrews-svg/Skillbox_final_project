@@ -1,65 +1,43 @@
 package com.example.searchengine.dto.statistics.responses;
 
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.searchengine.models.Status;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-@Getter
-@Component
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DetailedStatisticsItem {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailedStatisticsItem.class);
 
     private String url;
     private String name;
-    private Status status;
-    private long statusTime;
+    private String status;
+    private Long statusTime;
     private String error;
     private long pages;
     private long lemmas;
 
-
     public DetailedStatisticsItem(String url, String name,
-                                  Status status, long statusTime, String error,
+                                  String status, Long statusTime, String error,
                                   long pages, long lemmas) {
-
 
         if (url == null || url.isEmpty()) {
             logger.error("Invalid URL - value: {}", url);
             throw new IllegalArgumentException("URL cannot be null or empty.");
         }
         this.url = url;
-
-
         if (name == null || name.isEmpty()) {
             logger.error("Invalid name - value: {}", name);
             throw new IllegalArgumentException("Name cannot be null or empty.");
         }
         this.name = name;
-
-
-        if (status == null) {
-            logger.error("Invalid status - value: {}", (Object) null);
-            throw new IllegalArgumentException("Status cannot be null.");
+        if (status == null || status.isEmpty()) {
+            logger.error("Invalid status - value: {}", status);
+            throw new IllegalArgumentException("Status cannot be null or empty.");
         }
         this.status = status;
-
-
-        if (statusTime < 0) {
-            logger.error("Invalid status time - value: {}", statusTime);
-            throw new IllegalArgumentException("Status time cannot be negative.");
-        }
         this.statusTime = statusTime;
-
-
-        if (error != null && error.length() > 255) {
-            logger.error("Invalid error - message length: {}", error);
-            throw new IllegalArgumentException("Error message cannot exceed 255 characters.");
-        }
         this.error = error;
-
 
         if (pages < 0) {
             logger.error("Invalid pages - value: {}", pages);
@@ -67,20 +45,20 @@ public class DetailedStatisticsItem {
         }
         this.pages = pages;
 
-
         if (lemmas < 0) {
             logger.error("Invalid lemmas - value: {}", lemmas);
             throw new IllegalArgumentException("Lemmas cannot be negative.");
         }
         this.lemmas = lemmas;
-
-        logger.info("DetailedStatisticsItem created: {}", this);
+        logger.info("DetailedStatisticsItem created for site: {}", url);
     }
-
 
     public DetailedStatisticsItem() {
     }
 
+    public String getUrl() {
+        return url;
+    }
 
     public void setUrl(String url) {
         if (url == null || url.isEmpty()) {
@@ -88,6 +66,10 @@ public class DetailedStatisticsItem {
             throw new IllegalArgumentException("URL cannot be null or empty.");
         }
         this.url = url;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void setName(String name) {
@@ -98,28 +80,36 @@ public class DetailedStatisticsItem {
         this.name = name;
     }
 
-    public void setStatus(Status status) {
-        if (status == null) {
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        if (status == null || status.isEmpty()) {
             logger.error("Invalid status value: {}", status);
-            throw new IllegalArgumentException("Status cannot be null.");
+            throw new IllegalArgumentException("Status cannot be null or empty.");
         }
         this.status = status;
     }
 
-    public void setStatusTime(long statusTime) {
-        if (statusTime < 0) {
-            logger.error("Invalid status time value: {}", statusTime);
-            throw new IllegalArgumentException("Status time cannot be negative.");
-        }
+    public Long getStatusTime() {
+        return statusTime;
+    }
+
+    public void setStatusTime(Long statusTime) {
         this.statusTime = statusTime;
     }
 
+    public String getError() {
+        return error;
+    }
+
     public void setError(String error) {
-        if (error != null && error.length() > 255) {
-            logger.error("Invalid error message length: {}", error);
-            throw new IllegalArgumentException("Error message cannot exceed 255 characters.");
-        }
         this.error = error;
+    }
+
+    public long getPages() {
+        return pages;
     }
 
     public void setPages(long pages) {
@@ -128,6 +118,10 @@ public class DetailedStatisticsItem {
             throw new IllegalArgumentException("Pages cannot be negative.");
         }
         this.pages = pages;
+    }
+
+    public long getLemmas() {
+        return lemmas;
     }
 
     public void setLemmas(long lemmas) {
@@ -143,7 +137,7 @@ public class DetailedStatisticsItem {
         return "DetailedStatisticsItem{" +
                 "url='" + url + '\'' +
                 ", name='" + name + '\'' +
-                ", status=" + status +
+                ", status='" + status + '\'' +
                 ", statusTime=" + statusTime +
                 ", error='" + error + '\'' +
                 ", pages=" + pages +

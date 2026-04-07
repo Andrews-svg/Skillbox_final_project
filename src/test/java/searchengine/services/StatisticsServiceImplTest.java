@@ -1,7 +1,7 @@
 //package searchengine.services;
 //
-//import com.example.searchengine.config.Site;
-//import com.example.searchengine.dto.statistics.DetailedStatisticsItem;
+//import com.example.searchengine.models.Site;
+//import com.example.searchengine.dto.statistics.responses.DetailedStatisticsItem;
 //import com.example.searchengine.dao.PageDao;
 //import com.example.searchengine.dao.LemmaDao;
 //import com.example.searchengine.models.Status;
