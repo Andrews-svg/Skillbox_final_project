@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 
 @Service
 public class LemmaService {
@@ -144,13 +146,8 @@ public class LemmaService {
     }
 
     public Map<Long, Long> countLemmasGroupedBySite(List<Site> currentBatch) {
-        Map<Long, Long> result = new HashMap<>();
-        for (Site site : currentBatch) {
-            List<Lemma> lemmas = lemmaRepository.findDistinctBySite(site);
-            long uniqueLemmasCount = lemmas.size();
-            result.put(site.getId(), uniqueLemmasCount);
-        }
-        return result;
+        List<Long> siteIds = currentBatch.stream().map(Site::getId).collect(Collectors.toList());
+        return lemmaRepository.countLemmasGroupedBySiteIdsWithConversion(siteIds);
     }
 
 

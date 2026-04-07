@@ -2,207 +2,819 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <link rel="shortcut icon" th:href="@{/favicon/favicon.ico}" type="image/x-icon"/>
-    <link rel="icon" th:href="@{/favicon/favicon-16x16.png}" sizes="16x16" type="image/png"/>
-    <link rel="icon" th:href="@{/favicon/favicon-32x32.png}" sizes="32x32" type="image/png"/>
-    <link rel="icon" th:href="@{/favicon/favicon-64x64.png}" sizes="64x64" type="image/png"/>
-    <title>Site Search Engine</title>
-    <meta name="description" content="Site Search Engine">
+    <title th:text="${pageTitle} + ' - Поисковый движок'">Поисковый движок</title>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon"/>
+    <link rel="icon" th:href="@{/favicon-16x16.png}" sizes="16x16" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon-32x32.png}" sizes="32x32" type="image/png"/>
+    <link rel="icon" th:href="@{/favicon-64x64.png}" sizes="64x64" type="image/png"/>
+
+    <!-- Мета-теги -->
+    <meta name="description" content="Поисковый движок">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+    <!-- Шрифты -->
     <link rel="preload" href="/assets/fonts/Montserrat/Montserrat-SemiBold.woff2"
           as="font" type="font/woff2" crossorigin="anonymous">
-    <link rel="stylesheet" th:href="@{/assets/css/fonts.css?v=82368483}"/>
-    <link rel="stylesheet" th:href="@{/assets/css/basic.css?v=82368483}"/>
-    <link rel="stylesheet" th:href="@{/assets/css/extra.css?v=82368483}"/>
 
-    <script type="text/javascript" th:src="@{/assets/plg/jQuery/jquery-3.7.1.min.js}"></script>
-    <script th:src="@{/assets/js/config.js}"></script>
-    <script th:src="@{/assets/js/scripts.js(v=38874865)}" defer></script>
+    <!-- Стили -->
+    <link rel="stylesheet" th:href="@{/assets/css/fonts.css}" />
+    <link rel="stylesheet" th:href="@{/assets/css/basic.css}" />
+    <link rel="stylesheet" th:href="@{/assets/css/extra.css}" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSRF Token (для AJAX запросов) -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <style>
+        /* Основные стили SPA приложения */
+        :root {
+            --primary-green: rgb(100, 200, 100);
+            --primary-green-dark: rgb(80, 160, 80);
+            --light-green-bg: rgba(128, 255, 128, 0.3);
+        }
+
+        /* Светло-зелёный фон для всего приложения */
+        body.Site {
+            background-color: var(--light-green-bg);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Контейнер приложения */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Основной контент */
+        .app-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Контейнер для контента вкладок */
+        .tab-content-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-green);
+            min-height: 500px;
+            overflow: hidden;
+            flex: 1;
+            position: relative;
+        }
+
+        .tab-content {
+            padding: 30px;
+            height: 100%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Лоадер контента */
+        .content-loader {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .content-loader.active {
+            display: flex;
+        }
+
+        .loader-spinner {
+            font-size: 48px;
+            color: var(--primary-green);
+            margin-bottom: 20px;
+        }
+
+        .loader-text {
+            color: #4a5568;
+            font-size: 16px;
+        }
+
+        /* Глобальные сообщения */
+        .app-alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .alert-success {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            color: #276749;
+        }
+
+        .alert-error {
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            color: #c53030;
+        }
+
+        .alert-warning {
+            background: #fffaf0;
+            border: 1px solid #faf089;
+            color: #b7791f;
+        }
+
+        .alert-info {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            color: #2c5282;
+        }
+
+        /* Глобальный лоадер (при запуске приложения) */
+        #globalLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .Site-loader-block {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .Site-loader-block div {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-green);
+            animation: loaderAnimation 1.2s linear infinite;
+        }
+
+        .Site-loader-block div:nth-child(1) {
+            top: 8px;
+            left: 8px;
+            animation-delay: 0s;
+        }
+
+        .Site-loader-block div:nth-child(2) {
+            top: 8px;
+            left: 32px;
+            animation-delay: -0.4s;
+        }
+
+        .Site-loader-block div:nth-child(3) {
+            top: 8px;
+            left: 56px;
+            animation-delay: -0.8s;
+        }
+
+        .Site-loader-block div:nth-child(4) {
+            top: 32px;
+            left: 8px;
+            animation-delay: -0.4s;
+        }
+
+        .Site-loader-block div:nth-child(5) {
+            top: 32px;
+            left: 32px;
+            animation-delay: -0.8s;
+        }
+
+        .Site-loader-block div:nth-child(6) {
+            top: 32px;
+            left: 56px;
+            animation-delay: -1.2s;
+        }
+
+        .Site-loader-block div:nth-child(7) {
+            top: 56px;
+            left: 8px;
+            animation-delay: -0.8s;
+        }
+
+        .Site-loader-block div:nth-child(8) {
+            top: 56px;
+            left: 32px;
+            animation-delay: -1.2s;
+        }
+
+        .Site-loader-block div:nth-child(9) {
+            top: 56px;
+            left: 56px;
+            animation-delay: -1.6s;
+        }
+
+        @keyframes loaderAnimation {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Топ-лейбл (фирменный стиль) -->
+        .top-label {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-family: Montserrat, sans-serif;
+            font-weight: bold;
+            line-height: 1.2;
+            color: black;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-green);
+            pointer-events: none;
+        }
+
+        <!-- Анимации -->
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        <!-- Адаптивность - УПРОЩЕНА, ТОЛЬКО ГОРИЗОНТАЛЬНО -->
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 10px;
+            }
+
+            .tab-content {
+                padding: 15px;
+            }
+
+            .top-label {
+                top: 10px;
+                left: 10px;
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 5px;
+            }
+
+            .tab-content-container {
+                min-height: 400px;
+            }
+
+            .tab-content {
+                padding: 10px;
+            }
+        }
+
+        <!-- Дополнительные утилитарные классы -->
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body class="Site">
-<div class="Site-loader">
-
+<!-- Глобальный лоадер (при запуске приложения) -->
+<div class="Site-loader" id="globalLoader">
     <div class="Site-loader-block">
         <div></div>
         <div></div>
         <div></div>
         <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
     </div>
 </div>
 
-<!-- Общая структура приложения -->
-<div th:if="${isLoginPage}">
-    <h2>Вход</h2>
-    <div th:if="${errorMessage}" class="alert alert-danger">
-        <p th:text="${errorMessage}"></p>
-    </div>
-    <form action="/login" method="post">
-        <label for="username">Имя пользователя:</label>
-        <input type="text" id="username" name="username" required autocomplete="">
-        <br>
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-        <br>
-        <button type="submit">Войти</button>
-    </form>
+<!-- Топ-лейбл (фирменный стиль) -->
+<div class="top-label">
+    Search engine<br/>
+    AndrewsS
 </div>
 
-
-<div th:if="${isRegisterPage}">
-    <h2>Регистрация</h2>
-    <div th:if="${errorMessage}" class="alert alert-danger">
-        <p th:text="${errorMessage}"></p>
-    </div>
-    <form action="/register" method="post">
-        <label for="reg_username">Имя пользователя:</label>
-        <input type="text" id="reg_username" name="username" required autocomplete="username">
-        <br>
-        <label for="reg_password">Пароль:</label>
-        <input type="password" id="reg_password" name="password" required autocomplete="new-password">
-        <br>
-        <label for="reg_email">Email:</label>
-        <input type="email" id="reg_email" name="email" required autocomplete="email">
-        <br>
-        <button type="submit">Зарегистрироваться</button>
-    </form>
-</div>
+<div class="app-container">
 
 
-    <!-- Если это главная страница -->
-    <div th:if="${not isLoginPage && not isRegisterPage}">
-        <h1>Главная страница</h1>
-        <p th:text="${welcomeMessage}"></p>
+    <nav th:replace="fragments/navbar-fragment :: navbar(${activeTab})"></nav>
 
-        <div class="Middle">
-            <div class="wrap">
-                <div class="Site-loadingIsComplete">
-                    <main class="Tabs Tabs_column Middle-main">
-                        <div class="Column">
-                            <div class="Tabs-links">
-                                <a class="Tabs-link" th:classappend="${activeTab == 'dashboard'} ? 'Tabs-link_ACTIVE'"
-                                   th:href="@{/dashboard}">
-                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/dashboard.svg}" alt="dashboard.svg"/>
-                                    <span class="Tabs-linkText" th:text="${DASHBOARD_TAB_NAME}">Dashboard</span>
-                                </a>
-                                <a class="Tabs-link" th:classappend="${activeTab == 'management'} ? 'Tabs-link_ACTIVE'"
-                                   th:href="@{/management}">
-                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/management.svg}" alt="management.svg"/>
-                                    <span class="Tabs-linkText" th:text="${MANAGEMENT_TAB_NAME}">Management</span>
-                                </a>
-                                <a class="Tabs-link" th:classappend="${activeTab == 'search'} ? 'Tabs-link_ACTIVE'"
-                                   th:href="@{/search}">
-                                    <img class="Tabs-icon" th:src="@{/assets/img/icons/search.svg}" alt="search.svg"/>
-                                    <span class="Tabs-linkText" th:text="${SEARCH_TAB_NAME}">Search</span>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="Tabs-wrap">
+    <!-- Основной контент -->
+    <main class="app-content">
+        <!-- Глобальные сообщения -->
+        <div class="app-alert" id="globalAlert"></div>
 
-                            <!-- Вкладка Dashboard -->
-                            <div class="Tabs-block" id="dashboard" th:if="${activeTab == 'dashboard'}">
-                                <div class="Section">
-                                    <div class="Section-header">
-                                        <h2 class="Section-title" th:text="${DASHBOARD_TAB_NAME}">Dashboard</h2>
-                                    </div>
-                                    <div class="Statistics">
-                                        <div class="Statistics-info">
-                                            <div class="Statistics-block">
-                                                <span class="Statistics-amount" id="totalSites"></span>
-                                                <span class="Statistics-title">sites</span>
-                                            </div>
-                                            <div class="Statistics-block">
-                                                <span class="Statistics-amount" id="totalPages"></span>
-                                                <span class="Statistics-title">pages</span>
-                                            </div>
-                                            <div class="Statistics-block">
-                                                <span class="Statistics-amount" id="totalLemmas"></span>
-                                                <span class="Statistics-title">lemmas</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Вкладка Management -->
-                            <div class="Tabs-block" id="management" th:if="${activeTab == 'management'}">
-                                <div class="Section">
-                                    <div class="Section-header">
-                                        <h2 class="Section-title" th:text="${MANAGEMENT_TAB_NAME}">Management</h2>
-                                    </div>
-                                    <div>
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <form id="indexingForm" onsubmit="toggleIndexing(event)">
-                                                <input type="hidden" name="id" th:value="${id}"/>
-                                                <button type="submit" class="btn btn_primary" id="indexingButton"
-                                                        th:text="${indexingStatus == 'INDEXING' ? 'Stop indexing' :
-                                                        'Start indexing'}"></button>
-                                            </form>
-                                            <div>
-                    <span class="status-indicator" id="indexingIcon"
-                          th:class="${indexingStatus == 'INDEXED' ? 'green' : indexingStatus == 'FAILED' ? 'red' :
-                          indexingStatus == 'INDEXING' ? 'blue' : ''}"></span>
-                                                <button class="btn btn_primary" onclick="checkStatus()">Check Status</button>
-                                            </div>
-                                        </div>
-                                        <div th:if="${errorMessage}" class="error-message">
-                                            <p th:text="${errorMessage}" style="color: red;"></p>
-                                        </div>
-                                    </div>
-                                    <br>
-                                    <div class="UpdatePageBlock">
-                                        <h3>Add/update page:</h3>
-                                        <form class="form form_close" action="/indexPage" method="post">
-                                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                                            <input type="hidden" name="id" th:value="${id}"/>
-                                            <div class="form-group form-group_row">
-                                                <input class="form-input" id="page" name="url" type="text"
-                                                       required placeholder="Введите URL"/>
-                                                <button class="btn btn_primary form-btn" type="submit">Add/update</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-
-
-
-                            <!-- Вкладка Search -->
-                            <div class="Tabs-block" id="search" th:if="${activeTab == 'search'}">
-                                <div class="Section">
-                                    <div class="Section-header">
-                                        <h2 class="Section-title" th:text="${SEARCH_TAB_NAME}">Search</h2>
-                                    </div>
-                                    <form class="form form_close" action="#" method="post" data-send="search" data-sendlimit="10">
-                                        <div class="form-group">
-                                            <div class="form-selectWrap">
-                                                <select class="form-select" name="site">
-                                                    <option value="" selected="selected">All sites</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="form-group form-group_row">
-                                            <input class="form-input" id="query" name="query" type="text" placeholder="Query"/>
-                                            <button class="btn btn_primary form-btn" type="submit">Search</button>
-                                        </div>
-                                    </form>
-                                    <div class="SearchResult">
-                                        <strong class="SearchResult-title">Found
-                                            <span class="SearchResult-amount">0</span> results</strong>
-                                        <div class="SearchResult-content"></div>
-                                        <div class="SearchResult-footer SearchResult-footer_hide">
-                                            <button class="btn btn_primary" data-send="search" data-sendtype="next">Show more<span
-                                                    class="SearchResult-remain">(0)</span></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </main>
+        <!-- Контейнер для контента вкладок -->
+        <div class="tab-content-container">
+            <!-- Лоадер контента (показывается при переключении вкладок) -->
+            <div class="content-loader" id="contentLoader">
+                <div class="loader-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
                 </div>
+                <div class="loader-text">Загрузка вкладки...</div>
+            </div>
+
+            <!-- Контент вкладки (будет динамически заменяться) -->
+            <div class="tab-content" id="tabContent">
+                <!-- ВСЁ загружается через AJAX -->
             </div>
         </div>
-    </div>
+    </main>
+
+    <!-- Футер -->
+    <footer style="margin-top: 20px; padding: 15px; text-align: center; color: #718096; font-size: 14px; border-top: 1px solid #e2e8f0;">
+        <p>© 2024 Поисковый движок. Все права защищены.</p>
+        <p style="font-size: 12px; margin-top: 5px;">
+            Версия: 1.0.0 |
+            <span id="currentYear"></span> |
+            <a href="#" onclick="showAbout()" style="color: #718096; text-decoration: none;">О проекте</a>
+        </p>
+    </footer>
 </div>
+
+
+<script type="text/javascript" th:src="@{/assets/plg/jQuery/jquery-3.7.1.min.js}"></script>
+<script th:src="@{/assets/js/config.js}"></script>
+<script th:src="@{/assets/js/scripts.js}"></script>
+
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+        const AppState = {
+            currentTab: /*[[${activeTab}]]*/ 'home',
+            isIndexing: false,
+            isLoading: false,
+            isAuthenticated: /*[[${isAuthenticated}]]*/ false,
+            username: /*[[${username}]]*/ null,
+            csrfToken: document.querySelector('meta[name="_csrf"]')?.content,
+            csrfHeader: document.querySelector('meta[name="_csrf_header"]')?.content
+        };
+
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('SPA приложение инициализировано');
+
+            // Устанавливаем текущий год в футере
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+            // Скрываем глобальный лоадер с задержкой
+            setTimeout(() => {
+                const loader = document.getElementById('globalLoader');
+                if (loader) {
+                    loader.classList.add('fade-out');
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 300);
+                }
+            }, 500);
+
+            // Инициализируем текущую вкладку
+            initializeCurrentTab();
+
+            // Загружаем начальный контент
+            loadInitialContent();
+
+            // Загружаем глобальный статус
+            updateGlobalStatus();
+
+            // Обновляем статус каждые 10 секунд
+            setInterval(updateGlobalStatus, 10000);
+
+            // Обработка истории браузера
+            setupHistoryHandling();
+
+            // Инициализация навигации
+            setupNavigation();
+        });
+
+        // Инициализация текущей вкладки (при загрузке страницы)
+        function initializeCurrentTab() {
+            const tabName = AppState.currentTab;
+            console.log('Инициализация текущей вкладки:', tabName);
+
+            // Обновляем активные вкладки в навигации
+            document.querySelectorAll('.Tabs-link').forEach(tab => {
+                tab.classList.remove('Tabs-link_active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('Tabs-link_active');
+                }
+            });
+
+            // Обновляем заголовок страницы
+            updatePageTitle(tabName);
+        }
+
+        // Загрузка начального контента
+        function loadInitialContent() {
+            const tabName = AppState.currentTab;
+            console.log('Загрузка начального контента для:', tabName);
+
+            // Загружаем контент текущей вкладки
+            switchTab(tabName, true);
+        }
+
+        // Функция переключения вкладок
+        function switchTab(tabName, isInitialLoad = false) {
+            console.log('Переключение на вкладку:', tabName, 'initial:', isInitialLoad);
+
+            if (!isInitialLoad && (AppState.currentTab === tabName || AppState.isLoading)) {
+                console.log('Вкладка уже активна или идет загрузка');
+                return false;
+            }
+
+            AppState.currentTab = tabName;
+            AppState.isLoading = true;
+
+            // Обновляем активные вкладки в навигации
+            document.querySelectorAll('.Tabs-link').forEach(tab => {
+                tab.classList.remove('Tabs-link_active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('Tabs-link_active');
+                }
+            });
+
+            // Показываем лоадер (кроме начальной загрузки)
+            if (!isInitialLoad) {
+                const contentLoader = document.getElementById('contentLoader');
+                if (contentLoader) {
+                    contentLoader.classList.add('active');
+                }
+            }
+
+            // Загружаем контент вкладки
+            loadTabContent(tabName, isInitialLoad);
+
+            // Обновляем URL (кроме начальной загрузки)
+            if (!isInitialLoad) {
+                updateBrowserUrl(tabName);
+            }
+
+            return false;
+        }
+
+        // Проверка доступности вкладки
+        function isTabAccessible(tabName) {
+            const publicTabs = ['home', 'login', 'registration'];
+            const protectedTabs = ['dashboard', 'management', 'search'];
+
+            if (publicTabs.includes(tabName)) {
+                return true;
+            }
+
+            if (protectedTabs.includes(tabName)) {
+                return AppState.isAuthenticated;
+            }
+
+            return true;
+        }
+
+        // Единая функция загрузки контента через AJAX
+        async function loadTabContent(tabName, isInitialLoad = false) {
+            try {
+                console.log('Загрузка контента вкладки:', tabName);
+
+                // Проверяем доступность вкладки
+                if (!isTabAccessible(tabName)) {
+                    if (!AppState.isAuthenticated) {
+                        showGlobalAlert('Для доступа к этой вкладке необходимо авторизоваться', 'warning');
+                        switchTab('login');
+                        return;
+                    }
+                }
+
+                // Формируем URL
+                let url;
+                if (['home', 'login', 'registration'].includes(tabName)) {
+                    url = `/fragment/${tabName}`;
+                } else {
+                    url = `/tab/${tabName}`;
+                }
+
+                // Настройки запроса
+                const headers = {
+                    'Accept': 'text/html',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+
+                // Добавляем CSRF токен если есть
+                if (AppState.csrfToken && AppState.csrfHeader) {
+                    headers[AppState.csrfHeader] = AppState.csrfToken;
+                }
+
+                // Выполняем запрос
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showGlobalAlert('Для доступа к этой вкладке необходимо авторизоваться', 'warning');
+                        switchTab('login');
+                        return;
+                    }
+                    throw new Error(`HTTP ошибка ${response.status}: ${response.statusText}`);
+                }
+
+                const html = await response.text();
+
+                // Обновляем контент
+                const tabContent = document.getElementById('tabContent');
+                if (tabContent) {
+                    tabContent.innerHTML = html;
+
+                    // Обновляем заголовок страницы
+                    updatePageTitle(tabName);
+
+                    // Инициализируем загруженный фрагмент
+                    initializeFragment(tabName);
+                }
+
+            } catch (error) {
+                console.error('Ошибка загрузки вкладки:', error);
+                showGlobalAlert('Ошибка загрузки вкладки. Пожалуйста, обновите страницу.', 'error');
+
+                if (tabName !== 'home') {
+                    switchTab('home');
+                }
+            } finally {
+                const contentLoader = document.getElementById('contentLoader');
+                if (contentLoader) {
+                    contentLoader.classList.remove('active');
+                }
+                AppState.isLoading = false;
+            }
+        }
+
+        function initializeFragment(tabName) {
+            console.log(`Инициализация фрагмента: ${tabName}`);
+
+            switch(tabName) {
+                case 'home':
+                    if (typeof window.initializeHome === 'function') {
+                        setTimeout(() => window.initializeHome(), 100);
+                    }
+                    break;
+                case 'dashboard':
+                    if (typeof window.initializeDashboard === 'function') {
+                        setTimeout(() => window.initializeDashboard(), 100);
+                    }
+                    break;
+                case 'management':
+                    if (typeof window.initializeManagement === 'function') {
+                        setTimeout(() => window.initializeManagement(), 100);
+                    }
+                    break;
+                case 'search':
+                    if (typeof window.initializeSearch === 'function') {
+                        setTimeout(() => window.initializeSearch(), 100);
+                    }
+                    break;
+                case 'login':
+                    if (typeof window.initializeLogin === 'function') {
+                        setTimeout(() => window.initializeLogin(), 100);
+                    }
+                    break;
+                case 'registration':
+                    if (typeof window.initializeRegistration === 'function') {
+                        setTimeout(() => window.initializeRegistration(), 100);
+                    }
+                    break;
+                default:
+                    console.log(`Функция инициализации для вкладки ${tabName} не найдена`);
+            }
+        }
+
+        // Обновление глобального статуса
+        async function updateGlobalStatus() {
+            try {
+                const response = await fetch('/api/statistics');
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                if (data.result && data.statistics) {
+                    const isIndexing = data.statistics.total?.indexing || false;
+                    AppState.isIndexing = isIndexing;
+                }
+            } catch (error) {
+                console.error('Ошибка обновления статуса:', error);
+            }
+        }
+
+        // Настройка обработки истории браузера
+        function setupHistoryHandling() {
+            window.addEventListener('popstate', function(event) {
+                if (event.state && event.state.tab) {
+                    console.log('Popstate:', event.state.tab);
+                    switchTab(event.state.tab);
+                }
+            });
+
+            const hash = window.location.hash.substring(1);
+            if (hash && ['home', 'dashboard', 'management', 'search', 'login', 'registration'].includes(hash)) {
+                console.log('Initial hash detected:', hash);
+                setTimeout(() => {
+                    switchTab(hash);
+                }, 100);
+            }
+        }
+
+        // Обновление URL браузера
+        function updateBrowserUrl(tabName) {
+            const newUrl = window.location.pathname + '#' + tabName;
+            window.history.pushState({ tab: tabName }, '', newUrl);
+        }
+
+        // Настройка навигации
+        function setupNavigation() {
+            document.addEventListener('click', function(e) {
+                const tabLink = e.target.closest('.Tabs-link');
+                if (tabLink && tabLink.dataset.tab) {
+                    e.preventDefault();
+                    switchTab(tabLink.dataset.tab);
+                }
+            });
+        }
+
+        // Обновление заголовка страницы
+        function updatePageTitle(tabName) {
+            const titles = {
+                'home': 'Главная',
+                'dashboard': 'Статистика',
+                'management': 'Управление',
+                'search': 'Поиск',
+                'login': 'Вход',
+                'registration': 'Регистрация'
+            };
+
+            const title = titles[tabName] || 'Поисковый движок';
+            document.title = title + ' - Поисковый движок';
+        }
+
+        // Показать глобальное сообщение
+        function showGlobalAlert(message, type = 'info') {
+            const alertElement = document.getElementById('globalAlert');
+            if (!alertElement) return;
+
+            alertElement.className = `app-alert alert-${type}`;
+
+            let icon = 'ℹ️';
+            switch(type) {
+                case 'error': icon = '❌'; break;
+                case 'success': icon = '✅'; break;
+                case 'warning': icon = '⚠️'; break;
+            }
+
+            alertElement.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 16px;">${icon}</span>
+                        <span>${message}</span>
+                    </div>
+                    <button onclick="hideGlobalAlert()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 16px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            alertElement.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideGlobalAlert();
+                }, 5000);
+            }
+        }
+
+        // Скрыть глобальное сообщение
+        function hideGlobalAlert() {
+            const alertElement = document.getElementById('globalAlert');
+            if (alertElement) {
+                alertElement.style.display = 'none';
+            }
+        }
+
+        // Показать информацию о проекте
+        function showAbout() {
+            showGlobalAlert(`
+                <strong>Поисковый движок v1.0.0</strong><br>
+                <div style="margin-top: 10px; font-size: 14px;">
+                    Система для индексации и поиска информации по веб-сайтам.<br>
+                    Поддерживает морфологический поиск на русском языке.<br><br>
+                    <strong>Технологии:</strong> Spring Boot, MySQL, Thymeleaf, JavaScript
+                </div>
+            `, 'info');
+        }
+
+
+    /*]]>*/
+</script>
+
+<style>
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn_primary {
+        background-color: rgb(100, 200, 100);
+        color: white;
+        border: 2px solid rgb(80, 180, 80);
+    }
+
+    .btn_primary:hover:not(:disabled) {
+        background-color: rgb(80, 160, 80);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    }
+
+    .btn_primary:disabled {
+        background-color: #cbd5e0;
+        border-color: #a0aec0;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Анимации для плавных переходов */
+    .tab-content > * {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Стили для спиннера загрузки */
+    .fa-spinner {
+        animation: fa-spin 2s infinite linear;
+    }
+
+    @keyframes fa-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
 </body>
 </html>

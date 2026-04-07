@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="07-create-user-activity-log-table" author="midl">
+        <createTable tableName="user_activity_log">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_detail" type="VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ip_address" type="VARCHAR(45)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="user_agent" type="VARCHAR(500)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="timestamp" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="endpoint" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="execution_time_ms" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="additional_info" type="VARCHAR(1000)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="success" type="BOOLEAN">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="user_activity_log" indexName="idx_activity_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="user_activity_log" indexName="idx_activity_timestamp">
+            <column name="timestamp"/>
+        </createIndex>
+        <createIndex tableName="user_activity_log" indexName="idx_activity_action">
+            <column name="action"/>
+        </createIndex>
+        <createIndex tableName="user_activity_log" indexName="idx_activity_ip">
+            <column name="ip_address"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

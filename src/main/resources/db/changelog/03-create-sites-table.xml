@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="03-create-sites-table" author="midl">
+        <createTable tableName="site">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="status" type="ENUM('INDEXING', 'INDEXED', 'FAILED')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_time" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="site" indexName="idx_url">
+            <column name="url"/>
+        </createIndex>
+        <createIndex tableName="site" indexName="idx_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="site" indexName="idx_status_time">
+            <column name="status_time"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
