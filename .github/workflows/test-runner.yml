@@ -34,24 +34,19 @@ jobs:
           pwd
           echo "=== Files in root ==="
           ls -la
-          echo "=== Files in Skillbox_final_project ==="
-          ls -la Skillbox_final_project/ || echo "Folder not found"
-          echo "=== Files in Skillbox_final_project/Skillbox_final_project ==="
-          ls -la Skillbox_final_project/Skillbox_final_project/ || echo "Folder not found"
+          echo "=== Looking for pom.xml ==="
+          ls -la pom.xml || echo "pom.xml not found in root"
 
       - name: Build and test with Maven
-        run: |
-          cd Skillbox_final_project/Skillbox_final_project
-          mvn clean test
+        run: mvn clean test
 
       - name: Build JAR
-        run: |
-          cd Skillbox_final_project/Skillbox_final_project
-          mvn package -DskipTests
+        run: mvn package -DskipTests
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: search-engine-jar
-          path: Skillbox_final_project/Skillbox_final_project/target/*.jar
+          path: target/*.jar
+
 
