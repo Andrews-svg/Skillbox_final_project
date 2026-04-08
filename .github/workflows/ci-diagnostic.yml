@@ -10,11 +10,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show full structure
+      - name: Show full structure (Windows)
         run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Root files ==="
-          ls -la
-          echo "=== Searching for pom.xml ==="
-          find . -name "pom.xml" -type f
+          Write-Host "=== Current directory ==="
+          Get-Location
+          Write-Host "=== Root files ==="
+          Get-ChildItem -Force
+          Write-Host "=== Searching for pom.xml ==="
+          Get-ChildItem -Recurse -Filter "pom.xml" | Select-Object FullName
+
