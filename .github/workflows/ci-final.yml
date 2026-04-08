@@ -32,7 +32,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Find and move to project root
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "Looking for pom.xml..."
           $pomPath = Get-ChildItem -Recurse -Filter "pom.xml" | Select-Object -First 1 -ExpandProperty DirectoryName
