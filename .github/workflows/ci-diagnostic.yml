@@ -1,0 +1,20 @@
+name: CI Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show full structure
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Root files ==="
+          ls -la
+          echo "=== Searching for pom.xml ==="
+          find . -name "pom.xml" -type f
