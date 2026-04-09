@@ -44,13 +44,14 @@ jobs:
         run: |
           $settingsFile = Get-ChildItem -Path "$env:PROJECT_ROOT" -Recurse -Filter "settings.xml" | Select-Object -First 1 -ExpandProperty FullName
           if ($settingsFile) {
-            New-Item -Path "$env:USERPROFILE\.m2" -ItemType Directory -Force
-            Copy-Item $settingsFile -Destination "$env:USERPROFILE\.m2\settings.xml" -Force
-            Write-Host "✅ settings.xml copied from: $settingsFile"
-            Write-Host "✅ Destination: $env:USERPROFILE\.m2\settings.xml"
+            $m2Dir = "$env:USERPROFILE\.m2"
+            New-Item -Path $m2Dir -ItemType Directory -Force
+            Copy-Item $settingsFile -Destination "$m2Dir\settings.xml" -Force
+            Write-Host "✅ settings.xml copied to: $m2Dir\settings.xml"
+            Write-Host "✅ USERPROFILE is: $env:USERPROFILE"
           } else {
             Write-Host "⚠️ settings.xml not found in repository"
-            Write-Host "⚠️ Build may fail with 401 Unauthorized"
+            Write-Host "⚠️ Current PROJECT_ROOT: $env:PROJECT_ROOT"
           }
 
       - name: Run Maven tests
