@@ -58,7 +58,7 @@ jobs:
         run: |
           cd "$env:PROJECT_ROOT"
           Write-Host "Now in: $(Get-Location)"
-          mvn clean test
+          mvn clean test -U
 
       - name: Build JAR
         run: |
