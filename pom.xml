@@ -27,12 +27,12 @@
         <spring.mail.properties.mail.smtp.starttls.enable>false</spring.mail.properties.mail.smtp.starttls.enable>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>skillbox-gitlab</id>
-            <url>https://gitlab.skillbox.ru/api/v4/projects/263574/packages/maven</url>
-        </repository>
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>skillbox-gitlab</id>-->
+<!--            <url>https://gitlab.skillbox.ru/api/v4/projects/263574/packages/maven</url>-->
+<!--        </repository>-->
+<!--    </repositories>-->
 
     <build>
         <plugins>
