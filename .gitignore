@@ -84,6 +84,7 @@ ehthumbs.db
 desktop.ini
 
 # Temporaries from Java or Maven builds
+!lib/russian-1.5.jar
 *.jar
 *.war
 *.ear
