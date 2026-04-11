@@ -18,10 +18,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 21
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Cache Maven dependencies
@@ -58,12 +58,12 @@ jobs:
         run: |
           cd "$env:PROJECT_ROOT"
           Write-Host "Now in: $(Get-Location)"
-          mvn clean test -U
+          mvn clean test -s "$env:PROJECT_ROOT/settings.xml"
 
       - name: Build JAR
         run: |
           cd "$env:PROJECT_ROOT"
-          mvn package -DskipTests
+          mvn package -DskipTests -s "$env:PROJECT_ROOT/settings.xml"
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
