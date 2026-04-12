@@ -1,29 +1,26 @@
 package com.example.searchengine.utils;
 
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import com.github.demidko.aot.WordformMeaning;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.github.demidko.aot.WordformMeaning.lookupForMeanings;
 
 @Component
 public class Lemmatizer {
 
     private static final Logger logger = LoggerFactory.getLogger(Lemmatizer.class);
-    private static final List<String> SERVICE_PARTS = List.of(
-            "СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ"
+    private static final Set<String> SERVICE_PARTS = Set.of(
+            "СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ", "ЧАСТИЦА"
     );
 
-    private final RussianLuceneMorphology russianMorph;
-
-    public Lemmatizer(RussianLuceneMorphology russianMorph) {
-        this.russianMorph = russianMorph;
-        logger.info("Lemmatizer initialized successfully");
+    public Lemmatizer() {
+        logger.info("Lemmatizer initialized with AOT library");
     }
-
-
-
 
     private String cleanText(String text) {
         if (text == null || text.isEmpty()) {
@@ -35,24 +32,28 @@ public class Lemmatizer {
                 .trim();
     }
 
-
     private String getNormalForm(String word) {
         try {
-            List<String> normalForms = russianMorph.getNormalForms(word);
-            return normalForms.isEmpty() ? null : normalForms.get(0);
+            List<WordformMeaning> meanings = lookupForMeanings(word);
+            if (meanings != null && !meanings.isEmpty()) {
+                return meanings.getFirst().toString();
+            }
         } catch (Exception e) {
-            return null;
+            logger.debug("Could not get lemma for word: {}", word);
         }
+        return null;
     }
-
 
     private boolean isServiceWord(String word) {
         try {
-            List<String> morphInfo = russianMorph.getMorphInfo(word);
-            for (String info : morphInfo) {
-                for (String part : SERVICE_PARTS) {
-                    if (info.contains(part)) {
-                        return true;
+            List<WordformMeaning> meanings = lookupForMeanings(word);
+            if (meanings != null && !meanings.isEmpty()) {
+                for (WordformMeaning meaning : meanings) {
+                    String morphInfo = meaning.getMorphology().toString();
+                    for (String part : SERVICE_PARTS) {
+                        if (morphInfo.contains(part)) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -61,7 +62,6 @@ public class Lemmatizer {
         }
         return false;
     }
-
 
     public Map<String, Integer> getLemmasFrequency(String text) {
         if (text == null || text.trim().isEmpty()) {
@@ -82,11 +82,9 @@ public class Lemmatizer {
         return frequency;
     }
 
-
     public Set<String> getUniqueLemmas(String text) {
         return getLemmasFrequency(text).keySet();
     }
-
 
     public Set<String> getLemmasFromQuery(String query) {
         if (query == null || query.trim().isEmpty()) {
