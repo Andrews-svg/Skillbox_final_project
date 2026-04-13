@@ -1,0 +1,167 @@
+server:
+  port: 8080
+
+spring:
+  mvc:
+    contentnegotiation:
+      favor-path-extension: true
+      favor-parameter: false
+      ignore-accept-header: true
+      use-jaf: false
+      media-types:
+        css: text/css
+        js: application/javascript
+  resources:
+    static-locations: classpath:/static/,classpath:/public/,file:/uploads/
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Europe/Moscow&useLegacyDatetimeCode=false
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+  jpa:
+    show-sql: true
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      dialect: org.hibernate.dialect.MySQLDialect
+      properties:
+        hibernate:
+          format_sql: true
+          use_sql_comments: true
+          generate_statistics: true
+          session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 100
+          id:
+            new_generator_mappings: false
+          order_inserts: true
+          order_updates: true
+          jdbc:
+            time_zone: Europe/Moscow
+          cache:
+            use_second_level_cache: true
+            region:
+              factory_class: org.ehcache.jsr107.Eh107CacheRegionFactory
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+    encoding: UTF-8
+  jackson:
+    time-zone: Europe/Moscow
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+jwt:
+  secret: ${JWT_SECRET:bXlTdXBlclNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvblRoYXRJc0F0TGVhc3QzMkNoYXJzTG9uZw==}
+  issuer: search-engine
+  audience: search-engine-client
+  access-token:
+    expiration: 3600000
+  refresh-token:
+    expiration: 604800000
+  allowed-clock-skew-seconds: 30
+  cookie:
+    name: auth_token
+    secure: false
+    http-only: true
+    same-site: strict
+    max-age: 86400
+    path: /
+
+indexing-settings:
+  sites:
+    - url: https://skillbox.ru
+      name: Skillbox
+
+crawler:
+  js-enabled-sites:
+    - https://playback.ru
+    - https://skillbox.ru
+  js-timeout: 30000
+  js-wait: 5000
+  delay:
+    min: 3000
+    max: 7000
+
+logging:
+  level:
+    liquibase: DEBUG
+    searchengine: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+    org.springframework: DEBUG
+    org.springframework.mail: DEBUG
+    org.springframework.mail.javamail.JavaMailSenderImpl: DEBUG
+  file:
+    name: logs/debug.log
+    max-size: 100MB
+    max-history: 7
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+common:
+  userAgent: Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6
+  referrer: http://www.google.com
+  webInterfacePath: /admin
+  sites:
+    - url: https://www.abc-school.org
+      name: ABC
+
+logging:
+  level:
+    root: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+  file:
+    path: logs
+    name: dev-app.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+logging:
+  level:
+    root: ERROR
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+  file:
+    path: logs
+    name: test-app.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+    org.springframework: DEBUG
+  file:
+    path: logs
+    name: prod-app.log
