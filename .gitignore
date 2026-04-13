@@ -130,4 +130,4 @@ out/
 Icon?
 .Trashes
 __MACOSX
-Page/
+Page/src/main/resources/application.yaml
