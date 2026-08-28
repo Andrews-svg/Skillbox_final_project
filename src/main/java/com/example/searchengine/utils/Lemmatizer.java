@@ -1,11 +1,13 @@
 package com.example.searchengine.utils;
 
+import org.apache.lucene.morphology.LuceneMorphology;
+import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
-import static com.github.demidko.aot.WordformMeaning.lookupForMeanings;
 
 @Component
 public class Lemmatizer {
@@ -15,8 +17,15 @@ public class Lemmatizer {
             "СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ", "ЧАСТИЦА"
     );
 
+    private final LuceneMorphology morphology;
+
     public Lemmatizer() {
-        logger.info("Lemmatizer initialized with AOT library (version 2025.11.25)");
+        try {
+            this.morphology = new RussianLuceneMorphology();
+            logger.info("Lemmatizer initialized with RussianLuceneMorphology (Lucene 9.3 compatible)");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize RussianLuceneMorphology", e);
+        }
     }
 
     private String cleanText(String text) {
@@ -31,24 +40,23 @@ public class Lemmatizer {
 
     private String getNormalForm(String word) {
         try {
-            var meanings = lookupForMeanings(word);
-            if (meanings != null && !meanings.isEmpty()) {
-                return meanings.get(0).toString();
+            List<String> normalForms = morphology.getNormalForms(word);
+            if (normalForms != null && !normalForms.isEmpty()) {
+                return normalForms.get(0);
             }
         } catch (Exception e) {
-            logger.debug("Could not get lemma for word: {}", word);
+            logger.debug("Could not get lemma for word: {}", word, e);
         }
         return null;
     }
 
     private boolean isServiceWord(String word) {
         try {
-            var meanings = lookupForMeanings(word);
-            if (meanings != null && !meanings.isEmpty()) {
-                for (var meaning : meanings) {
-                    String morphInfo = meaning.getMorphology().toString();
+            List<String> morphInfos = morphology.getMorphInfo(word);
+            if (morphInfos != null) {
+                for (String info : morphInfos) {
                     for (String part : SERVICE_PARTS) {
-                        if (morphInfo.contains(part)) {
+                        if (info.contains(part)) {
                             return true;
                         }
                     }
