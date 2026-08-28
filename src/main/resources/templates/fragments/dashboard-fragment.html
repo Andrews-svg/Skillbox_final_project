@@ -1,0 +1,92 @@
+<div class="Section">
+    <div class="Section-header">
+        <h2 class="Section-title">Dashboard</h2>
+    </div>
+    <div class="Statistics">
+        <div class="Statistics-info">
+            <div class="Statistics-block">
+                <span class="Statistics-amount" id="totalSites">0</span>
+                <span class="Statistics-title">sites</span>
+            </div>
+            <div class="Statistics-block">
+                <span class="Statistics-amount" id="totalPages">0</span>
+                <span class="Statistics-title">pages</span>
+            </div>
+            <div class="Statistics-block">
+                <span class="Statistics-amount" id="totalLemmas">0</span>
+                <span class="Statistics-title">lemmas</span>
+            </div>
+        </div>
+    </div>
+    <div class="table-container" style="margin-top: 20px; overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Сайт</th>
+                <th>Статус</th>
+                <th>Страниц</th>
+                <th>Лемм</th>
+                <th>Ошибка</th>
+                <th>Последнее обновление</th>
+            </tr>
+            </thead>
+            <tbody id="statisticsTableBody">
+            <tr><td colspan="6" style="text-align: center;">Загрузка данных...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const backendUrl = window.backendApiUrl || '/api';
+
+        function loadStatistics() {
+            fetch(backendUrl + '/statistics')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result && data.statistics) {
+                        const stats = data.statistics;
+                        document.getElementById('totalSites').textContent = stats.total?.sites || 0;
+                        document.getElementById('totalPages').textContent = stats.total?.pages || 0;
+                        document.getElementById('totalLemmas').textContent = stats.total?.lemmas || 0;
+
+                        const tbody = document.getElementById('statisticsTableBody');
+                        tbody.innerHTML = '';
+
+                        if (stats.detailed && stats.detailed.length) {
+                            stats.detailed.forEach(site => {
+                                let statusClass = '';
+                                let statusText = site.status || 'UNKNOWN';
+                                if (site.status === 'INDEXED') statusClass = 'status-indexed';
+                                else if (site.status === 'INDEXING') statusClass = 'status-indexing';
+                                else if (site.status === 'FAILED') statusClass = 'status-failed';
+
+                                const row = `
+                                    <tr>
+                                        <td><a href="${site.url}" target="_blank">${site.name || site.url}</a></td>
+                                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                                        <td>${site.pages || 0}</td>
+                                        <td>${site.lemmas || 0}</td>
+                                        <td>${site.error || ''}</td>
+                                        <td>${site.statusTime ? new Date(site.statusTime * 1000).toLocaleString() : ''}</td>
+                                    </tr>
+                                `;
+                                tbody.insertAdjacentHTML('beforeend', row);
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет данных</td></tr>';
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Dashboard error:', err);
+                    document.getElementById('statisticsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center;">Ошибка загрузки статистики</td></tr>';
+                });
+        }
+
+        loadStatistics();
+        const interval = setInterval(loadStatistics, 30000);
+        window.addEventListener('beforeunload', () => clearInterval(interval));
+    })();
+</script>

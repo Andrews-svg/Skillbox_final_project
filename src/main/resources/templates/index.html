@@ -893,21 +893,6 @@
             background-color: var(--error-bg);
         }
 
-        /* Стили для пользовательских вкладок */
-        .user-tab-content {
-            padding: 30px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border: 2px solid var(--primary-green);
-        }
-
-        .user-tab-content h2 {
-            color: var(--primary-green-dark);
-            margin-bottom: 20px;
-            font-family: Montserrat, sans-serif;
-        }
-
         .management-controls {
             display: flex;
             gap: 15px;
@@ -958,9 +943,8 @@
 </div>
 
 <div class="app-container">
-    <!-- Оборачиваем табы в .Tabs для Tabs.init() -->
     <div class="Tabs">
-        <!-- ПУБЛИЧНЫЕ ТАБЫ (всегда видны) -->
+        <!-- ПУБЛИЧНЫЕ ТАБЫ (видны всегда) -->
         <div class="tabs-container" id="publicTabs">
             <a class="tab-link Tabs-link" href="#login">🔐 Вход</a>
             <a class="tab-link Tabs-link" href="#register">📝 Регистрация</a>
@@ -999,8 +983,6 @@
             </div>
             <div class="loader-text">Загрузка...</div>
         </div>
-
-        <!-- ===== ПОЛЬЗОВАТЕЛЬСКИЕ ВКЛАДКИ (ВСТРОЕНЫ В INDEX) ===== -->
 
         <!-- ПРИВЕТСТВЕННЫЙ БЛОК -->
         <div id="welcomeBlock" class="welcome-block">
@@ -1050,116 +1032,6 @@
             </div>
         </div>
 
-        <!-- ВКЛАДКА DASHBOARD (СТАТИСТИКА) -->
-        <div id="userDashboard" class="user-tab-content" style="display: none;">
-            <h2><i class="fas fa-chart-bar"></i> Статистика поискового движка</h2>
-
-            <!-- Общая статистика -->
-            <div class="stats-grid">
-                <div class="stats-card">
-                    <span class="stats-value" id="totalSites">0</span>
-                    <span class="stats-label">Сайтов</span>
-                </div>
-                <div class="stats-card">
-                    <span class="stats-value" id="totalPages">0</span>
-                    <span class="stats-label">Страниц</span>
-                </div>
-                <div class="stats-card">
-                    <span class="stats-value" id="totalLemmas">0</span>
-                    <span class="stats-label">Лемм</span>
-                </div>
-            </div>
-
-            <!-- Детальная статистика по сайтам -->
-            <div class="table-container">
-                <table class="data-table" id="statisticsTable">
-                    <thead>
-                    <tr>
-                        <th>Сайт</th>
-                        <th>Статус</th>
-                        <th>Страниц</th>
-                        <th>Лемм</th>
-                        <th>Ошибка</th>
-                        <th>Последнее обновление</th>
-                    </tr>
-                    </thead>
-                    <tbody id="statisticsTableBody">
-                    <tr>
-                        <td colspan="6" class="text-center">Загрузка данных...</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ВКЛАДКА MANAGEMENT (УПРАВЛЕНИЕ) -->
-        <div id="userManagement" class="user-tab-content" style="display: none;">
-            <h2><i class="fas fa-cogs"></i> Управление индексацией</h2>
-
-            <!-- Кнопки управления -->
-            <div class="card">
-                <div class="card-title">
-                    <i class="fas fa-play-circle"></i>
-                    <span>Управление процессом индексации</span>
-                </div>
-
-                <div class="management-controls">
-                    <button class="btn btn-success" id="startIndexingBtn">
-                        <i class="fas fa-play"></i> START INDEXING
-                    </button>
-                    <button class="btn btn-danger" id="stopIndexingBtn">
-                        <i class="fas fa-stop"></i> STOP INDEXING
-                    </button>
-                </div>
-            </div>
-
-            <!-- Добавление отдельной страницы -->
-            <div class="card">
-                <div class="card-title">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Добавить или обновить страницу</span>
-                </div>
-
-                <div class="url-input-group">
-                    <input type="url" class="form-control" id="pageUrl"
-                           placeholder="https://example.com/page">
-                    <button class="btn btn-primary" id="indexPageBtn">
-                        <i class="fas fa-plus"></i> ADD PAGE
-                    </button>
-                </div>
-            </div>
-
-            <!-- Результат операции -->
-            <div id="managementResult" class="global-alert" style="display: none;"></div>
-        </div>
-
-        <!-- ВКЛАДКА SEARCH (ПОИСК) -->
-        <div id="userSearch" class="user-tab-content" style="display: none;">
-            <h2><i class="fas fa-search"></i> Поиск по индексированным страницам</h2>
-
-            <!-- Форма поиска -->
-            <div class="card">
-                <div class="search-controls">
-                    <div class="search-input-group">
-                        <input type="text" class="form-control" id="searchQuery"
-                               placeholder="Введите поисковый запрос...">
-                        <select class="form-select" id="searchSite" style="width: 200px;">
-                            <option value="">Все сайты</option>
-                            <!-- Сайты будут загружаться динамически -->
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="searchBtn">
-                        <i class="fas fa-search"></i> НАЙТИ
-                    </button>
-                </div>
-            </div>
-
-            <!-- Результаты поиска -->
-            <div id="searchResults" class="search-results">
-                <!-- Результаты будут вставляться сюда -->
-            </div>
-        </div>
-
         <!-- КОНТЕЙНЕРЫ ДЛЯ ФРАГМЕНТОВ (только для форм авторизации) -->
         <div class="auth-container" style="display: none;"></div>
         <div class="main-interface" style="display: none;"></div>
@@ -1168,7 +1040,7 @@
 
     <!-- Футер -->
     <footer class="footer">
-        <p>© 2024 Поисковый движок. Учебный проект.</p>
+        <p>© 2025 Поисковый движок. Учебный проект.</p>
         <p style="font-size: 12px; margin-top: 5px;">
             Технологии: Spring Boot, MySQL, Lucene Morphology, Jsoup
         </p>
@@ -1200,7 +1072,6 @@
     // Обработка логина (вызывается из login-fragment)
     window.App.handleLogin = function() {
         console.log('Login handler');
-        // Здесь будет логика входа
         document.getElementById('loginAlert').style.display = 'block';
     };
 </script>
@@ -1213,33 +1084,42 @@
         var currentHash = window.location.hash;
 
         // Функция загрузки фрагментов авторизации
-function loadAuthFragment(route, callback) {
-    // Добавляем параметр v с timestamp, чтобы сломать кеш
-    var version = Date.now(); // текущее время в миллисекундах
-    var url = route === 'login'
-        ? '/fragments/login-fragment.html?v=' + version
-        : '/fragments/registration-fragment.html?v=' + version;
+        function loadAuthFragment(route, callback) {
+            var version = Date.now();
+            var url = route === 'login'
+                ? '/fragments/login-fragment.html?v=' + version
+                : '/fragments/registration-fragment.html?v=' + version;
 
-    $('.auth-container').load(url, function() {
-        console.log('✅ Загружен фрагмент:', route);
-        $('.auth-container').show();
-        if (callback) callback();
-    });
-}
+            $('.auth-container').load(url, function() {
+                console.log('✅ Загружен фрагмент:', route);
+                $('.auth-container').show();
+                if (callback) callback();
+            });
+        }
+
+        // Функция загрузки фрагментов вкладок (dashboard, management, search)
+        function loadTabFragment(tabName, callback) {
+            var version = Date.now();
+            var url = '/fragments/' + tabName + '-fragment.html?v=' + version;
+            $('#' + tabName).load(url, function() {
+                console.log('✅ Загружен фрагмент:', tabName);
+                if (callback) callback();
+            });
+        }
 
         // Функция маршрутизации
         function loadFragment(hash) {
             console.log('📍 Маршрутизация:', hash);
 
             // Скрываем все блоки
-            $('#welcomeBlock, #userDashboard, #userManagement, #userSearch, .auth-container, .main-interface').hide();
+            $('#welcomeBlock, .auth-container, .main-interface, #dashboard, #management, #search').hide();
 
             if (!hash || hash === '#') {
                 $('#welcomeBlock').show();
                 return;
             }
 
-            var route = hash.substring(1); // убираем #
+            var route = hash.substring(1);
 
             // Публичные маршруты (фрагменты)
             if (route === 'login') {
@@ -1258,38 +1138,33 @@ function loadAuthFragment(route, callback) {
                 return;
             }
 
-            // Пользовательские вкладки (встроены в index)
+            // Пользовательские вкладки — загружаем через AJAX
             if (route === 'dashboard') {
-                $('#userDashboard').show();
-                loadStatistics(); // Загружаем статистику
+                $('#dashboard').show();
+                loadTabFragment('dashboard');
             }
             else if (route === 'management') {
-                $('#userManagement').show();
-                // Здесь можно загрузить данные для управления
+                $('#management').show();
+                loadTabFragment('management');
             }
             else if (route === 'search') {
-                $('#userSearch').show();
-                loadSitesForSearch(); // Загружаем список сайтов для поиска
+                $('#search').show();
+                loadTabFragment('search');
             }
             else {
-                // Неизвестный маршрут - приветствие
                 $('#welcomeBlock').show();
             }
         }
 
-        // ===== API ВЫЗОВЫ =====
-
-        // Загрузка статистики
+        // Загрузка статистики (для dashboard)
         function loadStatistics() {
             $.get(backendApiUrl + '/statistics')
                 .done(function(response) {
                     if (response.result && response.statistics) {
-                        // Общая статистика
                         $('#totalSites').text(response.statistics.total.sites || 0);
                         $('#totalPages').text(response.statistics.total.pages || 0);
                         $('#totalLemmas').text(response.statistics.total.lemmas || 0);
 
-                        // Детальная статистика
                         var tbody = $('#statisticsTableBody');
                         tbody.empty();
 
@@ -1340,83 +1215,6 @@ function loadAuthFragment(route, callback) {
                 });
         }
 
-        // Запуск индексации
-        $('#startIndexingBtn').on('click', function() {
-            $.get(backendApiUrl + '/startIndexing')
-                .done(function(response) {
-                    if (response.result) {
-                        showResult('managementResult', 'Индексация успешно запущена', 'success');
-                    } else {
-                        showResult('managementResult', response.error || 'Ошибка запуска индексации', 'error');
-                    }
-                })
-                .fail(function() {
-                    showResult('managementResult', 'Ошибка соединения с сервером', 'error');
-                });
-        });
-
-        // Остановка индексации
-        $('#stopIndexingBtn').on('click', function() {
-            $.get(backendApiUrl + '/stopIndexing')
-                .done(function(response) {
-                    if (response.result) {
-                        showResult('managementResult', 'Индексация успешно остановлена', 'success');
-                    } else {
-                        showResult('managementResult', response.error || 'Ошибка остановки индексации', 'error');
-                    }
-                })
-                .fail(function() {
-                    showResult('managementResult', 'Ошибка соединения с сервером', 'error');
-                });
-        });
-
-        // Добавление страницы
-        $('#indexPageBtn').on('click', function() {
-            var url = $('#pageUrl').val();
-            if (!url) {
-                showResult('managementResult', 'Введите URL страницы', 'error');
-                return;
-            }
-
-            $.post(backendApiUrl + '/indexPage', { url: url })
-                .done(function(response) {
-                    if (response.result) {
-                        showResult('managementResult', 'Страница успешно добавлена/обновлена', 'success');
-                        $('#pageUrl').val('');
-                    } else {
-                        showResult('managementResult', response.error || 'Ошибка добавления страницы', 'error');
-                    }
-                })
-                .fail(function() {
-                    showResult('managementResult', 'Ошибка соединения с сервером', 'error');
-                });
-        });
-
-        // Поиск
-        $('#searchBtn').on('click', function() {
-            var query = $('#searchQuery').val();
-            if (!query) {
-                alert('Введите поисковый запрос');
-                return;
-            }
-
-            var site = $('#searchSite').val();
-            var data = { query: query };
-            if (site) data.site = site;
-
-            $.get(backendApiUrl + '/search', data)
-                .done(function(response) {
-                    if (response.result && response.data) {
-                        displaySearchResults(response);
-                    } else {
-                        $('#searchResults').html('<div class="alert alert-error">' + (response.error || 'Ничего не найдено') + '</div>');
-                    }
-                })
-                .fail(function() {
-                    $('#searchResults').html('<div class="alert alert-error">Ошибка соединения с сервером</div>');
-                });
-        });
-
         // Отображение результатов поиска
         function displaySearchResults(response) {
             var html = '<h3>Найдено страниц: ' + response.count + '</h3>';
@@ -1451,12 +1249,10 @@ function loadAuthFragment(route, callback) {
         $(document).ready(function() {
             console.log('🚀 Запуск приложения');
 
-            // Скрываем глобальный лоадер
             setTimeout(function() {
                 $('#globalLoader').fadeOut(500);
             }, 500);
 
-            // Управление видимостью табов
             if (window.isAuthenticated) {
                 $('#publicTabs').hide();
                 $('#protectedTabs').show();
@@ -1465,10 +1261,8 @@ function loadAuthFragment(route, callback) {
                 $('#protectedTabs').hide();
             }
 
-            // Загружаем фрагмент по текущему hash
             loadFragment(window.location.hash);
 
-            // Слушаем изменения hash
             $(window).on('hashchange', function() {
                 var newHash = window.location.hash;
                 if (newHash !== currentHash) {

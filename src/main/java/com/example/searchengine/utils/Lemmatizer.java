@@ -1,13 +1,10 @@
 package com.example.searchengine.utils;
 
-import com.github.demidko.aot.WordformMeaning;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
-
 import static com.github.demidko.aot.WordformMeaning.lookupForMeanings;
 
 @Component
@@ -19,7 +16,7 @@ public class Lemmatizer {
     );
 
     public Lemmatizer() {
-        logger.info("Lemmatizer initialized with AOT library");
+        logger.info("Lemmatizer initialized with AOT library (version 2025.11.25)");
     }
 
     private String cleanText(String text) {
@@ -34,9 +31,9 @@ public class Lemmatizer {
 
     private String getNormalForm(String word) {
         try {
-            List<WordformMeaning> meanings = lookupForMeanings(word);
+            var meanings = lookupForMeanings(word);
             if (meanings != null && !meanings.isEmpty()) {
-                return meanings.getFirst().toString();
+                return meanings.get(0).toString();
             }
         } catch (Exception e) {
             logger.debug("Could not get lemma for word: {}", word);
@@ -46,9 +43,9 @@ public class Lemmatizer {
 
     private boolean isServiceWord(String word) {
         try {
-            List<WordformMeaning> meanings = lookupForMeanings(word);
+            var meanings = lookupForMeanings(word);
             if (meanings != null && !meanings.isEmpty()) {
-                for (WordformMeaning meaning : meanings) {
+                for (var meaning : meanings) {
                     String morphInfo = meaning.getMorphology().toString();
                     for (String part : SERVICE_PARTS) {
                         if (morphInfo.contains(part)) {
@@ -68,13 +65,16 @@ public class Lemmatizer {
             return new HashMap<>();
         }
         String cleaned = cleanText(text);
+        if (cleaned.isEmpty()) {
+            return new HashMap<>();
+        }
         String[] words = cleaned.split("\\s+");
         Map<String, Integer> frequency = new HashMap<>();
         for (String word : words) {
-            if (word.isEmpty() || word.length() < 2) continue;
+            if (word.length() < 2) continue;
             if (isServiceWord(word)) continue;
             String lemma = getNormalForm(word);
-            if (lemma != null) {
+            if (lemma != null && !lemma.isEmpty()) {
                 frequency.put(lemma, frequency.getOrDefault(lemma, 0) + 1);
             }
         }
@@ -91,13 +91,16 @@ public class Lemmatizer {
             return new HashSet<>();
         }
         String cleaned = cleanText(query);
+        if (cleaned.isEmpty()) {
+            return new HashSet<>();
+        }
         String[] words = cleaned.split("\\s+");
         Set<String> lemmas = new HashSet<>();
         for (String word : words) {
             if (word.length() < 2) continue;
             if (isServiceWord(word)) continue;
             String lemma = getNormalForm(word);
-            if (lemma != null) {
+            if (lemma != null && !lemma.isEmpty()) {
                 lemmas.add(lemma);
             }
         }

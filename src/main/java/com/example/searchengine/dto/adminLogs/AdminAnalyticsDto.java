@@ -68,7 +68,7 @@ public class AdminAnalyticsDto {
                 '}';
     }
 
-    // Вложенный класс Builder
+
     public static class Builder {
         private List<TopQueryDto> topQueries;
         private List<ZeroResultQueryDto> zeroResultQueries;

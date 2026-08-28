@@ -1,0 +1,101 @@
+<div class="Section">
+    <div class="Section-header">
+        <h2 class="Section-title">Management</h2>
+    </div>
+
+    <!-- Управление индексацией -->
+    <div class="card">
+        <div class="card-title">
+            <i class="fas fa-play-circle"></i>
+            <span>Управление процессом индексации</span>
+        </div>
+        <div class="management-controls">
+            <button class="btn btn-success" id="startIndexingBtn">
+                <i class="fas fa-play"></i> START INDEXING
+            </button>
+            <button class="btn btn-danger" id="stopIndexingBtn">
+                <i class="fas fa-stop"></i> STOP INDEXING
+            </button>
+        </div>
+    </div>
+
+    <!-- Добавление отдельной страницы -->
+    <div class="card">
+        <div class="card-title">
+            <i class="fas fa-plus-circle"></i>
+            <span>Добавить или обновить страницу</span>
+        </div>
+        <div class="url-input-group">
+            <input type="url" class="form-control" id="pageUrl" placeholder="https://example.com/page">
+            <button class="btn btn-primary" id="indexPageBtn">
+                <i class="fas fa-plus"></i> ADD PAGE
+            </button>
+        </div>
+    </div>
+
+    <div id="managementResult" class="global-alert" style="display: none;"></div>
+</div>
+
+<script>
+    (function() {
+        const backendUrl = window.backendApiUrl || '/api';
+
+        function showResult(message, type) {
+            const alertDiv = document.getElementById('managementResult');
+            if (alertDiv) {
+                alertDiv.textContent = message;
+                alertDiv.className = 'global-alert alert-' + type;
+                alertDiv.style.display = 'block';
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        document.getElementById('startIndexingBtn')?.addEventListener('click', function() {
+            fetch(backendUrl + '/startIndexing')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result) {
+                        showResult('Индексация успешно запущена', 'success');
+                    } else {
+                        showResult(data.error || 'Ошибка запуска индексации', 'error');
+                    }
+                })
+                .catch(() => showResult('Ошибка соединения с сервером', 'error'));
+        });
+
+        document.getElementById('stopIndexingBtn')?.addEventListener('click', function() {
+            fetch(backendUrl + '/stopIndexing')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result) {
+                        showResult('Индексация успешно остановлена', 'success');
+                    } else {
+                        showResult(data.error || 'Ошибка остановки индексации', 'error');
+                    }
+                })
+                .catch(() => showResult('Ошибка соединения с сервером', 'error'));
+        });
+
+        document.getElementById('indexPageBtn')?.addEventListener('click', function() {
+            const url = document.getElementById('pageUrl')?.value;
+            if (!url) {
+                showResult('Введите URL страницы', 'error');
+                return;
+            }
+
+            fetch(backendUrl + '/indexPage?url=' + encodeURIComponent(url), { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result) {
+                        showResult('Страница успешно добавлена/обновлена', 'success');
+                        document.getElementById('pageUrl').value = '';
+                    } else {
+                        showResult(data.error || 'Ошибка добавления страницы', 'error');
+                    }
+                })
+                .catch(() => showResult('Ошибка соединения с сервером', 'error'));
+        });
+    })();
+</script>
