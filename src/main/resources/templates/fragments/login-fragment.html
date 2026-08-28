@@ -370,6 +370,16 @@
             document.querySelectorAll('.password-toggle-btn').forEach(btn => btn.remove());
         }
 
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('loginAlert');
+            if (alertDiv) {
+                alertDiv.textContent = message;
+                alertDiv.className = 'global-alert ' + type;
+                alertDiv.style.display = 'block';
+                setTimeout(() => { alertDiv.style.display = 'none'; }, 5000);
+            }
+        }
+
         // ===== ОБРАБОТЧИК ФОРМЫ =====
         function setupLoginForm() {
             const form = document.getElementById('loginForm');
@@ -381,24 +391,71 @@
 
         function handleSubmit(e) {
             e.preventDefault();
+            e.stopImmediatePropagation();
             console.log('🔐 Login: отправка формы');
 
             const username = document.getElementById('login-username')?.value;
             const password = document.getElementById('login-password')?.value;
 
             if (!username || !password) {
-                alert('Заполните все поля');
+                showAlert('Заполните все поля', 'error');
                 return;
             }
 
-            if (window.Auth && typeof window.Auth.loginUser === 'function') {
-                window.Auth.loginUser({ username, password })
-                    .done(() => console.log('✅ Успешный вход'))
-                    .fail((err) => console.error('❌ Ошибка входа', err));
-            } else {
-                console.log('Демо-режим: вход с', username, password);
-                alert('Демо: вход выполнен');
-            }
+            const submitBtn = document.getElementById('loginBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Вход...';
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.result) {
+                    localStorage.setItem('authToken', data.token);
+                    window.isAuthenticated = true;
+
+                    showAlert('Вход выполнен успешно!', 'success');
+
+                    // Скрываем форму входа
+                    $('.auth-container').hide();
+
+                    // Скрываем приветственный блок
+                    $('#welcomeBlock').hide();
+
+                    // Показываем вкладку статистики
+                    $('#userDashboard').show();
+
+                    // Скрываем остальные пользовательские вкладки
+                    $('#userManagement').hide();
+                    $('#userSearch').hide();
+
+                    // Переключаем табы
+                    $('#publicTabs').hide();
+                    $('#protectedTabs').show();
+
+                    // Загружаем статистику
+                    if (typeof loadStatistics === 'function') {
+                        loadStatistics();
+                    }
+
+                    // Устанавливаем хеш на dashboard
+                    window.location.hash = 'dashboard';
+                } else {
+                    showAlert(data.error || 'Ошибка входа', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert('Ошибка соединения с сервером', 'error');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
         }
 
         // ===== ИНИЦИАЛИЗАЦИЯ ФРАГМЕНТА =====
@@ -408,7 +465,6 @@
             removeOldEyes();
             createEyeButtons();
 
-            // 👇 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ - СЛУШАТЕЛЬ ПЕРЕКЛЮЧЕНИЯ
             document.addEventListener('fragmentLoaded', function onFragmentLoad() {
                 console.log('👁️ fragmentLoaded -> пересоздаём глазки');
                 removeOldEyes();
