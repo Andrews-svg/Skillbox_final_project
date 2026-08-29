@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,25 +23,31 @@ public class WatchdogService {
     private static final Logger logger = LoggerFactory.getLogger(WatchdogService.class);
 
     private final CrawlerConfig crawlerConfig;
+    private final SiteService siteService;
+    private final PageService pageService;
 
     private final long IDLE_TIMEOUT_MS;
     private final long CHECK_INTERVAL_MS;
     private final int MAX_ANALYSIS_ATTEMPTS;
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService scheduler;
+
     private final AtomicLong lastActivityTime = new AtomicLong(System.currentTimeMillis());
     private final AtomicBoolean isActive = new AtomicBoolean(true);
     private final AtomicInteger analysisAttempts = new AtomicInteger(0);
 
     private Site currentSite;
-    private SiteService siteService;
-    private PageService pageService;
-    private Runnable onTimeoutAction;
     private Long siteId;
+    private ExecutorService crawlerExecutor;
+    private Runnable onTimeoutAction;
 
 
-    public WatchdogService(CrawlerConfig crawlerConfig) {
+    public WatchdogService(CrawlerConfig crawlerConfig,
+                           SiteService siteService,
+                           PageService pageService) {
         this.crawlerConfig = crawlerConfig;
+        this.siteService = siteService;
+        this.pageService = pageService;
         this.IDLE_TIMEOUT_MS = crawlerConfig.getIdleTimeout();
         this.CHECK_INTERVAL_MS = crawlerConfig.getCheckInterval();
         this.MAX_ANALYSIS_ATTEMPTS = crawlerConfig.getMaxAnalysisAttempts();
@@ -49,12 +56,22 @@ public class WatchdogService {
     }
 
 
-    public void startWatching(Site site, SiteService siteService,
-                              PageService pageService, Runnable onTimeout) {
+    public void startWatching(Site site, ExecutorService crawlerExecutor, Runnable onTimeout) {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdownNow();
+            try {
+                if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+                    logger.warn("Предыдущий scheduler не завершился, принудительно завершаем");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                scheduler.shutdownNow();
+            }
+        }
+        scheduler = Executors.newScheduledThreadPool(1);
         this.currentSite = site;
         this.siteId = site.getId();
-        this.siteService = siteService;
-        this.pageService = pageService;
+        this.crawlerExecutor = crawlerExecutor;
         this.onTimeoutAction = onTimeout;
         this.lastActivityTime.set(System.currentTimeMillis());
         this.isActive.set(true);
@@ -136,6 +153,15 @@ public class WatchdogService {
 
 
     private boolean hasActiveCrawlerThreads() {
+        if (crawlerExecutor == null) {
+            return false;
+        }
+        if (crawlerExecutor.isShutdown() || crawlerExecutor.isTerminated()) {
+            return false;
+        }
+        if (crawlerExecutor instanceof java.util.concurrent.ThreadPoolExecutor tpe) {
+            return tpe.getActiveCount() > 0 || tpe.getQueue().size() > 0;
+        }
         return Thread.getAllStackTraces().keySet().stream()
                 .anyMatch(t -> (t.getName().contains("ForkJoinPool") ||
                         t.getName().contains("CrawlTask") ||
@@ -143,11 +169,9 @@ public class WatchdogService {
                         t.getState() == Thread.State.RUNNABLE);
     }
 
-
     private boolean hasSiteErrors() {
         return false;
     }
-
 
     public void notifyActivity() {
         lastActivityTime.set(System.currentTimeMillis());
@@ -163,14 +187,19 @@ public class WatchdogService {
         }
         logger.info("🛑 Watchdog остановлен для сайта {}",
                 currentSite != null ? currentSite.getUrl() : "unknown");
-        scheduler.shutdown();
-        try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+
+        if (scheduler != null) {
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
                 scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            scheduler.shutdownNow();
-            Thread.currentThread().interrupt();
+            scheduler = null;
         }
+        crawlerExecutor = null;
     }
 }
