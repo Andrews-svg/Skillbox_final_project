@@ -69,6 +69,7 @@ public class SiteCrawler {
         pageCounters.putIfAbsent(siteId, new AtomicInteger(0));
         errorCounters.putIfAbsent(siteId, new AtomicInteger(0));
         lastActivityTime.putIfAbsent(siteId, new AtomicLong(System.currentTimeMillis()));
+
         AtomicBoolean stopFlag = stopFlags.get(siteId);
         Set<String> visited = visitedUrls.get(siteId);
         AtomicInteger counter = pageCounters.get(siteId);
@@ -82,7 +83,7 @@ public class SiteCrawler {
         long expectedPages = estimateExpectedPages(siteUrl);
         logger.info("🔥 Начало обхода сайта: {} (ID: {}), ожидаемое кол-во страниц: ~{}",
                 siteUrl, siteId, expectedPages);
-        watchdogService.startWatching(site, siteService, pageService, () -> {
+        watchdogService.startWatching(site, pool, () -> {
             logger.info("🛑 Watchdog инициировал остановку для сайта {}", siteUrl);
             stopFlag.set(true);
         });
