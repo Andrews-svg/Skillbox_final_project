@@ -1,12 +1,12 @@
 package com.example.searchengine.config.security;
 
-
 import com.example.searchengine.services.CustomUserDetailsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -49,73 +49,61 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 )
 
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            if (request.getServletPath().startsWith("/api/")) {
+                                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                                response.setContentType("application/json");
+                                response.setCharacterEncoding("UTF-8");
+                                response.getWriter().write(
+                                        "{\"result\": false, \"error\": \"Требуется аутентификация\", \"code\": 401}"
+                                );
+                            } else {
+                                response.sendRedirect("/login");
+                            }
+                        })
+                )
 
                 .authorizeHttpRequests(authorization -> authorization
 
-
-                        .requestMatchers("/", "/layout").permitAll()
-
-                        .requestMatchers("/home").permitAll()
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/register").permitAll()
-
+                        .requestMatchers("/", "/layout", "/home", "/login", "/register").permitAll()
                         .requestMatchers("/tab/home").permitAll()
+                        .requestMatchers("/fragments/home", "/fragments/login-fragment",
+                                "/fragments/registration-fragment", "/fragments/login",
+                                "/fragments/registration", "/fragments/navbar").permitAll()
 
-                        .requestMatchers("/fragments/home").permitAll()
-                        .requestMatchers("/fragments/login-fragment").permitAll()
-                        .requestMatchers("/fragments/registration-fragment").permitAll()
-                        .requestMatchers("/fragments/login").permitAll()
-                        .requestMatchers("/fragments/registration").permitAll()
-                        .requestMatchers("/fragments/navbar").permitAll()
 
                         .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
 
                         .requestMatchers(
-                                "/assets/**",
-                                "/favicon/**",
-                                "/images/**",
-                                "/css/**",
-                                "/js/**",
-                                "/webjars/**",
-                                "/static/**",
-                                "/error",
-                                "/csrf-token",
-                                "/csp-reports"
+                                "/assets/**", "/favicon/**", "/images/**",
+                                "/css/**", "/js/**", "/webjars/**", "/static/**",
+                                "/error", "/csrf-token", "/csp-reports"
                         ).permitAll()
-
 
                         .requestMatchers(
-                                "/forgot-password",
-                                "/reset-password",
-                                "/password/forgot",
-                                "/password/reset",
-                                "/auth/activate/**",
-                                "/csp-reports"
+                                "/forgot-password", "/reset-password",
+                                "/password/forgot", "/password/reset",
+                                "/auth/activate/**", "/csp-reports"
                         ).permitAll()
-
 
                         .requestMatchers("/tab/dashboard", "/tab/management", "/tab/search")
                         .hasAnyAuthority("USER", "ADMIN")
-
                         .requestMatchers("/fragment/dashboard", "/fragment/management", "/fragment/search")
                         .hasAnyAuthority("USER", "ADMIN")
-
                         .requestMatchers("/dashboard", "/management", "/search")
                         .hasAnyAuthority("USER", "ADMIN")
 
-
                         .requestMatchers("/api/user/**").hasAnyAuthority("USER", "ADMIN")
-
-
                         .requestMatchers("/user/profile", "/user/settings")
                         .hasAnyAuthority("USER", "ADMIN")
-
                         .requestMatchers("/password/**").authenticated()
-
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
 
                         .requestMatchers("/fragments/**").permitAll()
+
+                        .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
@@ -130,7 +118,6 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout=true")
@@ -140,18 +127,18 @@ public class SecurityConfig {
                 )
 
                 .sessionManagement(session -> session
+
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation().migrateSession()
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
                         .sessionRegistry(sessionRegistry())
-                )
-
+                ) 
 
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -1,6 +1,5 @@
 package com.example.searchengine.config.security;
 
-
 import com.example.searchengine.services.jwt.JwtTokenService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -35,13 +34,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
 
-
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
-
-            "/",
-            "/layout",
-            "/home",
-
 
             "/login",
             "/register",
@@ -49,17 +42,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             "/reset-password",
             "/password/forgot",
             "/password/reset",
-
-
             "/tab/",
             "/fragments/",
-
-
             "/dashboard",
             "/management",
             "/search",
-
-
             "/assets/",
             "/css/",
             "/js/",
@@ -67,51 +54,53 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             "/webjars/",
             "/favicon.ico",
             "/static/",
-
             "/error",
             "/csrf-token",
             "/csp-reports",
-
 
             "/api/auth/",
             "/api/public/"
     );
 
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        logger.debug("JWT фильтр: проверка пути: {}", path);
+
+        if (path.equals("/")) {
+            logger.debug("JWT фильтр: исключаем корневой путь '/'");
+            return true;
+        }
+
         for (String excludePath : EXCLUDE_PATHS) {
             if (path.startsWith(excludePath)) {
-                logger.debug("JWT фильтр: исключаем путь (начинается с {}): {}", excludePath, path);
+                logger.debug("JWT фильтр: исключаем путь (начинается с '{}'): '{}'", excludePath, path);
                 return true;
             }
         }
-        if (path.startsWith("/auth/activate/")) {
-            return true;
-        }
+
         if (path.startsWith("/api/")) {
-            logger.debug("JWT фильтр: API путь требует проверки токена: {}", path);
+            logger.debug("JWT фильтр: API-путь требует проверки токена: '{}'", path);
             return false;
         }
-        logger.debug("JWT фильтр: обычный путь, пропускаем без токена: {}", path);
+
+        logger.debug("JWT фильтр: обычный публичный путь, пропускаем без токена: '{}'", path);
         return true;
     }
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
         final String requestPath = request.getServletPath();
-        logger.debug("JWT фильтр: обработка защищенного API запроса: {}", requestPath);
+        logger.debug("JWT фильтр: обработка защищённого API запроса: '{}'", requestPath);
+
         String token = extractToken(request);
         if (token == null) {
-            logger.warn("JWT фильтр: отсутствует токен для API маршрута {}", requestPath);
+            logger.warn("JWT фильтр: отсутствует токен для API маршрута '{}'", requestPath);
             sendUnauthorizedError(response, "Требуется JWT токен для доступа к API");
             return;
         }
+
         try {
             String username = jwtUtil.extractUsername(token);
             if (username == null) {
@@ -119,6 +108,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 sendUnauthorizedError(response, "Недействительный JWT токен");
                 return;
             }
+
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
@@ -133,9 +123,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.info("JWT фильтр: успешная аутентификация пользователя: {}", username);
+                    logger.info("JWT фильтр: успешная аутентификация пользователя: '{}'", username);
                 } else {
-                    logger.warn("JWT фильтр: недействительный токен для пользователя: {}", username);
+                    logger.warn("JWT фильтр: недействительный токен для пользователя: '{}'", username);
                     sendUnauthorizedError(response, "Недействительный JWT токен");
                     return;
                 }
@@ -149,9 +139,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             sendInternalError(response);
             return;
         }
+
         chain.doFilter(request, response);
     }
-
 
     private String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
@@ -160,11 +150,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             logger.debug("JWT фильтр: токен из Authorization header (длина: {})", token.length());
             return token;
         }
+
         String tokenParam = request.getParameter("token");
         if (tokenParam != null && !tokenParam.isEmpty()) {
             logger.debug("JWT фильтр: токен из параметра запроса (длина: {})", tokenParam.length());
             return tokenParam;
         }
+
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
@@ -175,10 +167,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 }
             }
         }
+
         logger.debug("JWT фильтр: токен не найден в запросе");
         return null;
     }
-
 
     private void sendUnauthorizedError(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -193,7 +185,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         response.getWriter().write(jsonResponse);
     }
 
-
     private void sendInternalError(HttpServletResponse response) throws IOException {
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         response.setContentType("application/json");
@@ -203,7 +194,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 "{\"result\": false, \"error\": \"%s\", \"code\": 500}",
                 "Внутренняя ошибка сервера".replace("\"", "\\\"")
         );
-
         response.getWriter().write(jsonResponse);
     }
 }
