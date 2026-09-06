@@ -66,7 +66,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authorization -> authorization
 
-                        .requestMatchers("/layout", "/home", "/login", "/register").permitAll()
+                        .requestMatchers("/", "/layout", "/home", "/login", "/register").permitAll()
                         .requestMatchers("/tab/home").permitAll()
                         .requestMatchers("/fragments/home", "/fragments/login-fragment",
                                 "/fragments/registration-fragment", "/fragments/login",
