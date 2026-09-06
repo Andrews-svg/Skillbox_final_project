@@ -1057,7 +1057,20 @@
     window.App = window.App || {};
 
     // Состояние авторизации
-    window.isAuthenticated = !!localStorage.getItem('authToken');
+    function isAuthenticated() {
+    // Проверяем токен в localStorage
+    if (localStorage.getItem('authToken')) return true;
+    if (localStorage.getItem('token')) return true;
+    if (localStorage.getItem('jwtToken')) return true;
+
+    // Проверяем наличие сессии (JSESSIONID)
+    if (document.cookie.indexOf('JSESSIONID=') !== -1) return true;
+
+    return false;
+}
+
+window.isAuthenticated = isAuthenticated();
+
 
     // Базовый URL API (используем backendApiUrl для совместимости с config.js)
     if (typeof backendApiUrl === 'undefined') {

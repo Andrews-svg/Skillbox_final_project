@@ -1711,20 +1711,20 @@
                     };
 
                     loginUser(credentials)
-                        .done(function(response) {
-                            if (handleAuthResponse(response, 'Вход выполнен успешно!')) {
-                                // После успешного входа инициализируем авторизованный режим
-                                if (window.apiInstance) {
-                                    window.apiInstance.initAuthorized();
-                                }
-                                // Показываем основной интерфейс
-                                $('.auth-container').hide();
-                                $('.main-interface').show();
+                       .done(function(response) {
+                           if (handleAuthResponse(response, 'Вход выполнен успешно!')) {
+                               if (window.apiInstance) {
+                                   window.apiInstance.initAuthorized();
+                               }
+                               $('.auth-container').hide();
+                               $('.main-interface').show();
+                               window.isAuthenticated = true;
 
-                                // Обновляем статус
-                                window.isAuthenticated = true;
-                            }
-                        })
+                               // Скрываем публичные вкладки и показываем защищённые
+                               $('#publicTabs').hide();
+                               $('#protectedTabs').show();
+                           }
+                       })
                         .fail(function(xhr) {
                             var errorMsg = 'Ошибка соединения с сервером';
                             try {
@@ -1763,6 +1763,11 @@
             };
         };
          window.Auth = Auth;
+         // Инициализация Auth
+         var auth = Auth();
+         auth.init();
+         auth.initLogin();
+         auth.initRegistration();
 
         // ===========================================
         // ПЕРЕХВАТ AJAX ЗАПРОСОВ ДЛЯ ОБРАБОТКИ 302
