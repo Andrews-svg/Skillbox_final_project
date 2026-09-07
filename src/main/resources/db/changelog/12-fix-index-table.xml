@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================== -->
+    <!-- СТАРЫЙ CHANGESET (оставляем как есть)          -->
+    <!-- ============================================== -->
+    <changeSet id="06-create-index-table" author="midl">
+        <createTable tableName="`index`">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="page_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lemma_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="`rank`" type="FLOAT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="`index`" indexName="idx_page_id">
+            <column name="page_id"/>
+        </createIndex>
+        <createIndex tableName="`index`" indexName="idx_lemma_id">
+            <column name="lemma_id"/>
+        </createIndex>
+        <createIndex tableName="`index`" indexName="idx_rank">
+            <column name="`rank`"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ============================================== -->
+    <!-- НОВЫЙ CHANGESET ДЛЯ ИСПРАВЛЕНИЯ                -->
+    <!-- ============================================== -->
+    <changeSet id="08-fix-index-table" author="midl">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="`index`"/>
+        </preConditions>
+        <comment>Удаляем неправильную таблицу с двойными кавычками и создаём правильную `index`</comment>
+        <sql>
+            -- Удаляем старую таблицу (если она существует)
+            DROP TABLE IF EXISTS `""index""`;
+
+            -- Создаём новую таблицу с правильным именем и структурой
+            CREATE TABLE `index` (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            page_id BIGINT NOT NULL,
+            lemma_id BIGINT NOT NULL,
+            `rank` FLOAT NOT NULL,
+            CONSTRAINT fk_index_page FOREIGN KEY (page_id) REFERENCES page(id) ON DELETE CASCADE,
+            CONSTRAINT fk_index_lemma FOREIGN KEY (lemma_id) REFERENCES lemma(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_page_lemma (page_id, lemma_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            -- Создаём индексы
+            CREATE INDEX idx_page_id ON `index` (page_id);
+            CREATE INDEX idx_lemma_id ON `index` (lemma_id);
+            CREATE INDEX idx_rank ON `index` (`rank`);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
