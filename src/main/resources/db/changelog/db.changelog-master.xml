@@ -16,5 +16,6 @@
     <include file="09-create-user-roles-table.xml" relativeToChangelogFile="true"/>
     <include file="10-insert-roles-data.xml" relativeToChangelogFile="true"/>
     <include file="11-add-foreign-keys.xml" relativeToChangelogFile="true"/>
+    <include file="12-fix-index-table.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
