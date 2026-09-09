@@ -1,5 +1,6 @@
 package com.example.searchengine.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -14,18 +15,19 @@ public class CrawlerConfig {
     // ⚡ ПРОФИЛЬ №1: ИНДЕКСАЦИЯ ОДНОГО САЙТА
     // ===========================================
     private static final int SINGLE_SITE_MAX_DEPTH = 10;
-    private static final int SINGLE_SITE_TIMEOUT = 20000;
+    private static final int SINGLE_SITE_TIMEOUT = 60000;
     private static final int SINGLE_SITE_MAX_LINKS_PER_PAGE = 100;
-    private static final int SINGLE_SITE_DELAY_MIN = 500;
-    private static final int SINGLE_SITE_DELAY_MAX = 1500;
-    private static final int SINGLE_SITE_ERROR_LIMIT = 30;
+    private static final int SINGLE_SITE_DELAY_MIN = 1000;
+    private static final int SINGLE_SITE_DELAY_MAX = 3000;
+    private static final int SINGLE_SITE_ERROR_LIMIT = 100;
     private static final int SINGLE_SITE_PAGINATION_MAX = 50;
     private static final int SINGLE_SITE_POOL_SIZE = 24;
     private static final int SINGLE_SITE_QUEUE_CAPACITY = 1000;
     private static final int SINGLE_SITE_MAX_CONCURRENT_BROWSERS = 2;
-    private static final long SINGLE_SITE_IDLE_TIMEOUT = 30000;
-    private static final long SINGLE_SITE_CHECK_INTERVAL = 5000;
+    private static final long SINGLE_SITE_IDLE_TIMEOUT = 60000;
+    private static final long SINGLE_SITE_CHECK_INTERVAL = 10000;
     private static final int SINGLE_SITE_MAX_ANALYSIS_ATTEMPTS = 3;
+    private static final int SINGLE_SITE_RETRY_COUNT = 3;
 
     // ===========================================
     // ⚡ ПРОФИЛЬ №2: ИНДЕКСАЦИЯ НЕСКОЛЬКИХ САЙТОВ
@@ -43,9 +45,15 @@ public class CrawlerConfig {
     private static final long MULTI_SITE_IDLE_TIMEOUT = 120000;
     private static final long MULTI_SITE_CHECK_INTERVAL = 15000;
     private static final int MULTI_SITE_MAX_ANALYSIS_ATTEMPTS = 5;
+    private static final int MULTI_SITE_RETRY_COUNT = 2;
 
     // ===========================================
-    // 🔧 ЗАГРУЖАЕМЫЕ ПАРАМЕТРЫ ИЗ YAML (ТОЛЬКО JS)
+    // 🔧 ОБЩИЕ ПАРАМЕТРЫ ДЛЯ RETRY
+    // ===========================================
+    private static final int RETRY_DELAY_MS = 2000;
+
+    // ===========================================
+    // 🔧 ЗАГРУЖАЕМЫЕ ПАРАМЕТРЫ ИЗ YAML
     // ===========================================
     private List<String> jsEnabledSites;
     private int jsTimeout = 30000;
@@ -66,6 +74,9 @@ public class CrawlerConfig {
         System.out.println("🟡 РЕЖИМ: Индексация НЕСКОЛЬКИХ сайтов");
     }
 
+    // ===========================================
+    // ГЕТТЕРЫ
+    // ===========================================
 
     public List<String> getJsEnabledSites() {
         return jsEnabledSites;
@@ -78,7 +89,6 @@ public class CrawlerConfig {
     public int getJsWait() {
         return jsWait;
     }
-
 
     public int getMaxDepth() {
         return multiSiteMode ? MULTI_SITE_MAX_DEPTH : SINGLE_SITE_MAX_DEPTH;
@@ -130,6 +140,17 @@ public class CrawlerConfig {
         return multiSiteMode ? MULTI_SITE_MAX_ANALYSIS_ATTEMPTS : SINGLE_SITE_MAX_ANALYSIS_ATTEMPTS;
     }
 
+    public int getRetryCount() {
+        return multiSiteMode ? MULTI_SITE_RETRY_COUNT : SINGLE_SITE_RETRY_COUNT;
+    }
+
+    public int getRetryDelay() {
+        return RETRY_DELAY_MS;
+    }
+
+    // ===========================================
+    // СЕТТЕРЫ (для YAML-биндинга)
+    // ===========================================
 
     public void setJsEnabledSites(List<String> jsEnabledSites) {
         this.jsEnabledSites = jsEnabledSites;
@@ -158,6 +179,18 @@ public class CrawlerConfig {
     public void setDelay(Map<String, Integer> delay) {}
 
 
+    // ===========================================
+// 🔧 ИНИЦИАЛИЗАЦИЯ ПРИ СТАРТЕ
+// ===========================================
+    @PostConstruct
+    public void init() {
+        printCurrentConfig();
+    }
+
+    // ===========================================
+    // ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ
+    // ===========================================
+
     public String getCurrentMode() {
         return multiSiteMode ? "🟡 МУЛЬТИ-САЙТ" : "🔵 ОДИН САЙТ";
     }
@@ -178,6 +211,8 @@ public class CrawlerConfig {
         System.out.println("Watchdog бездействие: " + getIdleTimeout() + " мс");
         System.out.println("Watchdog интервал: " + getCheckInterval() + " мс");
         System.out.println("Watchdog попыток: " + getMaxAnalysisAttempts());
+        System.out.println("Количество попыток (retry): " + getRetryCount());
+        System.out.println("Задержка между попытками: " + getRetryDelay() + " мс");
         System.out.println("JS таймаут: " + jsTimeout + " мс");
         System.out.println("JS ожидание: " + jsWait + " мс");
         System.out.println("JS сайты: " + (jsEnabledSites != null ? jsEnabledSites : "[]"));
