@@ -1056,20 +1056,15 @@
 <script>
     window.App = window.App || {};
 
-    // Состояние авторизации
-    function isAuthenticated() {
-    // Проверяем токен в localStorage
-    if (localStorage.getItem('authToken')) return true;
-    if (localStorage.getItem('token')) return true;
-    if (localStorage.getItem('jwtToken')) return true;
+// Состояние авторизации — функция, вызывается каждый раз заново
+    window.isAuthenticated = function() {
+        if (localStorage.getItem('authToken')) return true;
+        if (localStorage.getItem('token')) return true;
+        if (localStorage.getItem('jwtToken')) return true;
+        if (document.cookie.indexOf('JSESSIONID=') !== -1) return true;
+        return false;
+    };
 
-    // Проверяем наличие сессии (JSESSIONID)
-    if (document.cookie.indexOf('JSESSIONID=') !== -1) return true;
-
-    return false;
-}
-
-window.isAuthenticated = isAuthenticated();
 
 
     // Базовый URL API (используем backendApiUrl для совместимости с config.js)
@@ -1145,7 +1140,7 @@ window.isAuthenticated = isAuthenticated();
             }
 
             // Защищенные маршруты (проверка авторизации)
-            if (!window.isAuthenticated) {
+            if (!window.isAuthenticated()) {
                 console.log('🔒 Требуется авторизация, перенаправляем на логин');
                 window.location.hash = 'login';
                 return;
@@ -1169,87 +1164,8 @@ window.isAuthenticated = isAuthenticated();
             }
         }
 
-        // Загрузка статистики (для dashboard)
-        function loadStatistics() {
-            $.get(backendApiUrl + '/statistics')
-                .done(function(response) {
-                    if (response.result && response.statistics) {
-                        $('#totalSites').text(response.statistics.total.sites || 0);
-                        $('#totalPages').text(response.statistics.total.pages || 0);
-                        $('#totalLemmas').text(response.statistics.total.lemmas || 0);
-
-                        var tbody = $('#statisticsTableBody');
-                        tbody.empty();
-
-                        if (response.statistics.detailed && response.statistics.detailed.length) {
-                            response.statistics.detailed.forEach(function(site) {
-                                var statusClass = '';
-                                var statusText = site.status || 'UNKNOWN';
-
-                                if (site.status === 'INDEXED') statusClass = 'status-indexed';
-                                else if (site.status === 'INDEXING') statusClass = 'status-indexing';
-                                else if (site.status === 'FAILED') statusClass = 'status-failed';
-
-                                var row = '<tr>' +
-                                    '<td><a href="' + site.url + '" target="_blank">' + site.name + '</a></td>' +
-                                    '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>' +
-                                    '<td>' + (site.pages || 0) + '</td>' +
-                                    '<td>' + (site.lemmas || 0) + '</td>' +
-                                    '<td>' + (site.error || '') + '</td>' +
-                                    '<td>' + (site.statusTime ? new Date(site.statusTime * 1000).toLocaleString() : '') + '</td>' +
-                                    '</tr>';
-                                tbody.append(row);
-                            });
-                        } else {
-                            tbody.html('<tr><td colspan="6" class="text-center">Нет данных</td></tr>');
-                        }
-                    }
-                })
-                .fail(function() {
-                    console.error('Ошибка загрузки статистики');
-                });
-        }
-
-        // Загрузка сайтов для выпадающего списка поиска
-        function loadSitesForSearch() {
-            $.get(backendApiUrl + '/statistics')
-                .done(function(response) {
-                    if (response.result && response.statistics && response.statistics.detailed) {
-                        var select = $('#searchSite');
-                        select.empty().append('<option value="">Все сайты</option>');
-
-                        response.statistics.detailed.forEach(function(site) {
-                            select.append('<option value="' + site.url + '">' + site.name + '</option>');
-                        });
-                    }
-                })
-                .fail(function() {
-                    console.error('Ошибка загрузки списка сайтов');
-                });
-        }
-
-        // Отображение результатов поиска
-        function displaySearchResults(response) {
-            var html = '<h3>Найдено страниц: ' + response.count + '</h3>';
-
-            response.data.forEach(function(item) {
-                html += '<div class="search-result-item">' +
-                    '<div class="search-result-title">' + (item.title || 'Без заголовка') + '</div>' +
-                    '<div class="search-result-url">' + item.site + item.uri + '</div>' +
-                    '<div class="search-result-snippet">' + (item.snippet || '') + '</div>' +
-                    '<div><span class="relevance-badge">релевантность: ' + item.relevance.toFixed(4) + '</span></div>' +
-                    '</div>';
-            });
-
-            $('#searchResults').html(html);
-        }
-
-        // Вспомогательная функция для отображения результатов
-        function showResult(elementId, message, type) {
-            var $el = $('#' + elementId);
-            $el.removeClass('success error').addClass(type).text(message).show();
-            setTimeout(function() { $el.fadeOut(); }, 5000);
-        }
+        // (функции loadStatistics, loadSitesForSearch, displaySearchResults, showResult удалены)
+        // Вся логика загрузки статистики и результатов поиска перенесена в scripts.js
 
         $('.Tabs-link').on('click', function(e) {
             e.preventDefault();
@@ -1259,14 +1175,14 @@ window.isAuthenticated = isAuthenticated();
             }
         });
 
-        $(document).ready(function() {
+ $(document).ready(function() {
             console.log('🚀 Запуск приложения');
 
             setTimeout(function() {
                 $('#globalLoader').fadeOut(500);
             }, 500);
 
-            if (window.isAuthenticated) {
+            if (window.isAuthenticated()) {
                 $('#publicTabs').hide();
                 $('#protectedTabs').show();
             } else {
