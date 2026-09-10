@@ -1,8 +1,7 @@
 'use strict';
+
 (function ($) {
-
     var px = ''; // Префикс для селекторов (не используется)
-
     /**
      * Функция для вывода набора jQuery по селектору с префиксами
      */
@@ -1006,21 +1005,40 @@
         // ===========================================
         var API = function(){
             function sendData(address, type, data, cb, $this) {
-                $.ajax({
-                    url: (window.backendApiUrl || '') + address,
-                    type: type,
-                    dataType: 'json',
-                    data: data,
-                    complete: function(result) {
-                        if (result.status >= 200 && result.status <= 500) {
-                            cb(result.responseJSON, $this, data);
-                        } else {
-                            alert('Ошибка ' + result.status);
-                        }
-                    }
-                });
-            }
+                            var token = localStorage.getItem('authToken');
+                            var headers = {};
+                            if (token) {
+                                headers['Authorization'] = 'Bearer ' + token;
+                            }
 
+                            $.ajax({
+                                url: (window.backendApiUrl || '') + address,
+                                type: type,
+                                dataType: 'json',
+                                data: data,
+                                headers: headers,
+                                complete: function(result) {
+                                    if (result.status === 401 || result.status === 403) {
+                                        console.warn('🔒 Токен истёк или отсутствует, требуется повторный вход');
+                                        localStorage.removeItem('authToken');
+                                        localStorage.removeItem('refreshToken');
+                                        $('.auth-container').show();
+                                        $('.main-interface').hide();
+                                        $('#protectedTabs').hide();
+                                        $('#publicTabs').show();
+                                        if (window.Auth && window.Auth.showMessage) {
+                                            window.Auth.showMessage('error', 'Сессия истекла. Войдите заново.');
+                                        }
+                                        return;
+                                    }
+                                    if (result.status >= 200 && result.status <= 500) {
+                                        cb(result.responseJSON, $this, data);
+                                    } else {
+                                        alert('Ошибка ' + result.status);
+                                    }
+                                }
+                            });
+                        }
             var send = {
                 startIndexing:{
                     address: '/startIndexing',
@@ -1109,18 +1127,19 @@
                             var scroll = $(window).scrollTop();
 
                             if (result.data && result.data.forEach) {
-                                result.data.forEach(function(page){
-                                    $content.append('<div class="SearchResult-block">' +
-                                        '<a href="' + (page.site || '') + (page.uri || '') +'" target="_blank" class="SearchResult-siteTitle">' +
-                                            (!data.siteName ? (page.siteName || '') + ' - ': '') +
-                                            (page.title || '') +
-                                        '</a>' +
-                                        '<div class="SearchResult-description">' +
-                                            (page.snippet || '') +
-                                        '</div>' +
-                                    '</div>')
-                                });
-                            }
+                                 result.data.forEach(function(page){
+                                 var siteName = page.siteName || page.site || '';
+                                 var href = (page.site || '') + (page.uri || '');
+                                     $content.append('<div class="SearchResult-block">' +
+                                     '<a href="' + href + '" target="_blank" class="SearchResult-siteTitle">' +
+                                          siteName + ' — ' + (page.title || 'Без заголовка') +
+                                           '</a>' +
+                                           '<div class="SearchResult-description">' +
+                                                  (page.snippet || '') +
+                                                      '</div>' +
+                                                      '</div>');
+                                           });
+                                     }
 
                             $(window).scrollTop(scroll);
                             $searchResults.addClass('SearchResult_ACTIVE');
@@ -1176,7 +1195,7 @@
                                 });
                             }
 
-                            if (result.statistics.total && result.statistics.total.isIndexing) {
+                            if (result.statistics.total && result.statistics.total.indexing) {
                                 var $btnIndex = $('.btn[data-send="startIndexing"]'),
                                     text = $btnIndex.find('.btn-content').text();
                                 $btnIndex.find('.btn-content').text($btnIndex.data('alttext'));
@@ -1610,19 +1629,22 @@
             }
 
             // 6. Обработка ответа
-            function handleAuthResponse(response, successMessage, errorElement) {
-                if (response && response.success) {
-                    if (response.token) {
-                        localStorage.setItem('authToken', response.token);
-                    }
-                    showMessage('success', successMessage);
-                    return true;
-                } else {
-                    var errorMsg = response && response.message ? response.message : 'Ошибка сервера';
-                    showMessage('error', errorMsg, errorElement);
-                    return false;
-                }
-            }
+                       function handleAuthResponse(response, successMessage, errorElement) {
+                           if (response && response.result) {
+                               if (response.token) {
+                                   localStorage.setItem('authToken', response.token);
+                               }
+                               if (response.refreshToken) {
+                                   localStorage.setItem('refreshToken', response.refreshToken);
+                               }
+                               showMessage('success', successMessage);
+                               return true;
+                           } else {
+                               var errorMsg = response && response.error ? response.error : 'Ошибка сервера';
+                               showMessage('error', errorMsg, errorElement);
+                               return false;
+                           }
+                       }
 
             // 7. Показ сообщений
             function showMessage(type, text, $element) {
@@ -1716,20 +1738,23 @@
                                if (window.apiInstance) {
                                    window.apiInstance.initAuthorized();
                                }
+                               // Скрываем формы авторизации
                                $('.auth-container').hide();
-                               $('.main-interface').show();
-                               window.isAuthenticated = true;
+                               $('#welcomeBlock').hide();
 
-                               // Скрываем публичные вкладки и показываем защищённые
+                               // Показываем защищённые вкладки, скрываем публичные
                                $('#publicTabs').hide();
                                $('#protectedTabs').show();
+
+                               // Переходим на dashboard
+                               window.location.hash = 'dashboard';
                            }
                        })
                         .fail(function(xhr) {
                             var errorMsg = 'Ошибка соединения с сервером';
                             try {
                                 var response = JSON.parse(xhr.responseText);
-                                errorMsg = response.message || errorMsg;
+                                errorMsg = response.error || response.message || errorMsg;
                             } catch(e) {}
                             showMessage('error', errorMsg);
                         });
@@ -1762,12 +1787,32 @@
                 checkPasswords: checkPasswordsMatch
             };
         };
-         window.Auth = Auth;
-         // Инициализация Auth
-         var auth = Auth();
-         auth.init();
-         auth.initLogin();
-         auth.initRegistration();
+           window.Auth = Auth;
+                   // Инициализация Auth
+                   var auth = Auth();
+                   auth.init();
+                   auth.initLogin();
+                   auth.initRegistration();
+
+                   // ✅ Создаём глобальный экземпляр API для вызова initAuthorized() после логина
+                   var apiInstance = API();
+                   window.apiInstance = apiInstance;
+
+                   // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
+                   $.ajaxSetup({
+                       beforeSend: function(xhr) {
+                           var token = localStorage.getItem('authToken');
+                           if (token) {
+                               xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                           }
+                       }
+                   });
+
+                   // Если токен уже в localStorage — включаем авторизованный режим
+                   if (localStorage.getItem('authToken')) {
+                       console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
+                       apiInstance.initAuthorized();
+                   }
 
         // ===========================================
         // ПЕРЕХВАТ AJAX ЗАПРОСОВ ДЛЯ ОБРАБОТКИ 302
