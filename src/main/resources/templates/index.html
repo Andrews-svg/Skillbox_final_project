@@ -900,6 +900,53 @@
             flex-wrap: wrap;
         }
 
+        /* Индикатор индексации (светофор) */
+        .indexing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .indicator-light {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #cbd5e0;
+            border: 2px solid #a0aec0;
+            transition: all 0.3s ease;
+        }
+
+        .indicator-light.red.active {
+            background: #f56565;
+            border-color: #c53030;
+            box-shadow: 0 0 12px rgba(245, 101, 101, 0.8);
+        }
+
+        .indicator-light.green.active {
+            background: #48bb78;
+            border-color: #2f855a;
+            box-shadow: 0 0 12px rgba(72, 187, 120, 0.8);
+            animation: pulse-green 1.5s ease-in-out infinite;
+        }
+
+        .indicator-label {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 12px rgba(72, 187, 120, 0.8); }
+            50% { box-shadow: 0 0 20px rgba(72, 187, 120, 1); }
+        }
+
+
         .url-input-group {
             display: flex;
             gap: 10px;
@@ -1105,12 +1152,14 @@
             });
         }
 
-        // Функция загрузки фрагментов вкладок (dashboard, management, search)
+         // Функция загрузки фрагментов вкладок (dashboard, management, search)
         function loadTabFragment(tabName, callback) {
             var version = Date.now();
             var url = '/fragments/' + tabName + '-fragment.html?v=' + version;
             $('#' + tabName).load(url, function() {
                 console.log('✅ Загружен фрагмент:', tabName);
+                // Сообщаем scripts.js, что фрагмент готов — можно обновлять данные
+                $(document).trigger('fragmentLoaded', [tabName]);
                 if (callback) callback();
             });
         }

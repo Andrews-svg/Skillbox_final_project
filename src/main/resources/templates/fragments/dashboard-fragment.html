@@ -2,6 +2,14 @@
     <div class="Section-header">
         <h2 class="Section-title">Dashboard</h2>
     </div>
+
+    <!-- Индикатор общей индексации -->
+    <div id="indexingStatus" class="indexing-status" style="display: none; margin-bottom: 15px; padding: 12px 16px; border-radius: 8px; background: #fff3cd; color: #856404; border: 1px solid #ffd700;">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Индексация выполняется...</span>
+    </div>
+
+    <!-- Блок общей статистики -->
     <div class="Statistics">
         <div class="Statistics-info">
             <div class="Statistics-block">
@@ -18,6 +26,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Таблица детальной статистики по сайтам -->
     <div class="table-container" style="margin-top: 20px; overflow-x: auto;">
         <table class="data-table">
             <thead>
@@ -36,57 +46,3 @@
         </table>
     </div>
 </div>
-
-<script>
-    (function() {
-        const backendUrl = window.backendApiUrl || '/api';
-
-        function loadStatistics() {
-            fetch(backendUrl + '/statistics')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.result && data.statistics) {
-                        const stats = data.statistics;
-                        document.getElementById('totalSites').textContent = stats.total?.sites || 0;
-                        document.getElementById('totalPages').textContent = stats.total?.pages || 0;
-                        document.getElementById('totalLemmas').textContent = stats.total?.lemmas || 0;
-
-                        const tbody = document.getElementById('statisticsTableBody');
-                        tbody.innerHTML = '';
-
-                        if (stats.detailed && stats.detailed.length) {
-                            stats.detailed.forEach(site => {
-                                let statusClass = '';
-                                let statusText = site.status || 'UNKNOWN';
-                                if (site.status === 'INDEXED') statusClass = 'status-indexed';
-                                else if (site.status === 'INDEXING') statusClass = 'status-indexing';
-                                else if (site.status === 'FAILED') statusClass = 'status-failed';
-
-                                const row = `
-                                    <tr>
-                                        <td><a href="${site.url}" target="_blank">${site.name || site.url}</a></td>
-                                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                                        <td>${site.pages || 0}</td>
-                                        <td>${site.lemmas || 0}</td>
-                                        <td>${site.error || ''}</td>
-                                        <td>${site.statusTime ? new Date(site.statusTime * 1000).toLocaleString() : ''}</td>
-                                    </tr>
-                                `;
-                                tbody.insertAdjacentHTML('beforeend', row);
-                            });
-                        } else {
-                            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет данных</td></tr>';
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error('Dashboard error:', err);
-                    document.getElementById('statisticsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center;">Ошибка загрузки статистики</td></tr>';
-                });
-        }
-
-        loadStatistics();
-        const interval = setInterval(loadStatistics, 30000);
-        window.addEventListener('beforeunload', () => clearInterval(interval));
-    })();
-</script>
