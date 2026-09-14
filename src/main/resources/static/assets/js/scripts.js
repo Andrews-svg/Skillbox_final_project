@@ -1040,74 +1040,69 @@
                             });
                         }
             var send = {
-                startIndexing:{
-                    address: '/startIndexing',
-                    type: 'GET',
-                    action: function(result, $this){
-                        if (result && result.result){
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').remove();
-                            }
-                            if ($this.is('[data-btntype="check"]')) {
-                                shiftCheck($this);
-                            }
-                        } else {
-                            var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').text(errorMsg);
-                            } else {
-                                $this.after('<div class="API-error">' + errorMsg + '</div>');
-                            }
-                        }
-                    }
-                },
+                   startIndexing:{
+                                      address: '/startIndexing',
+                                      type: 'GET',
+                                      action: function(result, $this){
+                                          var $msg = $('#managementResult');
+                                          if (result && result.result){
+                                              $msg.removeClass('alert-error').addClass('alert-success')
+                                                  .text('✅ Индексация запущена').show();
+                                              setTimeout(function(){ $msg.fadeOut(); }, 5000);
+
+                                              // Перезапрашиваем статистику — обновит светофор и кнопки
+                                              setTimeout(function(){
+                                                  sendData(send['statistics'].address, send['statistics'].type,
+                                                      '', send['statistics'].action, $('.Statistics'));
+                                              }, 1000);
+                                          } else {
+                                              var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
+                                              $msg.removeClass('alert-success').addClass('alert-error')
+                                                  .text('❌ ' + errorMsg).show();
+                                              setTimeout(function(){ $msg.fadeOut(); }, 5000);
+                                          }
+                                      }
+                                  },
                 stopIndexing: {
-                    address: '/stopIndexing',
-                    type: 'GET',
-                    action: function(result, $this){
-                        if (result && result.result){
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').remove();
-                            }
-                            if ($this.is('[data-btntype="check"]')) {
-                                shiftCheck($this);
-                            }
-                        } else {
-                            var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').text(errorMsg);
-                            } else {
-                                $this.after('<div class="API-error">' + errorMsg + '</div>');
-                            }
-                        }
-                    }
-                },
+                                    stopIndexing: {
+                                                        address: '/stopIndexing',
+                                                        type: 'GET',
+                                                        action: function(result, $this){
+                                                            var $msg = $('#managementResult');
+                                                            if (result && result.result){
+                                                                $msg.removeClass('alert-error').addClass('alert-success')
+                                                                    .text('⛔ Индексация остановлена').show();
+                                                                setTimeout(function(){ $msg.fadeOut(); }, 5000);
+
+                                                                setTimeout(function(){
+                                                                    sendData(send['statistics'].address, send['statistics'].type,
+                                                                        '', send['statistics'].action, $('.Statistics'));
+                                                                }, 1000);
+                                                            } else {
+                                                                var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
+                                                                $msg.removeClass('alert-success').addClass('alert-error')
+                                                                    .text('❌ ' + errorMsg).show();
+                                                                setTimeout(function(){ $msg.fadeOut(); }, 5000);
+                                                            }
+                                                        }
+                                                    },
+ 
                 indexPage: {
-                    address: '/indexPage',
-                    type: 'POST',
-                    action: function(result, $this){
-                        if (result && result.result){
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').remove();
-                            }
-                            if ($this.next('.API-success').length) {
-                                $this.next('.API-success').text('Страница добавлена/обновлена успешно');
-                            } else {
-                                $this.after('<div class="API-success">Страница поставлена в очередь на обновление / добавление</div>');
-                            }
-                        } else {
-                            if ($this.next('.API-success').length) {
-                                $this.next('.API-success').remove();
-                            }
-                            var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').text(errorMsg);
-                            } else {
-                                $this.after('<div class="API-error">' + errorMsg + '</div>');
-                            }
-                        }
-                    }
-                },
+                                    address: '/indexPage',
+                                    type: 'POST',
+                                    action: function(result, $this){
+                                        var $msg = $('#managementResult');
+                                        if (result && result.result){
+                                            $msg.removeClass('error').addClass('success').text('Страница добавлена/обновлена').show();
+                                            setTimeout(function(){ $msg.fadeOut(); }, 5000);
+                                            $('#pageUrl').val('');
+                                        } else {
+                                            var errorMsg = (result && result.error) ? result.error : 'Неизвестная ошибка';
+                                            $msg.removeClass('success').addClass('error').text(errorMsg).show();
+                                            setTimeout(function(){ $msg.fadeOut(); }, 5000);
+                                        }
+                                    }
+                                },
                 search: {
                     address: '/search',
                     type: 'get',
@@ -1166,52 +1161,95 @@
                     }
                 },
 
-                statistics: {
+statistics: {
                     address: '/statistics',
                     type: 'get',
                     action: function(result, $this){
                         if (!result || typeof result !== 'object') {
                             console.warn('Статистика временно недоступна (требуется авторизация)');
-                            $('.Site-loader').hide(0);
-                            $('.Site-loadingIsComplete').css('visibility', 'visible').fadeIn(500);
                             return;
                         }
 
-                        if (result.result && result.statistics){
-                            if ($this.next('.API-error').length) {
-                                $this.next('.API-error').remove();
-                            }
-
-                            var $statistics = $('.Statistics');
-                            $statistics.find('.HideBlock').not('.Statistics-example').remove();
-                            $('#totalSites').text(result.statistics.total ? result.statistics.total.sites : 0);
-                            $('#totalPages').text(result.statistics.total ? result.statistics.total.pages : 0);
-                            $('#totalLemmas').text(result.statistics.total ? result.statistics.total.lemmas : 0);
-                            $('select[name="site"] option').not(':first-child').remove();
-
-                            if (result.statistics.detailed && result.statistics.detailed.forEach) {
-                                result.statistics.detailed.forEach(function(site){
-                                    // логика добавления сайтов
-                                });
-                            }
-
-                            if (result.statistics.total && result.statistics.total.indexing) {
-                                var $btnIndex = $('.btn[data-send="startIndexing"]'),
-                                    text = $btnIndex.find('.btn-content').text();
-                                $btnIndex.find('.btn-content').text($btnIndex.data('alttext'));
-                                $btnIndex
-                                    .data('check', true)
-                                    .data('altsend', 'startIndexing')
-                                    .data('send', 'stopIndexing')
-                                    .data('alttext', text)
-                                    .addClass('btn_check')
-                                $('.UpdatePageBlock').hide(0)
-                            }
-                        } else {
+                        if (!result.result || !result.statistics) {
                             console.log('Статистика недоступна - пользователь не авторизован');
+                            return;
                         }
-                        $('.Site-loader').hide(0);
-                        $('.Site-loadingIsComplete').css('visibility', 'visible').fadeIn(500);
+
+                        if ($this && $this.next('.API-error').length) {
+                            $this.next('.API-error').remove();
+                        }
+
+                        var total = result.statistics.total || {};
+                        var detailed = result.statistics.detailed || [];
+
+                        // === Общая статистика ===
+                        $('#totalSites').text(total.sites || 0);
+                        $('#totalPages').text(total.pages || 0);
+                        $('#totalLemmas').text(total.lemmas || 0);
+
+                         // === Светофор на вкладке Management ===
+                                               if ($('#indicatorGreen').length) {
+                                                   if (total.indexing) {
+                                                       $('#indicatorRed').removeClass('active');
+                                                       $('#indicatorGreen').addClass('active');
+                                                       $('#indicatorLabel').text('Индексация выполняется...');
+                                                       $('#startIndexingBtn').prop('disabled', true);
+                                                       $('#stopIndexingBtn').prop('disabled', false);
+                                                   } else {
+                                                       $('#indicatorRed').addClass('active');
+                                                       $('#indicatorGreen').removeClass('active');
+                                                       $('#indicatorLabel').text('Индексация не выполняется');
+                                                       $('#startIndexingBtn').prop('disabled', false);
+                                                       $('#stopIndexingBtn').prop('disabled', true);
+                                                   }
+                                               }
+
+                                               // === Индикатор на Dashboard ===
+                                               if (total.indexing) {
+                                                   $('#indexingStatus').show();
+                                               } else {
+                                                   $('#indexingStatus').hide();
+                                               }
+
+                        // === Таблица сайтов ===
+                        var $tbody = $('#statisticsTableBody');
+                        if ($tbody.length) {
+                            $tbody.empty();
+
+                            if (detailed.length) {
+                                detailed.forEach(function(site){
+                                    var statusClass = '';
+                                    if (site.status === 'INDEXED') statusClass = 'status-indexed';
+                                    else if (site.status === 'INDEXING') statusClass = 'status-indexing';
+                                    else if (site.status === 'FAILED') statusClass = 'status-failed';
+
+                                    var statusTime = site.statusTime
+                                        ? new Date(site.statusTime).toLocaleString()
+                                        : '';
+
+                                    var row = '<tr>' +
+                                        '<td><a href="' + (site.url || '') + '" target="_blank">' + (site.name || site.url || '') + '</a></td>' +
+                                        '<td><span class="status-badge ' + statusClass + '">' + (site.status || 'UNKNOWN') + '</span></td>' +
+                                        '<td>' + (site.pages || 0) + '</td>' +
+                                        '<td>' + (site.lemmas || 0) + '</td>' +
+                                        '<td>' + (site.error || '') + '</td>' +
+                                        '<td>' + statusTime + '</td>' +
+                                        '</tr>';
+                                    $tbody.append(row);
+                                });
+                            } else {
+                                $tbody.html('<tr><td colspan="6" style="text-align: center;">Нет данных</td></tr>');
+                            }
+                        }
+
+                        // === Выпадающий список сайтов для вкладки Search ===
+                        var $siteSelect = $('select[name="site"]');
+                        if ($siteSelect.length) {
+                            $siteSelect.find('option').not(':first-child').remove();
+                            detailed.forEach(function(site){
+                                $siteSelect.append('<option value="' + (site.url || '') + '">' + (site.name || site.url || '') + '</option>');
+                            });
+                        }
                     }
                 }
             };
@@ -1285,7 +1323,7 @@
                         }
                     });
 
-                    sendData(
+sendData(
                         send['statistics'].address,
                         send['statistics'].type,
                         '',
@@ -1293,52 +1331,63 @@
                         $('.Statistics')
                     );
 
-                    var $send = $('[data-send]');
-                    $send.on('submit click', function(e){
-                        var $this = $(this);
-                        var data = '';
-
-                        if (($this.hasClass('form') && e.type==='submit')
-                            || (e.type==='click' && !$this.hasClass('form'))){
-                            e.preventDefault();
-
-                            switch ($this.data('send')) {
-                                case 'indexPage':
-                                    var $page = $this.closest('.form').find('input[name="page"]');
-                                    data = {url: $page.val()};
-                                    break;
-                                case 'search':
-                                    if ($this.data('sendtype')==='next') {
-                                        data = {
-                                            site: $this.data('searchsite'),
-                                            query: $this.data('searchquery'),
-                                            offset: $this.data('sendoffset'),
-                                            limit: $this.data('sendlimit')
-                                        };
-                                    } else {
-                                        data = {
-                                            query: $this.find('[name="query"]').val(),
-                                            offset: 0,
-                                            limit: $this.data('sendlimit')
-                                        };
-                                        if ( $this.find('[name="site"]').val() ) {
-                                            data.site = $this.find('[name="site"]').val();
-                                        }
-                                    }
-                                    break;
-                            }
-
+                    // Обновляем статистику при каждом открытии вкладки Dashboard
+                    $(document).on('fragmentLoaded', function(e, tabName) {
+                        if (tabName === 'dashboard') {
+                            console.log('📊 Обновляем статистику для Dashboard');
                             sendData(
-                                send[$this.data('send')].address,
-                                send[$this.data('send')].type,
-                                data,
-                                send[$this.data('send')].action,
-                                $this
+                                send['statistics'].address,
+                                send['statistics'].type,
+                                '',
+                                send['statistics'].action,
+                                $('.Statistics')
                             );
                         }
                     });
-                },
 
+                     // Делегирование: работает для кнопок, загруженных позже
+                                        $(document).on('click', '[data-send]', function(e){
+                                            e.preventDefault();
+                                            var $this = $(this);
+                                            var action = $this.data('send');
+                                            if (!send[action]) return;
+                                            if ($this.prop('disabled')) return;
+
+                                            var data = {};
+
+                                            switch (action) {
+                                                case 'indexPage':
+                                                    data = {url: $('#pageUrl').val()};
+                                                    break;
+                                                case 'search':
+                                                    if ($this.data('sendtype')==='next') {
+                                                        data = {
+                                                            site: $this.data('searchsite'),
+                                                            query: $this.data('searchquery'),
+                                                            offset: $this.data('sendoffset'),
+                                                            limit: $this.data('sendlimit')
+                                                        };
+                                                    } else {
+                                                        data = {
+                                                            query: $('#searchQuery').val(),
+                                                            offset: 0,
+                                                            limit: $this.data('sendlimit') || 20
+                                                        };
+                                                        if ($('#searchSite').val()) {
+                                                            data.site = $('#searchSite').val();
+                                                        }
+                                                    }
+                                                    break;
+                                            }
+
+                                            sendData(
+                                                send[action].address,
+                                                send[action].type,
+                                                data,
+                                                send[action].action,
+                                                $this
+                                            );
+                                        });
                 checkAuth: function(){
                     return !!localStorage.getItem('authToken');
                 }
