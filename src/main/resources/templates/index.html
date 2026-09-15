@@ -1104,14 +1104,27 @@
     window.App = window.App || {};
 
 // Состояние авторизации — функция, вызывается каждый раз заново
+    // Проверяет не только наличие токена, но и срок его действия
     window.isAuthenticated = function() {
-        if (localStorage.getItem('authToken')) return true;
-        if (localStorage.getItem('token')) return true;
-        if (localStorage.getItem('jwtToken')) return true;
-        if (document.cookie.indexOf('JSESSIONID=') !== -1) return true;
-        return false;
-    };
+        var token = localStorage.getItem('authToken');
+        if (!token) return false;
 
+        try {
+            var payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+                // Токен истёк — чистим хранилище
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('refreshToken');
+                console.log('🔒 Токен истёк, требуется повторный вход');
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.warn('⚠️ Не удалось декодировать токен:', e);
+            localStorage.removeItem('authToken');
+            return false;
+        }
+    };
 
 
     // Базовый URL API (используем backendApiUrl для совместимости с config.js)
@@ -1164,6 +1177,19 @@
             });
         }
 
+        // Функция переключения видимости табов
+        function updateTabsVisibility(route) {
+            var isAuthRoute = (route === 'dashboard' || route === 'management' || route === 'search');
+
+            if (isAuthRoute) {
+                $('#publicTabs').hide();
+                $('#protectedTabs').show();
+            } else {
+                $('#publicTabs').show();
+                $('#protectedTabs').hide();
+            }
+        }
+
         // Функция маршрутизации
         function loadFragment(hash) {
             console.log('📍 Маршрутизация:', hash);
@@ -1173,21 +1199,23 @@
 
             if (!hash || hash === '#') {
                 $('#welcomeBlock').show();
+                updateTabsVisibility(null);
                 return;
             }
 
             var route = hash.substring(1);
 
-            // Публичные маршруты (фрагменты)
+           // Публичные маршруты (фрагменты)
             if (route === 'login') {
+                updateTabsVisibility('login');
                 loadAuthFragment('login');
                 return;
             }
             else if (route === 'register') {
+                updateTabsVisibility('register');
                 loadAuthFragment('register');
                 return;
             }
-
             // Защищенные маршруты (проверка авторизации)
             if (!window.isAuthenticated()) {
                 console.log('🔒 Требуется авторизация, перенаправляем на логин');
@@ -1195,21 +1223,25 @@
                 return;
             }
 
-            // Пользовательские вкладки — загружаем через AJAX
+             // Пользовательские вкладки — загружаем через AJAX
             if (route === 'dashboard') {
+                updateTabsVisibility('dashboard');
                 $('#dashboard').show();
                 loadTabFragment('dashboard');
             }
             else if (route === 'management') {
+                updateTabsVisibility('management');
                 $('#management').show();
                 loadTabFragment('management');
             }
             else if (route === 'search') {
+                updateTabsVisibility('search');
                 $('#search').show();
                 loadTabFragment('search');
             }
             else {
                 $('#welcomeBlock').show();
+                updateTabsVisibility(null);
             }
         }
 
@@ -1231,12 +1263,20 @@
                 $('#globalLoader').fadeOut(500);
             }, 500);
 
+            // Проверяем авторизацию с учётом срока действия токена
             if (window.isAuthenticated()) {
                 $('#publicTabs').hide();
                 $('#protectedTabs').show();
             } else {
                 $('#publicTabs').show();
                 $('#protectedTabs').hide();
+
+                // Если токен истёк или отсутствует — принудительно на форму входа
+                if (window.location.hash && window.location.hash !== '#login' && window.location.hash !== '#register') {
+                    console.log('🔒 Токен отсутствует или истёк, перенаправляем на логин');
+                    window.location.hash = 'login';
+                    return;
+                }
             }
 
             loadFragment(window.location.hash);
