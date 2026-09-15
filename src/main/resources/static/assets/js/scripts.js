@@ -1063,8 +1063,8 @@
                                           }
                                       }
                                   },
-                stopIndexing: {
-                                    stopIndexing: {
+
+                   stopIndexing: {
                                                         address: '/stopIndexing',
                                                         type: 'GET',
                                                         action: function(result, $this){
@@ -1086,7 +1086,7 @@
                                                             }
                                                         }
                                                     },
- 
+
                 indexPage: {
                                     address: '/indexPage',
                                     type: 'POST',
@@ -1161,7 +1161,7 @@
                     }
                 },
 
-statistics: {
+            statistics: {
                     address: '/statistics',
                     type: 'get',
                     action: function(result, $this){
@@ -1381,18 +1381,19 @@ sendData(
                                             }
 
                                             sendData(
-                                                send[action].address,
-                                                send[action].type,
-                                                data,
-                                                send[action].action,
-                                                $this
-                                            );
-                                        });
-                checkAuth: function(){
-                    return !!localStorage.getItem('authToken');
-                }
-            };
-        };
+                                                    send[action].address,
+                                                    send[action].type,
+                                                    data,
+                                                    send[action].action,
+                                                    $this
+                                                  );
+                                               });
+                                        },   // ← ЗАКРЫВАЕМ initAuthorized (эта строка была утеряна!)
+                                        checkAuth: function(){
+                                             return !!localStorage.getItem('authToken');
+                                       }
+                                    };
+                                 };
 
         // ===========================================
         // ФУНКЦИИ UI
