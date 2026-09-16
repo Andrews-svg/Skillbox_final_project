@@ -82,26 +82,6 @@
         </encoder>
     </appender>
 
-    <!-- ==================== SQL АППЕНДЕР (общий) ==================== -->
-    <appender name="SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOGS_DIR}/sql.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOGS_DIR}/sql.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
-    <!-- ==================== SQL ЛОГГЕРЫ ==================== -->
-    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-        <appender-ref ref="SQL_FILE" />
-    </logger>
-    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
-        <appender-ref ref="SQL_FILE" />
-    </logger>
-
     <!-- ==================== ПРОФИЛЬ DEV ==================== -->
     <springProfile name="dev">
         <root level="DEBUG">
@@ -124,9 +104,6 @@
             <appender-ref ref="TEST_APP_FILE" />
             <appender-ref ref="TEST_ERROR_FILE" />
         </logger>
-        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <appender-ref ref="SQL_FILE" />
-        </logger>
     </springProfile>
 
     <!-- ==================== ПРОФИЛЬ PROD ==================== -->
@@ -138,9 +115,6 @@
         <logger name="com.example.searchengine" level="INFO" additivity="false">
             <appender-ref ref="PROD_APP_FILE" />
             <appender-ref ref="PROD_ERROR_FILE" />
-        </logger>
-        <logger name="org.hibernate.SQL" level="WARN" additivity="false">
-            <appender-ref ref="SQL_FILE" />
         </logger>
     </springProfile>
 
