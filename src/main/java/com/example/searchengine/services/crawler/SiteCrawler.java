@@ -8,6 +8,7 @@ import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.indexing.IndexingState;
 import com.example.searchengine.utils.UrlFilter;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ public class SiteCrawler {
     private final UrlFilter urlFilter;
     private final IndexingState indexingState;
     private final WatchdogService watchdogService;
+    private final ExecutorService pageTaskExecutor;
 
     private final Map<Long, Set<String>> visitedUrls = new ConcurrentHashMap<>();
     private final Map<Long, AtomicBoolean> stopFlags = new ConcurrentHashMap<>();
@@ -57,6 +59,14 @@ public class SiteCrawler {
         this.urlFilter = urlFilter;
         this.indexingState = indexingState;
         this.watchdogService = watchdogService;
+        this.pageTaskExecutor = Executors.newFixedThreadPool(
+                crawlerConfig.getPoolSize(),
+                r -> {
+                    Thread t = new Thread(r, "page-worker");
+                    t.setDaemon(false);
+                    return t;
+                }
+        );
     }
 
 
@@ -243,10 +253,9 @@ public class SiteCrawler {
         }
         logger.info("📄 Обработка страницы [{}] {} (глубина {})",
                 counter.incrementAndGet(), pageUrl, depth);
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Optional<Page>> future = null;
         try {
-            future = executor.submit(() -> pageProcessor.processPage(site, pageUrl));
+            future = pageTaskExecutor.submit(() -> pageProcessor.processPage(site, pageUrl));
             Optional<Page> page = future.get(crawlerConfig.getTimeout(), TimeUnit.MILLISECONDS);
             if (page.isEmpty()) {
                 return;
@@ -259,8 +268,6 @@ public class SiteCrawler {
             handleTimeout(site, pageUrl, future, errorCounter, stopFlag);
         } catch (Exception e) {
             logger.error("❌ Ошибка обработки {}: {}", pageUrl, e.getMessage());
-        } finally {
-            executor.shutdownNow();
         }
     }
 
@@ -396,5 +403,20 @@ public class SiteCrawler {
             crawlPage(site, url, depth, visited, stopFlag, counter,
                     errorCounter, lastActivity);
         }
+    }
+
+    @PreDestroy
+    public void shutdownPageExecutor() {
+        logger.info("🛑 Завершение pageTaskExecutor");
+        pageTaskExecutor.shutdownNow();
+        try {
+            if (!pageTaskExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                logger.warn("⚠️ pageTaskExecutor не завершился за 10 секунд");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Прерывание при завершении pageTaskExecutor");
+        }
+        logger.info("✅ pageTaskExecutor завершён");
     }
 }
