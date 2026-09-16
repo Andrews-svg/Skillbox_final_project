@@ -1,7 +1,6 @@
 package com.example.searchengine.services.crawler;
 
 import com.example.searchengine.config.CrawlerConfig;
-import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Site;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.indexing.IndexingState;
@@ -137,3 +136,4 @@ public class CrawlerService {
         logger.debug("Пул для сайта {} успешно завершен", siteId);
     }
 }
+

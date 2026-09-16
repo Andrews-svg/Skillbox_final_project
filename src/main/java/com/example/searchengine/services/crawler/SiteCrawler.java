@@ -101,14 +101,14 @@ public class SiteCrawler {
             lastActivity.set(System.currentTimeMillis());
             logProgress(site, counter, errorCounter);
             crawlPage(site, site.getUrl(), 0, visited, stopFlag, counter,
-                    errorCounter, lastActivity);
+                    errorCounter, lastActivity, pool);
             boolean quiescent = pool.awaitQuiescence(30, TimeUnit.SECONDS);
             if (!quiescent) {
                 logger.warn("⚠️ Пул не успокоился за 30 секунд для сайта {}, принудительное завершение",
                         siteUrl);
                 pool.shutdownNow();
             }
-            checkAndFinalizeCrawling(site, siteId, stopFlag, quiescent, counter);
+            checkAndFinalizeCrawling(site, siteId, stopFlag, quiescent, counter, pool);
         } catch (Exception e) {
             logger.error("❌ Ошибка при обходе сайта {}: {}", siteUrl, e.getMessage(), e);
             siteService.updateStatusWithError(site, "Ошибка обхода: " + e.getMessage());
@@ -187,10 +187,11 @@ public class SiteCrawler {
     }
 
     private void checkAndFinalizeCrawling(Site site, Long siteId, AtomicBoolean stopFlag,
-                                          boolean quiescent, AtomicInteger counter) {
+                                          boolean quiescent, AtomicInteger counter,
+                                          ForkJoinPool pool) {
         if (!shouldStop(stopFlag, siteId) && quiescent) {
             long pageCount = pageService.countBySite(site);
-            if (pageCount > 0 && !hasActiveTasks(siteId)) {
+            if (pageCount > 0 && !hasActiveTasks(pool)) {
                 logger.info("✅ Обход сайта завершен штатно: {} (обработано {} страниц, всего в БД: {})",
                         site.getUrl(), counter.get(), pageCount);
                 siteService.updateStatus(site, Status.INDEXED);
@@ -216,16 +217,15 @@ public class SiteCrawler {
     }
 
 
-    private boolean hasActiveTasks(Long siteId) {
-        return visitedUrls.containsKey(siteId) &&
-                !ForkJoinPool.commonPool().isQuiescent();
+    private boolean hasActiveTasks(ForkJoinPool pool) {
+        return pool != null && !pool.isQuiescent();
     }
 
 
     private void crawlPage(Site site, String pageUrl, int depth,
                            Set<String> visited, AtomicBoolean stopFlag,
                            AtomicInteger counter, AtomicInteger errorCounter,
-                           AtomicLong lastActivity) {
+                           AtomicLong lastActivity, ForkJoinPool pool) {
         Long siteId = site.getId();
         String siteUrl = site.getUrl();
         if (shouldStop(stopFlag, siteId)) {
@@ -264,13 +264,14 @@ public class SiteCrawler {
             urlFilter.addVisitedBaseUrl(pageUrl);
             siteService.updateStatusTime(site);
             processPageLinks(site, result.document(), pageUrl, depth, visited, stopFlag,
-                    counter, errorCounter, lastActivity, baseUrl, path);
+                    counter, errorCounter, lastActivity, baseUrl, path, pool);
         } catch (TimeoutException e) {
             handleTimeout(site, pageUrl, future, errorCounter, stopFlag);
         } catch (Exception e) {
             logger.error("❌ Ошибка обработки {}: {}", pageUrl, e.getMessage());
         }
     }
+
 
     private boolean isValidUrlForCrawling(String pageUrl, Site site) {
         if (!urlFilter.isValidForCrawling(pageUrl)) {
@@ -291,7 +292,8 @@ public class SiteCrawler {
     private void processPageLinks(Site site, Document document, String pageUrl, int depth,
                                   Set<String> visited, AtomicBoolean stopFlag,
                                   AtomicInteger counter, AtomicInteger errorCounter,
-                                  AtomicLong lastActivity, String baseUrl, String path) {
+                                  AtomicLong lastActivity, String baseUrl, String path,
+                                  ForkJoinPool pool) {
         Long siteId = site.getId();
         String siteUrl = site.getUrl();
         List<String> links = linkExtractor.extractLinks(document, pageUrl, siteUrl);
@@ -301,9 +303,10 @@ public class SiteCrawler {
             return;
         }
         List<CrawlTask> subtasks = createSubtasks(site, links, depth + 1, visited,
-                stopFlag, counter, errorCounter, lastActivity);
+                stopFlag, counter, errorCounter, lastActivity, pool);
         if (!subtasks.isEmpty()) {
-            ForkJoinTask.invokeAll(subtasks);
+            subtasks.forEach(pool::execute);
+            subtasks.forEach(ForkJoinTask::join);
         }
     }
 
@@ -322,7 +325,7 @@ public class SiteCrawler {
     private List<CrawlTask> createSubtasks(Site site, List<String> links, int depth,
                                            Set<String> visited, AtomicBoolean stopFlag,
                                            AtomicInteger counter, AtomicInteger errorCounter,
-                                           AtomicLong lastActivity) {
+                                           AtomicLong lastActivity, ForkJoinPool pool) {
         List<CrawlTask> subtasks = new ArrayList<>();
         for (String link : links) {
             if (shouldStop(stopFlag, site.getId())) {
@@ -331,7 +334,7 @@ public class SiteCrawler {
             }
             if (isValidLinkForCrawling(link, site, visited)) {
                 subtasks.add(new CrawlTask(site, link, depth, visited,
-                        stopFlag, counter, errorCounter, lastActivity));
+                        stopFlag, counter, errorCounter, lastActivity, pool));
             }
         }
         return subtasks;
@@ -383,11 +386,12 @@ public class SiteCrawler {
         private final AtomicInteger counter;
         private final AtomicInteger errorCounter;
         private final AtomicLong lastActivity;
+        private final ForkJoinPool pool;
 
         public CrawlTask(Site site, String url, int depth,
                          Set<String> visited, AtomicBoolean stopFlag,
                          AtomicInteger counter, AtomicInteger errorCounter,
-                         AtomicLong lastActivity) {
+                         AtomicLong lastActivity, ForkJoinPool pool) {
             this.site = site;
             this.url = url;
             this.depth = depth;
@@ -396,14 +400,16 @@ public class SiteCrawler {
             this.counter = counter;
             this.errorCounter = errorCounter;
             this.lastActivity = lastActivity;
+            this.pool = pool;
         }
 
         @Override
         protected void compute() {
             crawlPage(site, url, depth, visited, stopFlag, counter,
-                    errorCounter, lastActivity);
+                    errorCounter, lastActivity, pool);
         }
     }
+
 
     @PreDestroy
     public void shutdownPageExecutor() {
