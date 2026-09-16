@@ -73,21 +73,33 @@ public class SiteService {
 
     @Transactional
     public void updateStatus(Site site, Status status) {
+        LocalDateTime now = LocalDateTime.now();
+        int updated = siteRepository.updateStatusById(site.getId(), status, now);
+        if (updated == 0) {
+            logger.warn("Не удалось обновить статус сайта id={} — сайт не найден", site.getId());
+            return;
+        }
         site.setStatus(status);
-        site.setStatusTime(LocalDateTime.now());
-        siteRepository.save(site);
+        site.setStatusTime(now);
         logger.info("Статус сайта {} обновлен на {}", site.getUrl(), status);
     }
 
 
     @Transactional
     public void updateStatusWithError(Site site, String error) {
+        LocalDateTime now = LocalDateTime.now();
+        int updated = siteRepository.updateStatusWithErrorById(
+                site.getId(), Status.FAILED, now, error);
+        if (updated == 0) {
+            logger.warn("Не удалось обновить статус с ошибкой для сайта id={}", site.getId());
+            return;
+        }
         site.setStatus(Status.FAILED);
-        site.setStatusTime(LocalDateTime.now());
+        site.setStatusTime(now);
         site.setLastError(error);
-        siteRepository.save(site);
         logger.error("Ошибка индексации сайта {}: {}", site.getUrl(), error);
     }
+
 
     @Transactional
     public Site createNewSite(String url, String name) {
@@ -98,7 +110,11 @@ public class SiteService {
 
     @Transactional
     public void updateStatusTime(Site site) {
-        site.setStatusTime(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        int updated = siteRepository.updateStatusTimeById(site.getId(), now);
+        if (updated > 0) {
+            site.setStatusTime(now);
+        }
         logger.debug("Время статуса обновлено для сайта {}", site.getUrl());
     }
 
