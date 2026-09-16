@@ -2,13 +2,13 @@ package com.example.searchengine.services.crawler;
 
 import com.example.searchengine.config.CrawlerConfig;
 import com.example.searchengine.models.Site;
-import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Status;
 import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.indexing.IndexingState;
 import com.example.searchengine.utils.UrlFilter;
 import jakarta.annotation.PreDestroy;
+import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -253,24 +253,24 @@ public class SiteCrawler {
         }
         logger.info("📄 Обработка страницы [{}] {} (глубина {})",
                 counter.incrementAndGet(), pageUrl, depth);
-        Future<Optional<Page>> future = null;
+        Future<Optional<ProcessedPage>> future = null;
         try {
             future = pageTaskExecutor.submit(() -> pageProcessor.processPage(site, pageUrl));
-            Optional<Page> page = future.get(crawlerConfig.getTimeout(), TimeUnit.MILLISECONDS);
-            if (page.isEmpty()) {
+            Optional<ProcessedPage> processed = future.get(crawlerConfig.getTimeout(), TimeUnit.MILLISECONDS);
+            if (processed.isEmpty()) {
                 return;
             }
+            ProcessedPage result = processed.get();
             urlFilter.addVisitedBaseUrl(pageUrl);
             siteService.updateStatusTime(site);
-            processPageLinks(site, pageUrl, depth, visited, stopFlag, counter,
-                    errorCounter, lastActivity, baseUrl, path);
+            processPageLinks(site, result.document(), pageUrl, depth, visited, stopFlag,
+                    counter, errorCounter, lastActivity, baseUrl, path);
         } catch (TimeoutException e) {
             handleTimeout(site, pageUrl, future, errorCounter, stopFlag);
         } catch (Exception e) {
             logger.error("❌ Ошибка обработки {}: {}", pageUrl, e.getMessage());
         }
     }
-
 
     private boolean isValidUrlForCrawling(String pageUrl, Site site) {
         if (!urlFilter.isValidForCrawling(pageUrl)) {
@@ -288,13 +288,13 @@ public class SiteCrawler {
     }
 
 
-    private void processPageLinks(Site site, String pageUrl, int depth,
+    private void processPageLinks(Site site, Document document, String pageUrl, int depth,
                                   Set<String> visited, AtomicBoolean stopFlag,
                                   AtomicInteger counter, AtomicInteger errorCounter,
                                   AtomicLong lastActivity, String baseUrl, String path) {
         Long siteId = site.getId();
         String siteUrl = site.getUrl();
-        List<String> links = linkExtractor.extractLinks(pageUrl, siteUrl);
+        List<String> links = linkExtractor.extractLinks(document, pageUrl, siteUrl);
         logger.debug("🔗 Извлечено {} ссылок с {}", links.size(), pageUrl);
         links = limitLinksPerPage(links, pageUrl);
         if (links.isEmpty() || shouldStop(stopFlag, siteId)) {

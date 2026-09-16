@@ -1,13 +1,11 @@
 package com.example.searchengine.services.crawler;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,41 +24,35 @@ public class LinkExtractor {
                     "/\\d+$"
     );
 
-    public List<String> extractLinks(String pageUrl, String baseUrl) {
+    public List<String> extractLinks(Document doc, String pageUrl, String baseUrl) {
         Set<String> uniqueLinks = new HashSet<>();
-        try {
-            logger.debug("🔗 Извлечение ссылок с: {}", pageUrl);
-            Document doc = Jsoup.connect(pageUrl)
-                    .timeout(10000)
-                    .get();
-            for (Element link : doc.select("a[href]")) {
-                String absUrl = link.absUrl("href");
-                if (absUrl.startsWith(baseUrl)) {
-                    String normalized = normalizeUrl(absUrl);
-                    if (isValidCrawlableUrl(normalized, baseUrl)) {
-                        uniqueLinks.add(normalized);
-                        if (isPaginationLink(normalized)) {
-                            logger.info("📑 НАЙДЕНА ССЫЛКА ПАГИНАЦИИ: {} -> {}", pageUrl, normalized);
-                        }
+        logger.debug("🔗 Извлечение ссылок с: {}", pageUrl);
+        for (Element link : doc.select("a[href]")) {
+            String absUrl = link.absUrl("href");
+            if (absUrl.startsWith(baseUrl)) {
+                String normalized = normalizeUrl(absUrl);
+                if (isValidCrawlableUrl(normalized, baseUrl)) {
+                    uniqueLinks.add(normalized);
+                    if (isPaginationLink(normalized)) {
+                        logger.info("📑 НАЙДЕНА ССЫЛКА ПАГИНАЦИИ: {} -> {}", pageUrl, normalized);
                     }
                 }
             }
-            for (Element element : doc.select("[data-url], [data-href], [data-page]")) {
-                String dataUrl = element.attr("data-url");
-                if (!dataUrl.isEmpty()) {
-                    String fullUrl = dataUrl.startsWith("http") ? dataUrl : baseUrl + dataUrl;
-                    if (isPaginationLink(fullUrl)) {
-                        logger.info("📑 ПАГИНАЦИЯ В DATA-АТРИБУТЕ: {} -> {}", pageUrl, fullUrl);
-                        uniqueLinks.add(normalizeUrl(fullUrl));
-                    }
-                }
-            }
-            logger.debug("✅ Найдено {} уникальных ссылок на {}", uniqueLinks.size(), pageUrl);
-        } catch (IOException e) {
-            logger.error("❌ Ошибка при извлечении ссылок с {}: {}", pageUrl, e.getMessage());
         }
+        for (Element element : doc.select("[data-url], [data-href], [data-page]")) {
+            String dataUrl = element.attr("data-url");
+            if (!dataUrl.isEmpty()) {
+                String fullUrl = dataUrl.startsWith("http") ? dataUrl : baseUrl + dataUrl;
+                if (isPaginationLink(fullUrl)) {
+                    logger.info("📑 ПАГИНАЦИЯ В DATA-АТРИБУТЕ: {} -> {}", pageUrl, fullUrl);
+                    uniqueLinks.add(normalizeUrl(fullUrl));
+                }
+            }
+        }
+        logger.debug("✅ Найдено {} уникальных ссылок на {}", uniqueLinks.size(), pageUrl);
         return new ArrayList<>(uniqueLinks);
     }
+
 
     private boolean isPaginationLink(String url) {
         return PAGINATION_PATTERNS.matcher(url).find() ||
