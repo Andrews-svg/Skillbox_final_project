@@ -57,7 +57,7 @@ public class PageProcessor {
         this.watchdogService = watchdogService;
     }
 
-    public Optional<Page> processPage(Site site, String pageUrl) {
+    public Optional<ProcessedPage> processPage(Site site, String pageUrl) {
         watchdogService.notifyActivity();
         long startTime = System.currentTimeMillis();
 
@@ -155,7 +155,7 @@ public class PageProcessor {
         long duration = System.currentTimeMillis() - startTime;
         logger.info("✅ Страница обработана: {} ({} лемм, {} мс)",
                 normalizedPath, lemmaCount, duration);
-        return Optional.of(page);
+        return Optional.of(new ProcessedPage(page, doc));
     }
 
 

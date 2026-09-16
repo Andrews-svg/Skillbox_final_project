@@ -70,8 +70,8 @@ public class CrawlerService {
     public boolean indexPage(Site site, String pageUrl) {
         logger.info("📥 Ручная индексация страницы: {}", pageUrl);
         try {
-            Optional<Page> page = pageProcessor.processPage(site, pageUrl);
-            if (page.isPresent()) {
+            Optional<ProcessedPage> processed = pageProcessor.processPage(site, pageUrl);
+            if (processed.isPresent()) {
                 logger.info("✅ Страница успешно проиндексирована: {}", pageUrl);
                 return true;
             } else {
