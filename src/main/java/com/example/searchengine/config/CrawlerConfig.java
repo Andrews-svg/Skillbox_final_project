@@ -21,7 +21,7 @@ public class CrawlerConfig {
     private static final int SINGLE_SITE_DELAY_MAX = 3000;
     private static final int SINGLE_SITE_ERROR_LIMIT = 100;
     private static final int SINGLE_SITE_PAGINATION_MAX = 50;
-    private static final int SINGLE_SITE_POOL_SIZE = 24;
+    private static final int SINGLE_SITE_POOL_SIZE = 8;
     private static final int SINGLE_SITE_QUEUE_CAPACITY = 1000;
     private static final int SINGLE_SITE_MAX_CONCURRENT_BROWSERS = 2;
     private static final long SINGLE_SITE_IDLE_TIMEOUT = 60000;
