@@ -7,6 +7,7 @@ import com.example.searchengine.services.LemmaService;
 import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.indexing.IndexService;
 import com.example.searchengine.services.indexing.IndexingState;
+import com.example.searchengine.services.indexing.PageIndexingService;
 import com.example.searchengine.utils.Lemmatizer;
 import com.example.searchengine.utils.UrlFilter;
 import org.jsoup.Connection;
@@ -17,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,6 +30,7 @@ public class PageProcessor {
     private final PageService pageService;
     private final LemmaService lemmaService;
     private final IndexService indexService;
+    private final PageIndexingService pageIndexingService;
     private final Lemmatizer lemmatizer;
     private final CrawlerConfig crawlerConfig;
     private final UrlFilter urlFilter;
@@ -40,6 +41,7 @@ public class PageProcessor {
     public PageProcessor(PageService pageService,
                          LemmaService lemmaService,
                          IndexService indexService,
+                         PageIndexingService pageIndexingService,
                          Lemmatizer lemmatizer,
                          CrawlerConfig crawlerConfig,
                          UrlFilter urlFilter,
@@ -49,12 +51,14 @@ public class PageProcessor {
         this.pageService = pageService;
         this.lemmaService = lemmaService;
         this.indexService = indexService;
+        this.pageIndexingService = pageIndexingService;
         this.lemmatizer = lemmatizer;
         this.crawlerConfig = crawlerConfig;
         this.urlFilter = urlFilter;
         this.indexingState = indexingState;
         this.seleniumFetcher = seleniumFetcher;
         this.watchdogService = watchdogService;
+
     }
 
     public Optional<ProcessedPage> processPage(Site site, String pageUrl) {
@@ -137,20 +141,12 @@ public class PageProcessor {
         titleLemmas.forEach((lemma, count) ->
                 textLemmas.merge(lemma, count * 2, Integer::sum));
 
-        int lemmaCount = 0;
-        for (Map.Entry<String, Integer> entry : textLemmas.entrySet()) {
-            if (!indexingState.isActive()) {
-                logger.debug("Индексация остановлена во время обработки лемм");
-                break;
-            }
-            try {
-                var lemma = lemmaService.saveOrIncrement(entry.getKey(), site);
-                indexService.save(page, lemma, entry.getValue());
-                lemmaCount++;
-            } catch (Exception e) {
-                logger.error("Ошибка при сохранении леммы '{}': {}", entry.getKey(), e.getMessage());
-            }
+        if (!indexingState.isActive()) {
+            logger.debug("Индексация остановлена перед сохранением лемм");
+            return Optional.empty();
         }
+
+        int lemmaCount = pageIndexingService.savePageLemmas(page, site, textLemmas);
 
         long duration = System.currentTimeMillis() - startTime;
         logger.info("✅ Страница обработана: {} ({} лемм, {} мс)",
