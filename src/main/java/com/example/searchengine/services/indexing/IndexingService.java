@@ -253,11 +253,6 @@ public class IndexingService {
             logger.warn("Ошибка при остановке краулера: {}", e.getMessage());
         }
         try {
-            indexingExecutor.shutdownNow();
-        } catch (Exception e) {
-            logger.warn("Ошибка при остановке executor: {}", e.getMessage());
-        }
-        try {
             siteService.findAll().stream()
                     .filter(site -> site.getStatus() == Status.INDEXING)
                     .forEach(site -> {

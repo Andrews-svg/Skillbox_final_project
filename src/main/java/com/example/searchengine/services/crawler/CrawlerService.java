@@ -61,7 +61,7 @@ public class CrawlerService {
             siteService.updateStatusWithError(site, "Ошибка обхода: " + e.getMessage());
         } finally {
             shutdownPool(site.getId(), pool);
-            sitePools.remove(site.getId());
+            sitePools.remove(site.getId(), pool);
         }
     }
 
@@ -86,8 +86,6 @@ public class CrawlerService {
 
     public void stopAllCrawling() {
         logger.info("⛔ Остановка всех обходов...");
-        // ✅ НЕ ставим глобальный флаг сразу!
-        // indexingState.setActive(false); - убрали!
         siteCrawler.stopAllCrawling();
         sitePools.forEach(this::shutdownPool);
         sitePools.clear();
@@ -103,7 +101,7 @@ public class CrawlerService {
         ForkJoinPool pool = sitePools.get(siteId);
         if (pool != null) {
             shutdownPool(siteId, pool);
-            sitePools.remove(siteId);
+            sitePools.remove(siteId, pool);
             logger.info("✅ Обход сайта {} остановлен", siteId);
         }
     }
