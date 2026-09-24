@@ -1250,7 +1250,31 @@
                                 $siteSelect.append('<option value="' + (site.url || '') + '">' + (site.name || site.url || '') + '</option>');
                             });
                         }
+
+                        // === Поллинг статуса индексации ===
+                                                if (total.indexing) {
+                                                    if (!window._statisticsPollTimer) {
+                                                        window._statisticsPollTimer = setTimeout(function() {
+                                                            window._statisticsPollTimer = null;
+                                                            sendData(
+                                                                send['statistics'].address,
+                                                                send['statistics'].type,
+                                                                '',
+                                                                send['statistics'].action,
+                                                                $('.Statistics')
+                                                            );
+                                                        }, 2000);
+                                                    }
+                                                } else {
+                                                    if (window._statisticsPollTimer) {
+                                                        clearTimeout(window._statisticsPollTimer);
+                                                        window._statisticsPollTimer = null;
+                                                    }
+                                                }
+
+
                     }
+
                 }
             };
 
