@@ -242,7 +242,8 @@ public class IndexingService {
 
     public synchronized void stopIndexing() {
         if (!indexingState.isActive()) {
-            throw new IllegalStateException("Индексация не запущена");
+            logger.info("Индексация уже не запущена, остановка не требуется");
+            return;
         }
         logger.info("=== ОСТАНОВКА ИНДЕКСАЦИИ ПО ЗАПРОСУ ПОЛЬЗОВАТЕЛЯ ===");
         indexingState.setActive(false);
