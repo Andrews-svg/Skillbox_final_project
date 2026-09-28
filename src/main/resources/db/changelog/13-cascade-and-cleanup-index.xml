@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="13-cascade-and-cleanup-index" author="midl">
+        <comment>
+            1) Дропаем Hibernate-FK без CASCADE.
+            2) Очищаем index, lemma, page (dev-среда).
+            3) Создаём Liquibase-FK с ON DELETE CASCADE.
+        </comment>
+        <sql>
+            -- 1. Дропаем старые FK (без CASCADE)
+            ALTER TABLE `index` DROP FOREIGN KEY FK3uxy5s82mxfodai0iafb232cs;
+            ALTER TABLE `index` DROP FOREIGN KEY FKiqgm34dkvjdt7kobg71xlbr33;
+
+            -- 2. Очистка таблиц (порядок: index -> lemma, page)
+            TRUNCATE TABLE `index`;
+            TRUNCATE TABLE lemma;
+            TRUNCATE TABLE page;
+
+            -- 3. Создаём новые FK с ON DELETE CASCADE
+            ALTER TABLE `index`
+            ADD CONSTRAINT fk_index_page
+            FOREIGN KEY (page_id) REFERENCES page(id) ON DELETE CASCADE;
+
+            ALTER TABLE `index`
+            ADD CONSTRAINT fk_index_lemma
+            FOREIGN KEY (lemma_id) REFERENCES lemma(id) ON DELETE CASCADE;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -174,12 +174,12 @@ public class IndexingService {
     private void clearSiteData(Site site) {
         try {
             logger.debug("Очистка данных сайта: {}", site.getUrl());
-            pageService.deleteAllBySite(site);
-            lemmaService.deleteAllBySite(site);
             indexService.deleteAllBySite(site);
+            lemmaService.deleteAllBySite(site);
+            pageService.deleteAllBySite(site);
         } catch (Exception e) {
-            logger.warn("Ошибка при очистке данных сайта {}: {}",
-                    site.getUrl(), e.getMessage());
+            logger.error("Ошибка при очистке данных сайта {}: {}",
+                    site.getUrl(), e.getMessage(), e);
         }
     }
 
