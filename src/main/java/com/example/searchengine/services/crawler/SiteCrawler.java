@@ -40,6 +40,8 @@ public class SiteCrawler {
     private final Map<Long, AtomicInteger> pageCounters = new ConcurrentHashMap<>();
     private final Map<Long, AtomicInteger> errorCounters = new ConcurrentHashMap<>();
     private final Map<Long, AtomicLong> lastActivityTime = new ConcurrentHashMap<>();
+    private final Map<Long, AtomicLong> lastStatusTimeUpdate = new ConcurrentHashMap<>();
+    private final Map<Long, AtomicLong> lastProgressLog = new ConcurrentHashMap<>();
 
 
     @Autowired
@@ -79,6 +81,8 @@ public class SiteCrawler {
         pageCounters.putIfAbsent(siteId, new AtomicInteger(0));
         errorCounters.putIfAbsent(siteId, new AtomicInteger(0));
         lastActivityTime.putIfAbsent(siteId, new AtomicLong(System.currentTimeMillis()));
+        lastStatusTimeUpdate.putIfAbsent(siteId, new AtomicLong(0L));
+        lastProgressLog.putIfAbsent(siteId, new AtomicLong(0L));
 
         AtomicBoolean stopFlag = stopFlags.get(siteId);
         Set<String> visited = visitedUrls.get(siteId);
@@ -108,7 +112,7 @@ public class SiteCrawler {
                         siteUrl);
                 pool.shutdownNow();
             }
-            checkAndFinalizeCrawling(site, siteId, stopFlag, quiescent, counter, pool);
+            checkAndFinalizeCrawling(site, siteId, stopFlag, quiescent, counter);
         } catch (Exception e) {
             logger.error("❌ Ошибка при обходе сайта {}: {}", siteUrl, e.getMessage(), e);
             siteService.updateStatusWithError(site, "Ошибка обхода: " + e.getMessage());
@@ -136,6 +140,8 @@ public class SiteCrawler {
         errorCounters.clear();
         lastActivityTime.clear();
         urlFilter.clearVisitedBaseUrls();
+        lastStatusTimeUpdate.clear();
+        lastProgressLog.clear();
         logger.info("🧹 Ресурсы очищены для всех сайтов");
     }
 
@@ -187,15 +193,14 @@ public class SiteCrawler {
     }
 
     private void checkAndFinalizeCrawling(Site site, Long siteId, AtomicBoolean stopFlag,
-                                          boolean quiescent, AtomicInteger counter,
-                                          ForkJoinPool pool) {
+                                          boolean quiescent, AtomicInteger counter) {
         if (!shouldStop(stopFlag, siteId) && quiescent) {
             long pageCount = pageService.countBySite(site);
-            if (pageCount > 0 && !hasActiveTasks(pool)) {
+            if (pageCount > 0) {
                 logger.info("✅ Обход сайта завершен штатно: {} (обработано {} страниц, всего в БД: {})",
                         site.getUrl(), counter.get(), pageCount);
                 siteService.updateStatus(site, Status.INDEXED);
-            } else if (pageCount == 0) {
+            } else {
                 logger.warn("⚠️ Обход сайта {} завершен, но не найдено ни одной страницы",
                         site.getUrl());
                 siteService.updateStatusWithError(site, "Не найдено ни одной страницы");
@@ -212,13 +217,10 @@ public class SiteCrawler {
         pageCounters.remove(siteId);
         errorCounters.remove(siteId);
         lastActivityTime.remove(siteId);
+        lastStatusTimeUpdate.remove(siteId);
+        lastProgressLog.remove(siteId);
         urlFilter.clearVisitedBaseUrls();
         logger.info("🧹 Ресурсы очищены для сайта {}", site.getUrl());
-    }
-
-
-    private boolean hasActiveTasks(ForkJoinPool pool) {
-        return pool != null && !pool.isQuiescent();
     }
 
 
@@ -234,9 +236,7 @@ public class SiteCrawler {
         }
         lastActivity.set(System.currentTimeMillis());
         watchdogService.notifyActivity();
-        if (counter.get() % 10 == 0 && counter.get() > 0) {
-            logProgress(site, counter, errorCounter);
-        }
+        maybeLogProgress(site, counter, errorCounter);
         if (depth > crawlerConfig.getMaxDepth()) {
             return;
         }
@@ -262,7 +262,7 @@ public class SiteCrawler {
             }
             ProcessedPage result = processed.get();
             urlFilter.addVisitedBaseUrl(pageUrl);
-            siteService.updateStatusTime(site);
+            maybeUpdateStatusTime(site);
             processPageLinks(site, result.document(), pageUrl, depth, visited, stopFlag,
                     counter, errorCounter, lastActivity, baseUrl, path, pool);
         } catch (TimeoutException e) {
@@ -374,6 +374,37 @@ public class SiteCrawler {
         }
         String path = urlFilter.normalizePath(link, baseUrl);
         return !visited.contains(path);
+    }
+
+
+    private void maybeUpdateStatusTime(Site site) {
+        Long siteId = site.getId();
+        long now = System.currentTimeMillis();
+        AtomicLong lastUpdate = lastStatusTimeUpdate.computeIfAbsent(siteId, k -> new AtomicLong(0L));
+        long last = lastUpdate.get();
+        if (now - last > 30_000) {
+            if (lastUpdate.compareAndSet(last, now)) {
+                try {
+                    siteService.updateStatusTime(site);
+                } catch (Exception e) {
+                    logger.warn("Не удалось обновить status_time для {}: {}",
+                            site.getUrl(), e.getMessage());
+                }
+            }
+        }
+    }
+
+
+    private void maybeLogProgress(Site site, AtomicInteger counter, AtomicInteger errorCounter) {
+        Long siteId = site.getId();
+        long now = System.currentTimeMillis();
+        AtomicLong lastLog = lastProgressLog.computeIfAbsent(siteId, k -> new AtomicLong(0L));
+        long last = lastLog.get();
+        if (now - last > 30_000) {
+            if (lastLog.compareAndSet(last, now)) {
+                logProgress(site, counter, errorCounter);
+            }
+        }
     }
 
 

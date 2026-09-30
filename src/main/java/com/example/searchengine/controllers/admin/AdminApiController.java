@@ -7,34 +7,47 @@ import com.example.searchengine.dto.adminLogs.ZeroResultQueryDto;
 import com.example.searchengine.services.SearchLogService;
 import com.example.searchengine.services.AuthService;
 import com.example.searchengine.services.HealthService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import com.example.searchengine.services.crawler.CrawlerService;
+import java.util.Map;
 
 import java.util.List;
+
 
 @Controller
 @RequestMapping("/api/admin")
 public class AdminApiController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminApiController.class);
 
     private final CrawlerConfig crawlerConfig;
     private final SearchLogService searchLogService;
     private final SessionRegistry sessionRegistry;
     private final HealthService healthService;
     private final AuthService authService;
+    private final CrawlerService crawlerService;
+
 
     public AdminApiController(CrawlerConfig crawlerConfig,
+                              CrawlerService crawlerService,
                               SearchLogService searchLogService,
                               SessionRegistry sessionRegistry,
                               HealthService healthService,
                               AuthService authService) {
         this.crawlerConfig = crawlerConfig;
+        this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
         this.sessionRegistry = sessionRegistry;
         this.healthService = healthService;
         this.authService = authService;
     }
+
 
     @GetMapping("/layout")
     public String getAdminLayout(Model model) {
@@ -86,6 +99,30 @@ public class AdminApiController {
     @ResponseBody
     public String getCurrentMode() {
         return crawlerConfig.getCurrentMode();
+    }
+
+    @GetMapping("/crawler/progress")
+    @ResponseBody
+    public Map<Long, Integer> getCrawlerProgress() {
+        return crawlerService.getIndexingProgress();
+    }
+
+    @GetMapping("/crawler/errors")
+    @ResponseBody
+    public Map<Long, Integer> getCrawlerErrors() {
+        return crawlerService.getIndexingErrors();
+    }
+
+    @PostMapping("/crawler/stop/{siteId}")
+    @ResponseBody
+    public ResponseEntity<?> stopCrawler(@PathVariable Long siteId) {
+        logger.info("🛑 Ручная остановка обхода сайта ID={}", siteId);
+        crawlerService.stopCrawling(siteId);
+        return ResponseEntity.ok(Map.of(
+                "result", true,
+                "siteId", siteId,
+                "message", "Обход сайта остановлен"
+        ));
     }
 
     @PostMapping("/mode/single")

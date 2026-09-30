@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +34,11 @@ public class PageIndexingService {
     }
 
 
+    @Retryable(
+            retryFor = {CannotAcquireLockException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 2)
+    )
     @Transactional
     public int savePageLemmas(Page page, Site site, Map<String, Integer> lemmas) {
         int count = 0;
