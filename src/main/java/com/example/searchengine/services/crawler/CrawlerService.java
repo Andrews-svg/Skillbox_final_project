@@ -111,6 +111,10 @@ public class CrawlerService {
         return siteCrawler.getProgress();
     }
 
+    public Map<Long, Integer> getIndexingErrors() {
+        return siteCrawler.getErrorCounts();
+    }
+
 
     private void shutdownPool(Long siteId, ForkJoinPool pool) {
         if (pool == null || pool.isShutdown()) {
@@ -119,11 +123,11 @@ public class CrawlerService {
         logger.debug("Завершение пула для сайта {}", siteId);
         pool.shutdown();
         try {
-            if (!pool.awaitTermination(30, TimeUnit.SECONDS)) {
-                logger.warn("Пул для сайта {} не завершился за 30 сек, принудительное завершение", siteId);
+            if (!pool.awaitTermination(10, TimeUnit.SECONDS)) {
+                logger.warn("Пул для сайта {} не завершился за 10 сек, принудительное завершение", siteId);
                 pool.shutdownNow();
 
-                if (!pool.awaitTermination(10, TimeUnit.SECONDS)) {
+                if (!pool.awaitTermination(5, TimeUnit.SECONDS)) {
                     logger.error("НЕ УДАЛОСЬ ОСТАНОВИТЬ ПУЛ для сайта {}", siteId);
                 }
             }

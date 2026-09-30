@@ -174,7 +174,6 @@ public class IndexingService {
     private void clearSiteData(Site site) {
         try {
             logger.debug("Очистка данных сайта: {}", site.getUrl());
-            indexService.deleteAllBySite(site);
             lemmaService.deleteAllBySite(site);
             pageService.deleteAllBySite(site);
         } catch (Exception e) {
