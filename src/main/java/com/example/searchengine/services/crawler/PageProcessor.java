@@ -192,7 +192,7 @@ public class PageProcessor {
                     Connection.Response response = Jsoup.connect(pageUrl)
                             .userAgent(USER_AGENT)
                             .referrer(REFERRER)
-                            .timeout(crawlerConfig.getTimeout())
+                            .timeout(crawlerConfig.getNetworkTimeout())
                             .followRedirects(true)
                             .execute();
 

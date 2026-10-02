@@ -256,7 +256,7 @@ public class SiteCrawler {
         Future<Optional<ProcessedPage>> future = null;
         try {
             future = pageTaskExecutor.submit(() -> pageProcessor.processPage(site, pageUrl));
-            Optional<ProcessedPage> processed = future.get(crawlerConfig.getTimeout(), TimeUnit.MILLISECONDS);
+            Optional<ProcessedPage> processed = future.get(crawlerConfig.getPageTimeout(), TimeUnit.MILLISECONDS);
             if (processed.isEmpty()) {
                 return;
             }
@@ -344,7 +344,7 @@ public class SiteCrawler {
     private void handleTimeout(Site site, String pageUrl, Future<?> future,
                                AtomicInteger errorCounter, AtomicBoolean stopFlag) {
         String siteUrl = site.getUrl();
-        int timeoutSeconds = crawlerConfig.getTimeout() / 1000;
+        int timeoutSeconds = crawlerConfig.getPageTimeout() / 1000;
         int errorLimit = crawlerConfig.getErrorLimit();
         logger.error("⏱ ТАЙМАУТ {} - страница не обработана за {} секунд", pageUrl, timeoutSeconds);
         if (future != null) {
