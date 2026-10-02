@@ -8,9 +8,9 @@ import com.example.searchengine.repositories.IndexRepository;
 import com.example.searchengine.repositories.LemmaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
@@ -35,7 +35,7 @@ public class PageIndexingService {
 
 
     @Retryable(
-            retryFor = {CannotAcquireLockException.class},
+            retryFor = {PessimisticLockingFailureException.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 100, multiplier = 2)
     )

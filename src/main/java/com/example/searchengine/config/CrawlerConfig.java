@@ -53,6 +53,12 @@ public class CrawlerConfig {
     private static final int RETRY_DELAY_MS = 2000;
 
     // ===========================================
+// 🔧 ТАЙМАУТЫ (разделены: сеть / полный цикл)
+// ===========================================
+    private static final int NETWORK_TIMEOUT_MS = 15000;
+    private static final int PAGE_TIMEOUT_MS = 180000;
+
+    // ===========================================
     // 🔧 ЗАГРУЖАЕМЫЕ ПАРАМЕТРЫ ИЗ YAML
     // ===========================================
     private List<String> jsEnabledSites;
@@ -86,6 +92,14 @@ public class CrawlerConfig {
         return jsTimeout;
     }
 
+    public int getNetworkTimeout() {
+        return NETWORK_TIMEOUT_MS;
+    }
+
+    public int getPageTimeout() {
+        return PAGE_TIMEOUT_MS;
+    }
+
     public int getJsWait() {
         return jsWait;
     }
@@ -94,6 +108,7 @@ public class CrawlerConfig {
         return multiSiteMode ? MULTI_SITE_MAX_DEPTH : SINGLE_SITE_MAX_DEPTH;
     }
 
+    @Deprecated
     public int getTimeout() {
         return multiSiteMode ? MULTI_SITE_TIMEOUT : SINGLE_SITE_TIMEOUT;
     }
@@ -200,7 +215,8 @@ public class CrawlerConfig {
         System.out.println(getCurrentMode() + " - ТЕКУЩАЯ КОНФИГУРАЦИЯ");
         System.out.println("=".repeat(60));
         System.out.println("Глубина обхода: " + getMaxDepth());
-        System.out.println("Таймаут: " + getTimeout() + " мс");
+        System.out.println("Сетевой таймаут: " + getNetworkTimeout() + " мс");
+        System.out.println("Таймаут страницы: " + getPageTimeout() + " мс");
         System.out.println("Макс. ссылок на странице: " + getMaxLinksPerPage());
         System.out.println("Задержка: " + getRandomDelay() + " мс (динамическая)");
         System.out.println("Лимит ошибок: " + getErrorLimit());
@@ -217,5 +233,6 @@ public class CrawlerConfig {
         System.out.println("JS ожидание: " + jsWait + " мс");
         System.out.println("JS сайты: " + (jsEnabledSites != null ? jsEnabledSites : "[]"));
         System.out.println("=".repeat(60));
+
     }
 }
