@@ -71,6 +71,12 @@ public class SiteService {
     }
 
 
+    @Transactional(readOnly = true)
+    public List<Site> findByStatus(Status status) {
+        return siteRepository.findByStatus(status);
+    }
+
+
     @Transactional
     public void updateStatus(Site site, Status status) {
         LocalDateTime now = LocalDateTime.now();

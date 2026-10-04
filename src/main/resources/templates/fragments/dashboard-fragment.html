@@ -29,7 +29,15 @@
 
     <!-- Таблица детальной статистики по сайтам -->
     <div class="table-container" style="margin-top: 20px; overflow-x: auto;">
-        <table class="data-table">
+
+        <!-- Заглушка для пустой live-сессии -->
+        <div id="statisticsEmptyState" style="text-align: center; padding: 40px 20px; color: #888;">
+            <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+            <div style="font-size: 16px;">Запустите индексацию, чтобы увидеть статистику</div>
+        </div>
+
+        <!-- Таблица — видна только при активной live-сессии -->
+        <table class="data-table" id="statisticsTable" style="display: none;">
             <thead>
             <tr>
                 <th>Сайт</th>
@@ -40,9 +48,7 @@
                 <th>Последнее обновление</th>
             </tr>
             </thead>
-            <tbody id="statisticsTableBody">
-            <tr><td colspan="6" style="text-align: center;">Загрузка данных...</td></tr>
-            </tbody>
+            <tbody id="statisticsTableBody"></tbody>
         </table>
     </div>
 </div>

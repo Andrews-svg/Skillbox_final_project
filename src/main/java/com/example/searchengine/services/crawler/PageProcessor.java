@@ -64,17 +64,14 @@ public class PageProcessor {
     public Optional<ProcessedPage> processPage(Site site, String pageUrl) {
         watchdogService.notifyActivity();
         long startTime = System.currentTimeMillis();
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена, пропускаем {}", pageUrl);
             return Optional.empty();
         }
-
         if (!urlFilter.shouldIndex(pageUrl)) {
             logger.debug("Страница отфильтрована: {}", pageUrl);
             return Optional.empty();
         }
-
         try {
             Thread.sleep(crawlerConfig.getRandomDelay());
         } catch (InterruptedException e) {
@@ -82,33 +79,27 @@ public class PageProcessor {
             logger.debug("Задержка прервана для {}", pageUrl);
             return Optional.empty();
         }
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена после задержки");
             return Optional.empty();
         }
-
         Optional<Document> docOpt = fetchDocumentWithRetry(site, pageUrl);
         if (docOpt.isEmpty()) {
             return Optional.empty();
         }
         Document doc = docOpt.get();
-
         String normalizedPath = urlFilter.normalizePath(pageUrl, site.getUrl());
         String content = doc.html();
         String text = doc.body().text();
         String title = doc.title();
-
         logger.debug("Контент: HTML={} байт, TEXT={} символов", content.length(), text.length());
         if (text.length() < 100) {
             logger.warn("⚠️ Мало текста на странице {}: {} символов", pageUrl, text.length());
         }
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена перед удалением старой версии");
             return Optional.empty();
         }
-
         if (pageService.existsByPathAndSite(normalizedPath, site)) {
             logger.debug("Страница уже существует, обновляем: {}", normalizedPath);
             pageService.findByPathAndSite(normalizedPath, site).ifPresent(oldPage -> {
@@ -121,33 +112,27 @@ public class PageProcessor {
                 }
             });
         }
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена перед сохранением страницы");
             return Optional.empty();
         }
-
         Page page = new Page(normalizedPath, 200, content, site);
         page = pageService.save(page);
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена перед лемматизацией");
             return Optional.empty();
         }
-
-
         Map<String, Integer> textLemmas = lemmatizer.getLemmasFrequency(text);
         Map<String, Integer> titleLemmas = lemmatizer.getLemmasFrequency(title);
         titleLemmas.forEach((lemma, count) ->
                 textLemmas.merge(lemma, count * 2, Integer::sum));
-
         if (!indexingState.isActive()) {
             logger.debug("Индексация остановлена перед сохранением лемм");
             return Optional.empty();
         }
-
         int lemmaCount = pageIndexingService.savePageLemmas(page, site, textLemmas);
-
+        indexingState.incrementPages(site.getId(), 1);
+        indexingState.incrementLemmas(site.getId(), lemmaCount);
         long duration = System.currentTimeMillis() - startTime;
         logger.info("✅ Страница обработана: {} ({} лемм, {} мс)",
                 normalizedPath, lemmaCount, duration);
