@@ -9,6 +9,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.example.searchengine.config.CrawlerConfig;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -26,6 +27,7 @@ public class IndexingService {
     private final CrawlerService crawlerService;
     private final SitesList sitesList;
     private final IndexingState indexingState;
+    private final CrawlerConfig crawlerConfig;
 
 
     private final ExecutorService indexingExecutor = Executors.newCachedThreadPool(r -> {
@@ -40,7 +42,7 @@ public class IndexingService {
                            LemmaService lemmaService,
                            IndexService indexService,
                            CrawlerService crawlerService,
-                           SitesList sitesList, IndexingState indexingState) {
+                           SitesList sitesList, IndexingState indexingState, CrawlerConfig crawlerConfig) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -48,6 +50,7 @@ public class IndexingService {
         this.crawlerService = crawlerService;
         this.sitesList = sitesList;
         this.indexingState = indexingState;
+        this.crawlerConfig = crawlerConfig;
     }
 
 
@@ -89,6 +92,15 @@ public class IndexingService {
             indexingState.setActive(false);
             throw new IllegalStateException("В конфигурации нет сайтов для индексации");
         }
+
+
+        if (!crawlerConfig.isMultiSiteMode()) {
+            configs = configs.subList(0, 1);
+            logger.info("🔵 SINGLE режим: индексируем только {}", configs.get(0).getUrl());
+        } else {
+            logger.info("🟡 MULTI режим: индексируем {} сайтов", configs.size());
+        }
+
         AtomicInteger completedCount = new AtomicInteger(0);
         int totalSites = configs.size();
         for (SitesList.SiteConfig config : configs) {

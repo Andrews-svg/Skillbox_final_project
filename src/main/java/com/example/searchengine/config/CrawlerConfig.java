@@ -12,6 +12,23 @@ import java.util.Map;
 public class CrawlerConfig {
 
     // ===========================================
+    // ⚡ КОНЦЕПЦИЯ РЕЖИМОВ ИНДЕКСАЦИИ
+    // ===========================================
+    // SINGLE — индексация ОДНОГО сайта. Настройки ПРОЩЕ:
+    //          меньше глубина, меньше лимиты, короче таймауты.
+    //          Обход идёт быстрее, ресурсы не распыляются.
+    //
+    // MULTI — индексация НЕСКОЛЬКИХ сайтов (обычно маркетплейсы
+    //          и новостные порталы с разветвлённой структурой).
+    //          Настройки ГЛУБЖЕ и ТЩАТЕЛЬНЕЕ:
+    //          больше глубина, больше допустимо ошибок,
+    //          больше попыток, дольше таймауты.
+    //
+    // ⚠️ SINGLE обрабатывает ТОЛЬКО ПЕРВЫЙ сайт из indexing-settings.sites.
+    //    MULTI обрабатывает ВСЕ.
+    // ===========================================
+
+    // ===========================================
     // ⚡ ПРОФИЛЬ №1: ИНДЕКСАЦИЯ ОДНОГО САЙТА
     // ===========================================
     private static final int SINGLE_SITE_MAX_DEPTH = 10;
@@ -32,20 +49,20 @@ public class CrawlerConfig {
     // ===========================================
     // ⚡ ПРОФИЛЬ №2: ИНДЕКСАЦИЯ НЕСКОЛЬКИХ САЙТОВ
     // ===========================================
-    private static final int MULTI_SITE_MAX_DEPTH = 8;
+    private static final int MULTI_SITE_MAX_DEPTH = 15;
     private static final int MULTI_SITE_TIMEOUT = 120000;
     private static final int MULTI_SITE_MAX_LINKS_PER_PAGE = 100;
-    private static final int MULTI_SITE_DELAY_MIN = 1000;
-    private static final int MULTI_SITE_DELAY_MAX = 3000;
-    private static final int MULTI_SITE_ERROR_LIMIT = 50;
-    private static final int MULTI_SITE_PAGINATION_MAX = 30;
+    private static final int MULTI_SITE_DELAY_MIN = 2000;
+    private static final int MULTI_SITE_DELAY_MAX = 5000;
+    private static final int MULTI_SITE_ERROR_LIMIT = 300;
+    private static final int MULTI_SITE_PAGINATION_MAX = 100;
     private static final int MULTI_SITE_POOL_SIZE = 8;
     private static final int MULTI_SITE_QUEUE_CAPACITY = 500;
     private static final int MULTI_SITE_MAX_CONCURRENT_BROWSERS = 3;
     private static final long MULTI_SITE_IDLE_TIMEOUT = 120000;
     private static final long MULTI_SITE_CHECK_INTERVAL = 15000;
     private static final int MULTI_SITE_MAX_ANALYSIS_ATTEMPTS = 5;
-    private static final int MULTI_SITE_RETRY_COUNT = 2;
+    private static final int MULTI_SITE_RETRY_COUNT = 5;
 
     // ===========================================
     // 🔧 ОБЩИЕ ПАРАМЕТРЫ ДЛЯ RETRY
@@ -53,8 +70,8 @@ public class CrawlerConfig {
     private static final int RETRY_DELAY_MS = 2000;
 
     // ===========================================
-// 🔧 ТАЙМАУТЫ (разделены: сеть / полный цикл)
-// ===========================================
+    // 🔧 ТАЙМАУТЫ (разделены: сеть / полный цикл)
+    // ===========================================
     private static final int NETWORK_TIMEOUT_MS = 15000;
     private static final int PAGE_TIMEOUT_MS = 180000;
 
@@ -208,6 +225,10 @@ public class CrawlerConfig {
 
     public String getCurrentMode() {
         return multiSiteMode ? "🟡 МУЛЬТИ-САЙТ" : "🔵 ОДИН САЙТ";
+    }
+
+    public boolean isMultiSiteMode() {
+        return multiSiteMode;
     }
 
     public void printCurrentConfig() {
