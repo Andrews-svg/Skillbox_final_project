@@ -1050,7 +1050,7 @@
                                                   .text('✅ Индексация запущена').show();
                                               setTimeout(function(){ $msg.fadeOut(); }, 5000);
 
-                                              // Перезапрашиваем статистику — обновит светофор и кнопки
+                                              resetStatisticsUI();
                                               setTimeout(function(){
                                                   sendData(send['statistics'].address, send['statistics'].type,
                                                       '', send['statistics'].action, $('.Statistics'));
@@ -1211,6 +1211,19 @@
                                                    $('#indexingStatus').hide();
                                                }
 
+                         // === Empty state: пустая live-сессия ===
+                                                var $emptyState = $('#statisticsEmptyState');
+                                                var $statsTable = $('#statisticsTableBody').closest('table');
+
+                                                  if (detailed.length === 0 && !total.indexing) {
+                                                      $emptyState.show();
+                                                      $statsTable.hide();
+                                                  } else {
+                                                      $emptyState.hide();
+                                                      $statsTable.show();
+                                                  }
+
+
                         // === Таблица сайтов ===
                         var $tbody = $('#statisticsTableBody');
                         if ($tbody.length) {
@@ -1238,8 +1251,8 @@
                                     $tbody.append(row);
                                 });
                             } else {
-                                $tbody.html('<tr><td colspan="6" style="text-align: center;">Нет данных</td></tr>');
-                            }
+                               // Пустая сессия — ничего не рисуем, показывает заглушка
+                                                       }
                         }
 
                         // === Выпадающий список сайтов для вкладки Search ===
@@ -1277,6 +1290,34 @@
 
                 }
             };
+
+             // ===========================================
+                        // СБРОС UI СТАТИСТИКИ ПРИ СТАРТЕ НОВОЙ СЕССИИ
+                        // ===========================================
+                        function resetStatisticsUI() {
+                            console.log('🔄 Сброс UI статистики — новая live-сессия');
+
+                            // Карточки метрик
+                            $('#totalSites').text('0');
+                            $('#totalPages').text('0');
+                            $('#totalLemmas').text('0');
+
+                            // Feed: очистить
+                            $('#statisticsTableBody').empty();
+
+                            // Заглушка — видна, таблица — скрыта
+                            $('#statisticsEmptyState').show();
+                            $('#statisticsTableBody').closest('table').hide();
+
+                            // Светофор — зелёный
+                            if ($('#indicatorGreen').length) {
+                                $('#indicatorRed').removeClass('active');
+                                $('#indicatorGreen').addClass('active');
+                                $('#indicatorLabel').text('Индексация выполняется...');
+                                $('#startIndexingBtn').prop('disabled', true);
+                                $('#stopIndexingBtn').prop('disabled', false);
+                            }
+                        }
 
             // Функция shiftCheck
             function shiftCheck($element, wave){

@@ -92,15 +92,13 @@ public class IndexingService {
             indexingState.setActive(false);
             throw new IllegalStateException("В конфигурации нет сайтов для индексации");
         }
-
-
         if (!crawlerConfig.isMultiSiteMode()) {
             configs = configs.subList(0, 1);
             logger.info("🔵 SINGLE режим: индексируем только {}", configs.get(0).getUrl());
         } else {
             logger.info("🟡 MULTI режим: индексируем {} сайтов", configs.size());
         }
-
+        indexingState.startSession();
         AtomicInteger completedCount = new AtomicInteger(0);
         int totalSites = configs.size();
         for (SitesList.SiteConfig config : configs) {
@@ -139,6 +137,8 @@ public class IndexingService {
                     });
             logger.info("   Сайт получен: id={}, status={}, name={}",
                     site.getId(), site.getStatus(), site.getName());
+            indexingState.addSessionSite(site.getId());
+
             logger.info("2. Очистка старых данных для сайта: {}", config.getUrl());
             clearSiteData(site);
             logger.info("3. Установка статуса INDEXING для сайта: {}", config.getUrl());
@@ -264,12 +264,9 @@ public class IndexingService {
             logger.warn("Ошибка при остановке краулера: {}", e.getMessage());
         }
         try {
-            siteService.findAll().stream()
-                    .filter(site -> site.getStatus() == Status.INDEXING)
-                    .forEach(site -> {
-                        siteService.updateStatusWithError(
-                                site, "Индексация остановлена пользователем");
-                    });
+            siteService.findByStatus(Status.INDEXING)
+                    .forEach(site -> siteService.updateStatusWithError(
+                            site, "Индексация остановлена пользователем"));
         } catch (Exception e) {
             logger.warn("Ошибка при обновлении статусов: {}", e.getMessage());
         }

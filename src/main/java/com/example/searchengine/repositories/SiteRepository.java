@@ -26,11 +26,10 @@ public interface SiteRepository extends JpaRepository<Site, Long> {
     long countByStatus(Status status);
 
     @Modifying
-    @Query("UPDATE Site s SET s.status = :status, s.statusTime = :statusTime WHERE s.id = :id")
+    @Query("UPDATE Site s SET s.status = :status, s.statusTime = :statusTime, s.lastError = NULL WHERE s.id = :id")
     int updateStatusById(@Param("id") Long id,
                          @Param("status") Status status,
                          @Param("statusTime") LocalDateTime statusTime);
-
 
     @Modifying
     @Query("UPDATE Site s SET s.status = :status, s.statusTime = :statusTime, s.lastError = :error WHERE s.id = :id")
