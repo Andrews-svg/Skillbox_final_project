@@ -51,27 +51,16 @@ public class SecurityConfig {
 
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
-                            if (request.getServletPath().startsWith("/api/")) {
-                                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                                response.setContentType("application/json");
-                                response.setCharacterEncoding("UTF-8");
-                                response.getWriter().write(
-                                        "{\"result\": false, \"error\": \"Требуется аутентификация\", \"code\": 401}"
-                                );
-                            } else {
-                                response.sendRedirect("/login");
-                            }
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write(
+                                    "{\"result\": false, \"error\": \"Требуется аутентификация\", \"code\": 401}"
+                            );
                         })
                 )
 
                 .authorizeHttpRequests(authorization -> authorization
-
-                        .requestMatchers("/layout", "/home", "/login", "/register").permitAll()
-                        .requestMatchers("/tab/home").permitAll()
-                        .requestMatchers("/fragments/home", "/fragments/login-fragment",
-                                "/fragments/registration-fragment", "/fragments/login",
-                                "/fragments/registration", "/fragments/navbar").permitAll()
-
 
                         .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
 
@@ -81,16 +70,6 @@ public class SecurityConfig {
                                 "/error", "/csrf-token", "/csp-reports"
                         ).permitAll()
 
-                        .requestMatchers(
-                                "/forgot-password", "/reset-password",
-                                "/password/forgot", "/password/reset",
-                                "/auth/activate/**", "/csp-reports"
-                        ).permitAll()
-
-                        .requestMatchers("/tab/dashboard", "/tab/management", "/tab/search")
-                        .hasAnyAuthority("USER", "ADMIN")
-                        .requestMatchers("/fragment/dashboard", "/fragment/management", "/fragment/search")
-                        .hasAnyAuthority("USER", "ADMIN")
                         .requestMatchers("/dashboard", "/management", "/search")
                         .hasAnyAuthority("USER", "ADMIN")
 
@@ -105,22 +84,13 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/**").authenticated()
 
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
 
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .usernameParameter("username")
-                        .passwordParameter("password")
-                        .defaultSuccessUrl("/", true)
-                        .failureUrl("/login?error=true")
-                        .permitAll()
-                )
 
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout=true")
+                        .logoutSuccessUrl("/")
                         .deleteCookies("JSESSIONID", "jwt_token")
                         .invalidateHttpSession(true)
                         .permitAll()
