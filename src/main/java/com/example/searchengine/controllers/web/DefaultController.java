@@ -19,9 +19,4 @@ public class DefaultController {
         model.addAttribute("currentMode", crawlerConfig.getCurrentMode());
         return "index";
     }
-
-    @GetMapping("/login")
-    public String loginPage() {
-        return "index";
-    }
 }
