@@ -41,16 +41,13 @@ public class SeleniumFetcher {
             "detmir.ru"
     );
 
-    private static final int MAX_CONCURRENT_BROWSERS_SINGLE = 2;
-    private static final int MAX_CONCURRENT_BROWSERS_MULTI = 3;
+
     private final Semaphore browserSemaphore;
 
 
     public SeleniumFetcher(CrawlerConfig crawlerConfig) {
         this.crawlerConfig = crawlerConfig;
-        int maxBrowsers = crawlerConfig.getCurrentMode().contains("МУЛЬТИ")
-                ? MAX_CONCURRENT_BROWSERS_MULTI
-                : MAX_CONCURRENT_BROWSERS_SINGLE;
+        int maxBrowsers = crawlerConfig.getMaxConcurrentBrowsers();
         this.browserSemaphore = new Semaphore(maxBrowsers, true);
         logger.info("🔄 SeleniumFetcher: максимум {} параллельных браузеров", maxBrowsers);
     }
@@ -80,13 +77,13 @@ public class SeleniumFetcher {
                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             options.addArguments("--lang=ru-RU");
             options.addArguments("--accept-lang=ru-RU,ru;q=0.9");
-            int timeoutSeconds = crawlerConfig.getTimeout() / 1000;
-            options.setPageLoadTimeout(Duration.ofSeconds(timeoutSeconds));
+            Duration jsTimeout = Duration.ofMillis(crawlerConfig.getJsTimeout());
+            options.setPageLoadTimeout(jsTimeout);
             long startTime = System.currentTimeMillis();
             logger.debug("⏱ Создание ChromeDriver...");
             driver = new ChromeDriver(options);
             logger.debug("✅ ChromeDriver создан за {} мс", System.currentTimeMillis() - startTime);
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(timeoutSeconds));
+            driver.manage().timeouts().pageLoadTimeout(jsTimeout);
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
             driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(5));
             logger.debug("⏱ Загрузка страницы: {}", url);
@@ -133,14 +130,5 @@ public class SeleniumFetcher {
         }
         logger.debug("📄 JSOUP для {}", url);
         return false;
-    }
-
-
-    public void updateConcurrencyLimit() {
-        int newLimit = crawlerConfig.getCurrentMode().contains("МУЛЬТИ")
-                ? MAX_CONCURRENT_BROWSERS_MULTI
-                : MAX_CONCURRENT_BROWSERS_SINGLE;
-        logger.info("⚠️ Текущий лимит браузеров: {} (режим: {})",
-                newLimit, crawlerConfig.getCurrentMode());
     }
 }

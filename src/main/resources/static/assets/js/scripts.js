@@ -1613,10 +1613,6 @@ sendData(
                         }
                     });
 
-                    $tabs.each(function(){
-                        $(this).find($tabsLink).eq(0).trigger('click');
-                    });
-
                     if (~window.location.href.indexOf('#')){
                         var tab = window.location.href.split('#');
                         tab = tab[tab.length - 1];
@@ -1849,22 +1845,27 @@ sendData(
 
                     loginUser(credentials)
                        .done(function(response) {
-                           if (handleAuthResponse(response, 'Вход выполнен успешно!')) {
-                               if (window.apiInstance) {
-                                   window.apiInstance.initAuthorized();
-                               }
-                               // Скрываем формы авторизации
-                               $('.auth-container').hide();
-                               $('#welcomeBlock').hide();
+                          if (handleAuthResponse(response, 'Вход выполнен успешно!')) {
+                              if (window.apiInstance) {
+                                  window.apiInstance.initAuthorized();
+                              }
+                              // Скрываем формы авторизации
+                              $('.auth-container').hide();
+                              $('#welcomeBlock').hide();
 
-                               // Показываем защищённые вкладки, скрываем публичные
-                               $('#publicTabs').hide();
-                               $('#protectedTabs').show();
+                              // Показываем защищённые вкладки, скрываем публичные
+                              $('#publicTabs').hide();
+                              $('#protectedTabs').show();
 
-                               // Переходим на dashboard
-                               window.location.hash = 'dashboard';
-                           }
-                       })
+                              // Переходим на dashboard
+                              window.location.hash = 'dashboard';
+
+                              // Явный вызов — не полагаемся только на hashchange
+                              if (window.App && window.App.loadFragment) {
+                                  window.App.loadFragment('#dashboard');
+                              }
+                          }
+                      })
                         .fail(function(xhr) {
                             var errorMsg = 'Ошибка соединения с сервером';
                             try {
@@ -1945,7 +1946,9 @@ sendData(
 
             var responseText = xhr.responseText;
             if (responseText && responseText.trim().startsWith('<!DOCTYPE')) {
-                console.warn('📄 Получен HTML ответ вместо JSON для URL:', settings.url);
+                if (settings.url && settings.url.indexOf('/fragments/') === -1) {
+                    console.warn('📄 Получен HTML ответ вместо JSON для URL:', settings.url);
+                }
             }
         });
 

@@ -414,9 +414,8 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.result) {
+                 if (data.result) {
                     localStorage.setItem('authToken', data.token);
-                    window.isAuthenticated = true;
 
                     showAlert('Вход выполнен успешно!', 'success');
 

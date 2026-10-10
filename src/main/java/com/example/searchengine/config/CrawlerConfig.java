@@ -5,7 +5,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 
 @Component
 @ConfigurationProperties(prefix = "crawler")
@@ -31,8 +30,10 @@ public class CrawlerConfig {
     // ===========================================
     // ⚡ ПРОФИЛЬ №1: ИНДЕКСАЦИЯ ОДНОГО САЙТА
     // ===========================================
+    private static final int SINGLE_NETWORK_TIMEOUT_MS = 15000;
+    private static final int SINGLE_PAGE_TIMEOUT_MS = 180000;
+    private static final int SINGLE_JS_TIMEOUT_MS = 30000;
     private static final int SINGLE_SITE_MAX_DEPTH = 10;
-    private static final int SINGLE_SITE_TIMEOUT = 60000;
     private static final int SINGLE_SITE_MAX_LINKS_PER_PAGE = 100;
     private static final int SINGLE_SITE_DELAY_MIN = 1000;
     private static final int SINGLE_SITE_DELAY_MAX = 3000;
@@ -49,8 +50,10 @@ public class CrawlerConfig {
     // ===========================================
     // ⚡ ПРОФИЛЬ №2: ИНДЕКСАЦИЯ НЕСКОЛЬКИХ САЙТОВ
     // ===========================================
+    private static final int MULTI_NETWORK_TIMEOUT_MS = 20000;
+    private static final int MULTI_PAGE_TIMEOUT_MS = 240000;
+    private static final int MULTI_JS_TIMEOUT_MS = 45000;
     private static final int MULTI_SITE_MAX_DEPTH = 15;
-    private static final int MULTI_SITE_TIMEOUT = 120000;
     private static final int MULTI_SITE_MAX_LINKS_PER_PAGE = 100;
     private static final int MULTI_SITE_DELAY_MIN = 2000;
     private static final int MULTI_SITE_DELAY_MAX = 5000;
@@ -70,16 +73,9 @@ public class CrawlerConfig {
     private static final int RETRY_DELAY_MS = 2000;
 
     // ===========================================
-    // 🔧 ТАЙМАУТЫ (разделены: сеть / полный цикл)
-    // ===========================================
-    private static final int NETWORK_TIMEOUT_MS = 15000;
-    private static final int PAGE_TIMEOUT_MS = 180000;
-
-    // ===========================================
     // 🔧 ЗАГРУЖАЕМЫЕ ПАРАМЕТРЫ ИЗ YAML
     // ===========================================
     private List<String> jsEnabledSites;
-    private int jsTimeout = 30000;
     private int jsWait = 5000;
 
     // ===========================================
@@ -101,33 +97,28 @@ public class CrawlerConfig {
     // ГЕТТЕРЫ
     // ===========================================
 
+    public int getNetworkTimeout() {
+        return multiSiteMode ? MULTI_NETWORK_TIMEOUT_MS : SINGLE_NETWORK_TIMEOUT_MS;
+    }
+
     public List<String> getJsEnabledSites() {
         return jsEnabledSites;
-    }
-
-    public int getJsTimeout() {
-        return jsTimeout;
-    }
-
-    public int getNetworkTimeout() {
-        return NETWORK_TIMEOUT_MS;
-    }
-
-    public int getPageTimeout() {
-        return PAGE_TIMEOUT_MS;
     }
 
     public int getJsWait() {
         return jsWait;
     }
 
-    public int getMaxDepth() {
-        return multiSiteMode ? MULTI_SITE_MAX_DEPTH : SINGLE_SITE_MAX_DEPTH;
+    public int getPageTimeout() {
+        return multiSiteMode ? MULTI_PAGE_TIMEOUT_MS : SINGLE_PAGE_TIMEOUT_MS;
     }
 
-    @Deprecated
-    public int getTimeout() {
-        return multiSiteMode ? MULTI_SITE_TIMEOUT : SINGLE_SITE_TIMEOUT;
+    public int getJsTimeout() {
+        return multiSiteMode ? MULTI_JS_TIMEOUT_MS : SINGLE_JS_TIMEOUT_MS;
+    }
+
+    public int getMaxDepth() {
+        return multiSiteMode ? MULTI_SITE_MAX_DEPTH : SINGLE_SITE_MAX_DEPTH;
     }
 
     public int getMaxLinksPerPage() {
@@ -188,27 +179,9 @@ public class CrawlerConfig {
         this.jsEnabledSites = jsEnabledSites;
     }
 
-    public void setJsTimeout(int jsTimeout) {
-        this.jsTimeout = jsTimeout;
-    }
-
     public void setJsWait(int jsWait) {
         this.jsWait = jsWait;
     }
-
-
-    public void setMaxDepth(int maxDepth) {}
-    public void setTimeout(int timeout) {}
-    public void setMaxLinksPerPage(int maxLinksPerPage) {}
-    public void setErrorLimit(int errorLimit) {}
-    public void setPaginationMaxPages(int paginationMaxPages) {}
-    public void setPoolSize(int poolSize) {}
-    public void setQueueCapacity(int queueCapacity) {}
-    public void setMaxConcurrentBrowsers(int maxConcurrentBrowsers) {}
-    public void setIdleTimeout(long idleTimeout) {}
-    public void setCheckInterval(long checkInterval) {}
-    public void setMaxAnalysisAttempts(int maxAnalysisAttempts) {}
-    public void setDelay(Map<String, Integer> delay) {}
 
 
     // ===========================================
@@ -250,7 +223,7 @@ public class CrawlerConfig {
         System.out.println("Watchdog попыток: " + getMaxAnalysisAttempts());
         System.out.println("Количество попыток (retry): " + getRetryCount());
         System.out.println("Задержка между попытками: " + getRetryDelay() + " мс");
-        System.out.println("JS таймаут: " + jsTimeout + " мс");
+        System.out.println("JS таймаут: " + getJsTimeout() + " мс");
         System.out.println("JS ожидание: " + jsWait + " мс");
         System.out.println("JS сайты: " + (jsEnabledSites != null ? jsEnabledSites : "[]"));
         System.out.println("=".repeat(60));
