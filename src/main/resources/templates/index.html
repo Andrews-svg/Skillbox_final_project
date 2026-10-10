@@ -1245,8 +1245,12 @@
             }
         }
 
-        // (функции loadStatistics, loadSitesForSearch, displaySearchResults, showResult удалены)
+         // (функции loadStatistics, loadSitesForSearch, displaySearchResults, showResult удалены)
         // Вся логика загрузки статистики и результатов поиска перенесена в scripts.js
+
+        // Экспорт loadFragment для внешних вызовов
+        window.App = window.App || {};
+        window.App.loadFragment = loadFragment;
 
         $('.Tabs-link').on('click', function(e) {
             e.preventDefault();
@@ -1281,12 +1285,8 @@
 
             loadFragment(window.location.hash);
 
-            $(window).on('hashchange', function() {
-                var newHash = window.location.hash;
-                if (newHash !== currentHash) {
-                    currentHash = newHash;
-                    loadFragment(newHash);
-                }
+             $(window).on('hashchange', function() {
+                loadFragment(window.location.hash);
             });
         });
 
