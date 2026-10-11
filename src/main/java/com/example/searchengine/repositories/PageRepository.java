@@ -4,6 +4,9 @@ import com.example.searchengine.models.Page;
 import com.example.searchengine.models.Site;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +20,9 @@ public interface PageRepository extends JpaRepository<Page, Long> {
 
     boolean existsByPathAndSite(String path, Site site);
 
-    void deleteBySite(Site site);
+    @Modifying
+    @Query("DELETE FROM Page p WHERE p.site = :site")
+    void deleteBySite(@Param("site") Site site);
 
     long countBySite(Site site);
 }
