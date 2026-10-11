@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -21,25 +21,6 @@ public class SeleniumFetcher {
     private static final Logger logger = LoggerFactory.getLogger(SeleniumFetcher.class);
     private final CrawlerConfig crawlerConfig;
 
-
-    private static final Set<String> JS_HEAVY_SITES = Set.of(
-            "ozon.ru",
-            "wildberries.ru",
-            "ozon.by",
-            "wildberries.by",
-            "market.yandex.ru",
-            "aliexpress.ru",
-            "sbermegamarket.ru",
-            "citilink.ru",
-            "dns-shop.ru",
-            "mvideo.ru",
-            "eldorado.ru",
-            "ozon.uz",
-            "wildberries.kz",
-            "lamoda.ru",
-            "sportmaster.ru",
-            "detmir.ru"
-    );
 
 
     private final Semaphore browserSemaphore;
@@ -88,8 +69,8 @@ public class SeleniumFetcher {
             driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(5));
             logger.debug("⏱ Загрузка страницы: {}", url);
             driver.get(url);
-            int delay = crawlerConfig.getRandomDelay();
-            logger.debug("⏱ Ожидание JS {} мс...", delay);
+            int delay = crawlerConfig.getJsWait();
+            logger.debug("⏱ Ожидание JS {} мс (js-wait из YAML)...", delay);
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
@@ -122,7 +103,12 @@ public class SeleniumFetcher {
 
 
     public boolean shouldUseBrowser(String url) {
-        for (String site : JS_HEAVY_SITES) {
+        List<String> jsSites = crawlerConfig.getJsEnabledSites();
+        if (jsSites == null || jsSites.isEmpty()) {
+            logger.debug("📄 JSOUP для {} (js-enabled-sites пуст)", url);
+            return false;
+        }
+        for (String site : jsSites) {
             if (url.contains(site)) {
                 logger.debug("🔧 SELENIUM для {}", url);
                 return true;
