@@ -2,6 +2,7 @@ package com.example.searchengine.utils;
 
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,17 +15,20 @@ public class Lemmatizer {
 
     private static final Logger logger = LoggerFactory.getLogger(Lemmatizer.class);
     private static final Set<String> SERVICE_PARTS = Set.of(
-            "СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ", "ЧАСТИЦА"
+            "СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ", "ЧАСТИЦА",
+            "CONJ", "PREP", "PRON", "DET", "PART"
     );
 
-    private final LuceneMorphology morphology;
+    private final LuceneMorphology russianMorphology;
+    private final LuceneMorphology englishMorphology;
 
     public Lemmatizer() {
         try {
-            this.morphology = new RussianLuceneMorphology();
-            logger.info("Lemmatizer initialized with RussianLuceneMorphology (Lucene 9.3 compatible)");
+            this.russianMorphology = new RussianLuceneMorphology();
+            this.englishMorphology = new EnglishLuceneMorphology();
+            logger.info("Lemmatizer initialized with Russian and English morphologies");
         } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize RussianLuceneMorphology", e);
+            throw new RuntimeException("Failed to initialize Lucene morphologies", e);
         }
     }
 
@@ -33,14 +37,17 @@ public class Lemmatizer {
             return "";
         }
         return text.toLowerCase()
-                .replaceAll("[^а-яё\\s]", " ")
+                .replaceAll("[^а-яёa-z\\s]", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
     }
 
     private String getNormalForm(String word) {
+        LuceneMorphology targetMorphology = word.matches("[а-яё]+")
+                ? russianMorphology
+                : englishMorphology;
         try {
-            List<String> normalForms = morphology.getNormalForms(word);
+            List<String> normalForms = targetMorphology.getNormalForms(word);
             if (normalForms != null && !normalForms.isEmpty()) {
                 return normalForms.get(0);
             }
@@ -51,8 +58,11 @@ public class Lemmatizer {
     }
 
     private boolean isServiceWord(String word) {
+        LuceneMorphology targetMorphology = word.matches("[а-яё]+")
+                ? russianMorphology
+                : englishMorphology;
         try {
-            List<String> morphInfos = morphology.getMorphInfo(word);
+            List<String> morphInfos = targetMorphology.getMorphInfo(word);
             if (morphInfos != null) {
                 for (String info : morphInfos) {
                     for (String part : SERVICE_PARTS) {
