@@ -3,6 +3,7 @@ package com.example.searchengine.services.crawler;
 import com.example.searchengine.config.CrawlerConfig;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -58,13 +59,11 @@ public class SeleniumFetcher {
                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             options.addArguments("--lang=ru-RU");
             options.addArguments("--accept-lang=ru-RU,ru;q=0.9");
-            Duration jsTimeout = Duration.ofMillis(crawlerConfig.getJsTimeout());
-            options.setPageLoadTimeout(jsTimeout);
+            options.setPageLoadStrategy(PageLoadStrategy.EAGER);
             long startTime = System.currentTimeMillis();
             logger.debug("⏱ Создание ChromeDriver...");
             driver = new ChromeDriver(options);
             logger.debug("✅ ChromeDriver создан за {} мс", System.currentTimeMillis() - startTime);
-            driver.manage().timeouts().pageLoadTimeout(jsTimeout);
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
             driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(5));
             logger.debug("⏱ Загрузка страницы: {}", url);
@@ -82,7 +81,7 @@ public class SeleniumFetcher {
             String pageSource = driver.getPageSource();
             logger.debug("✅ Получен HTML, размер: {} байт за {} мс",
                     pageSource.length(), System.currentTimeMillis() - startTime);
-            return Jsoup.parse(pageSource);
+            return Jsoup.parse(pageSource, url);
         } catch (Exception e) {
             logger.error("❌ Ошибка Selenium для {}: {}", url, e.getMessage());
             return null;
