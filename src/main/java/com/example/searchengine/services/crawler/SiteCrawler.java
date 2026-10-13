@@ -269,6 +269,7 @@ public class SiteCrawler {
             handleTimeout(site, pageUrl, future, errorCounter, stopFlag);
         } catch (Exception e) {
             logger.error("❌ Ошибка обработки {}: {}", pageUrl, e.getMessage());
+            indexingState.incrementErrors(site.getId(), 1);
         }
     }
 
@@ -351,6 +352,7 @@ public class SiteCrawler {
             future.cancel(true);
         }
         int currentErrors = errorCounter.incrementAndGet();
+        indexingState.incrementErrors(site.getId(), 1);
         if (currentErrors > errorLimit) {
             logger.error("❌ Критическое количество таймаутов ({} > {}) для сайта {}, останавливаем обход",
                     currentErrors, errorLimit, siteUrl);

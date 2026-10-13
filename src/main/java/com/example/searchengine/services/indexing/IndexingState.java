@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class IndexingState {
 
     private final AtomicBoolean indexingInProgress = new AtomicBoolean(false);
+    private final ConcurrentHashMap<Long, AtomicLong> sessionErrorsBySite = new ConcurrentHashMap<>();
 
     // ===========================================
     // 🟢 LIVE STATE СЕССИИ ИНДЕКСАЦИИ
@@ -39,12 +40,14 @@ public class IndexingState {
         sessionSiteIds.clear();
         sessionPagesBySite.clear();
         sessionLemmasBySite.clear();
+        sessionErrorsBySite.clear();
     }
 
     public void addSessionSite(Long siteId) {
         sessionSiteIds.add(siteId);
         sessionPagesBySite.putIfAbsent(siteId, new AtomicLong(0));
         sessionLemmasBySite.putIfAbsent(siteId, new AtomicLong(0));
+        sessionErrorsBySite.putIfAbsent(siteId, new AtomicLong(0));
     }
 
     // ===========================================
@@ -58,6 +61,12 @@ public class IndexingState {
 
     public void incrementLemmas(Long siteId, long delta) {
         sessionLemmasBySite
+                .computeIfAbsent(siteId, k -> new AtomicLong(0))
+                .addAndGet(delta);
+    }
+
+    public void incrementErrors(Long siteId, long delta) {
+        sessionErrorsBySite
                 .computeIfAbsent(siteId, k -> new AtomicLong(0))
                 .addAndGet(delta);
     }
@@ -91,6 +100,17 @@ public class IndexingState {
 
     public long getTotalLemmas() {
         return sessionLemmasBySite.values().stream()
+                .mapToLong(AtomicLong::get)
+                .sum();
+    }
+
+    public long getSessionErrors(Long siteId) {
+        AtomicLong counter = sessionErrorsBySite.get(siteId);
+        return counter != null ? counter.get() : 0;
+    }
+
+    public long getTotalErrors() {
+        return sessionErrorsBySite.values().stream()
                 .mapToLong(AtomicLong::get)
                 .sum();
     }
