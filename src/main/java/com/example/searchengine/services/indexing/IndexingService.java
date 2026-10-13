@@ -264,9 +264,13 @@ public class IndexingService {
             logger.warn("Ошибка при остановке краулера: {}", e.getMessage());
         }
         try {
-            siteService.findByStatus(Status.INDEXING)
-                    .forEach(site -> siteService.updateStatusWithError(
-                            site, "Индексация остановлена пользователем"));
+            indexingState.getSessionSiteIds().forEach(siteId ->
+                    siteService.findById(siteId).ifPresent(site -> {
+                        if (site.getStatus() == Status.INDEXING) {
+                            siteService.updateStatusWithError(site, "Индексация остановлена пользователем");
+                        }
+                    })
+            );
         } catch (Exception e) {
             logger.warn("Ошибка при обновлении статусов: {}", e.getMessage());
         }
@@ -275,6 +279,9 @@ public class IndexingService {
 
 
     public void onPageIndexed(Site site) {
+        if (!indexingState.isActive()) {
+            return;
+        }
         try {
             siteService.updateStatusTime(site);
         } catch (Exception e) {

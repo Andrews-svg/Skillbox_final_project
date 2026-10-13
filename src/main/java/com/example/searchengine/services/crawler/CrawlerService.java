@@ -2,12 +2,12 @@ package com.example.searchengine.services.crawler;
 
 import com.example.searchengine.config.CrawlerConfig;
 import com.example.searchengine.models.Site;
+import com.example.searchengine.models.Status;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.indexing.IndexingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -102,8 +102,13 @@ public class CrawlerService {
         if (pool != null) {
             shutdownPool(siteId, pool);
             sitePools.remove(siteId, pool);
-            logger.info("✅ Обход сайта {} остановлен", siteId);
         }
+        siteService.findById(siteId).ifPresent(site -> {
+            if (site.getStatus() == Status.INDEXING) {
+                siteService.updateStatusWithError(site, "Обход остановлен пользователем");
+                logger.info("✅ Обход сайта {} остановлен, статус обновлён", siteId);
+            }
+        });
     }
 
 
