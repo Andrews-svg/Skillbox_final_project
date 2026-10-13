@@ -127,19 +127,39 @@ public class AdminApiController {
 
     @PostMapping("/mode/single")
     @ResponseBody
-    public String setSingleMode() {
-        System.out.println("🔥 setSingleMode() вызван");
-        CrawlerConfig.setSingleSiteMode();
-        System.out.println("✅ Режим переключен на ОДИН сайт");
-        return "Режим переключен на ОДИН сайт";
+    public ResponseEntity<Map<String, Object>> setSingleMode() {
+        if (crawlerService.isIndexing()) {
+            logger.warn("Попытка переключить режим /mode/single во время индексации");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "result", false,
+                    "error", "Нельзя переключить режим во время индексации"
+            ));
+        }
+        crawlerConfig.setSingleSiteMode();
+        logger.info("✅ Режим переключён на SINGLE");
+        return ResponseEntity.ok(Map.of(
+                "result", true,
+                "mode", "single",
+                "message", "Режим переключён на SINGLE"
+        ));
     }
 
     @PostMapping("/mode/multi")
     @ResponseBody
-    public String setMultiMode() {
-        System.out.println("🔥 setMultiMode() вызван");
-        CrawlerConfig.setMultiSiteMode();
-        System.out.println("✅ Режим переключен на НЕСКОЛЬКО сайтов");
-        return "Режим переключен на НЕСКОЛЬКО сайтов";
+    public ResponseEntity<Map<String, Object>> setMultiMode() {
+        if (crawlerService.isIndexing()) {
+            logger.warn("Попытка переключить режим /mode/multi во время индексации");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "result", false,
+                    "error", "Нельзя переключить режим во время индексации"
+            ));
+        }
+        crawlerConfig.setMultiSiteMode();
+        logger.info("✅ Режим переключён на MULTI");
+        return ResponseEntity.ok(Map.of(
+                "result", true,
+                "mode", "multi",
+                "message", "Режим переключён на MULTI"
+        ));
     }
 }
