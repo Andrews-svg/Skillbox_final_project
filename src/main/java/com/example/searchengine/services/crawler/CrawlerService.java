@@ -115,6 +115,10 @@ public class CrawlerService {
         return siteCrawler.getErrorCounts();
     }
 
+    public boolean isIndexing() {
+        return indexingState.isActive() || !sitePools.isEmpty();
+    }
+
 
     private void shutdownPool(Long siteId, ForkJoinPool pool) {
         if (pool == null || pool.isShutdown()) {

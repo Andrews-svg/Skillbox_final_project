@@ -3,12 +3,16 @@ package com.example.searchengine.config;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Component
 @ConfigurationProperties(prefix = "crawler")
 public class CrawlerConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(CrawlerConfig.class);
 
     // ===========================================
     // ⚡ КОНЦЕПЦИЯ РЕЖИМОВ ИНДЕКСАЦИИ
@@ -81,16 +85,16 @@ public class CrawlerConfig {
     // ===========================================
     // 🔧 ТУМБЛЕР ПЕРЕКЛЮЧЕНИЯ ПРОФИЛЕЙ
     // ===========================================
-    private static boolean multiSiteMode = false;
+    private volatile boolean multiSiteMode = false;
 
-    public static void setSingleSiteMode() {
-        multiSiteMode = false;
-        System.out.println("🔵 РЕЖИМ: Индексация ОДНОГО сайта");
+    public void setSingleSiteMode() {
+        this.multiSiteMode = false;
+        logger.info("🔵 Режим переключён на SINGLE");
     }
 
-    public static void setMultiSiteMode() {
-        multiSiteMode = true;
-        System.out.println("🟡 РЕЖИМ: Индексация НЕСКОЛЬКИХ сайтов");
+    public void setMultiSiteMode() {
+        this.multiSiteMode = true;
+        logger.info("🟡 Режим переключён на MULTI");
     }
 
     // ===========================================
