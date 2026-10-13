@@ -114,8 +114,13 @@ public class IndexingService {
                             config.getUrl(), e.getMessage(), e);
                 } finally {
                     if (completedCount.incrementAndGet() == totalSites) {
-                        indexingState.setActive(false);
-                        logger.info("=== ВСЕ САЙТЫ ЗАВЕРШИЛИ ИНДЕКСАЦИЮ ===");
+                        if (indexingState.isActive()) {
+                            indexingState.setActive(false);
+                            logSessionEnd("COMPLETED");
+                            logger.info("=== ВСЕ САЙТЫ ЗАВЕРШИЛИ ИНДЕКСАЦИЮ ===");
+                        } else {
+                            logger.info("=== ИНДЕКСАЦИЯ ЗАВЕРШЕНА (ОСТАНОВЛЕНА ПОЛЬЗОВАТЕЛЕМ) ===");
+                        }
                     }
                 }
             });
@@ -274,7 +279,24 @@ public class IndexingService {
         } catch (Exception e) {
             logger.warn("Ошибка при обновлении статусов: {}", e.getMessage());
         }
+        logSessionEnd("STOPPED");
         logger.info("✅ Индексация остановлена");
+    }
+
+
+    private void logSessionEnd(String status) {
+        long durationSeconds = 0;
+        if (indexingState.getSessionStartTime() > 0) {
+            durationSeconds = (System.currentTimeMillis() - indexingState.getSessionStartTime()) / 1000;
+        }
+        logger.info("[SESSION] END | mode={} | sites={} | pages={} | lemmas={} | errors={} | duration={}s | status={}",
+                crawlerConfig.getCurrentMode(),
+                indexingState.getSessionSiteIds().size(),
+                indexingState.getTotalPages(),
+                indexingState.getTotalLemmas(),
+                indexingState.getTotalErrors(),
+                durationSeconds,
+                status);
     }
 
 
