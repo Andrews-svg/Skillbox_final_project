@@ -97,8 +97,23 @@ public class AdminApiController {
 
     @GetMapping("/mode")
     @ResponseBody
-    public String getCurrentMode() {
-        return crawlerConfig.getCurrentMode();
+    public ResponseEntity<Map<String, Object>> getCurrentMode() {
+        return ResponseEntity.ok(Map.of(
+                "mode", crawlerConfig.getCurrentMode(),
+                "isMulti", crawlerConfig.isMultiSiteMode()
+        ));
+    }
+
+    @GetMapping("/status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getStatus() {
+        return ResponseEntity.ok(Map.of(
+                "mode", crawlerConfig.getCurrentMode(),
+                "isMulti", crawlerConfig.isMultiSiteMode(),
+                "indexing", crawlerService.isIndexing(),
+                "progress", crawlerService.getIndexingProgress(),
+                "errors", crawlerService.getIndexingErrors()
+        ));
     }
 
     @GetMapping("/crawler/progress")
