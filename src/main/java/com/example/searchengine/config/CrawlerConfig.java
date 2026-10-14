@@ -209,28 +209,27 @@ public class CrawlerConfig {
     }
 
     public void printCurrentConfig() {
-        System.out.println("\n" + "=".repeat(60));
-        System.out.println(getCurrentMode() + " - ТЕКУЩАЯ КОНФИГУРАЦИЯ");
-        System.out.println("=".repeat(60));
-        System.out.println("Глубина обхода: " + getMaxDepth());
-        System.out.println("Сетевой таймаут: " + getNetworkTimeout() + " мс");
-        System.out.println("Таймаут страницы: " + getPageTimeout() + " мс");
-        System.out.println("Макс. ссылок на странице: " + getMaxLinksPerPage());
-        System.out.println("Задержка: " + getRandomDelay() + " мс (динамическая)");
-        System.out.println("Лимит ошибок: " + getErrorLimit());
-        System.out.println("Макс. страниц пагинации: " + getPaginationMaxPages());
-        System.out.println("Размер пула потоков: " + getPoolSize());
-        System.out.println("Емкость очереди: " + getQueueCapacity());
-        System.out.println("Параллельных браузеров: " + getMaxConcurrentBrowsers());
-        System.out.println("Watchdog бездействие: " + getIdleTimeout() + " мс");
-        System.out.println("Watchdog интервал: " + getCheckInterval() + " мс");
-        System.out.println("Watchdog попыток: " + getMaxAnalysisAttempts());
-        System.out.println("Количество попыток (retry): " + getRetryCount());
-        System.out.println("Задержка между попытками: " + getRetryDelay() + " мс");
-        System.out.println("JS таймаут: " + getJsTimeout() + " мс");
-        System.out.println("JS ожидание: " + jsWait + " мс");
-        System.out.println("JS сайты: " + (jsEnabledSites != null ? jsEnabledSites : "[]"));
-        System.out.println("=".repeat(60));
-
+        logger.info("{}", "=".repeat(60));
+        logger.info("{} - ТЕКУЩАЯ КОНФИГУРАЦИЯ", getCurrentMode());
+        logger.info("{}", "=".repeat(60));
+        logger.info("Глубина обхода: {}", getMaxDepth());
+        logger.info("Сетевой таймаут: {} мс", getNetworkTimeout());
+        logger.info("Таймаут страницы: {} мс", getPageTimeout());
+        logger.info("Макс. ссылок на странице: {}", getMaxLinksPerPage());
+        logger.info("Задержка: {} мс (динамическая)", getRandomDelay());
+        logger.info("Лимит ошибок: {}", getErrorLimit());
+        logger.info("Макс. страниц пагинации: {}", getPaginationMaxPages());
+        logger.info("Размер пула потоков: {}", getPoolSize());
+        logger.info("Емкость очереди: {}", getQueueCapacity());
+        logger.info("Параллельных браузеров: {}", getMaxConcurrentBrowsers());
+        logger.info("Watchdog бездействие: {} мс", getIdleTimeout());
+        logger.info("Watchdog интервал: {} мс", getCheckInterval());
+        logger.info("Watchdog попыток: {}", getMaxAnalysisAttempts());
+        logger.info("Количество попыток (retry): {}", getRetryCount());
+        logger.info("Задержка между попытками: {} мс", getRetryDelay());
+        logger.info("JS таймаут: {} мс", getJsTimeout());
+        logger.info("JS ожидание: {} мс", jsWait);
+        logger.info("JS сайты: {}", jsEnabledSites != null ? jsEnabledSites : "[]");
+        logger.info("{}", "=".repeat(60));
     }
 }
