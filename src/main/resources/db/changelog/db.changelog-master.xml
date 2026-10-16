@@ -18,5 +18,6 @@
     <include file="11-add-foreign-keys.xml" relativeToChangelogFile="true"/>
     <include file="12-fix-index-table.xml" relativeToChangelogFile="true"/>
     <include file="13-cascade-and-cleanup-index.xml" relativeToChangelogFile="true"/>
+    <include file="14-create-indexing-session-table.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
