@@ -16,6 +16,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import com.example.searchengine.services.crawler.CrawlerService;
 import java.util.Map;
+import com.example.searchengine.services.VisitCounterService;
+import com.example.searchengine.repositories.UserRepository;
 
 import java.util.List;
 
@@ -32,6 +34,9 @@ public class AdminApiController {
     private final HealthService healthService;
     private final AuthService authService;
     private final CrawlerService crawlerService;
+    private final VisitCounterService visitCounterService;
+    private final UserRepository userRepository;
+
 
 
     public AdminApiController(CrawlerConfig crawlerConfig,
@@ -39,13 +44,17 @@ public class AdminApiController {
                               SearchLogService searchLogService,
                               SessionRegistry sessionRegistry,
                               HealthService healthService,
-                              AuthService authService) {
+                              AuthService authService,
+                              VisitCounterService visitCounterService,
+                              UserRepository userRepository) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
         this.sessionRegistry = sessionRegistry;
         this.healthService = healthService;
         this.authService = authService;
+        this.visitCounterService = visitCounterService;
+        this.userRepository = userRepository;
     }
 
 
@@ -80,6 +89,8 @@ public class AdminApiController {
                 .activeSessions(sessionRegistry.getAllPrincipals().size())
                 .systemHealth(healthService.getStatus())
                 .authLogs(authService.getRecentLogs(20))
+                .totalVisits(visitCounterService.getTotalVisits())
+                .totalUsers(userRepository.count())
                 .build();
     }
 

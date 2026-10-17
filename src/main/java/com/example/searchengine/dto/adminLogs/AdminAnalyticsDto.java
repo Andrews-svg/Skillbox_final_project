@@ -10,6 +10,8 @@ public class AdminAnalyticsDto {
     private int activeSessions;
     private Map<String, Object> systemHealth;
     private List<?> authLogs;
+    private long totalVisits;
+    private long totalUsers;
 
     private AdminAnalyticsDto(Builder builder) {
         this.topQueries = builder.topQueries;
@@ -17,6 +19,8 @@ public class AdminAnalyticsDto {
         this.activeSessions = builder.activeSessions;
         this.systemHealth = builder.systemHealth;
         this.authLogs = builder.authLogs;
+        this.totalVisits = builder.totalVisits;
+        this.totalUsers = builder.totalUsers;
     }
 
     public static Builder builder() {
@@ -29,6 +33,8 @@ public class AdminAnalyticsDto {
     public int getActiveSessions() { return activeSessions; }
     public Map<String, Object> getSystemHealth() { return systemHealth; }
     public List<?> getAuthLogs() { return authLogs; }
+    public long getTotalVisits() { return totalVisits; }
+    public long getTotalUsers() { return totalUsers; }
 
 
     public void setTopQueries(List<TopQueryDto> topQueries) { this.topQueries = topQueries; }
@@ -38,6 +44,8 @@ public class AdminAnalyticsDto {
     public void setActiveSessions(int activeSessions) { this.activeSessions = activeSessions; }
     public void setSystemHealth(Map<String, Object> systemHealth) { this.systemHealth = systemHealth; }
     public void setAuthLogs(List<?> authLogs) { this.authLogs = authLogs; }
+    public void setTotalVisits(long totalVisits) { this.totalVisits = totalVisits; }
+    public void setTotalUsers(long totalUsers) { this.totalUsers = totalUsers; }
 
     @Override
     public boolean equals(Object o) {
@@ -45,6 +53,8 @@ public class AdminAnalyticsDto {
         if (o == null || getClass() != o.getClass()) return false;
         AdminAnalyticsDto that = (AdminAnalyticsDto) o;
         return activeSessions == that.activeSessions &&
+                totalVisits == that.totalVisits &&
+                totalUsers == that.totalUsers &&
                 Objects.equals(topQueries, that.topQueries) &&
                 Objects.equals(zeroResultQueries, that.zeroResultQueries) &&
                 Objects.equals(systemHealth, that.systemHealth) &&
@@ -54,7 +64,8 @@ public class AdminAnalyticsDto {
     @Override
     public int hashCode() {
         return Objects.hash(topQueries, zeroResultQueries,
-                activeSessions, systemHealth, authLogs);
+                activeSessions, systemHealth, authLogs,
+                totalVisits, totalUsers);
     }
 
     @Override
@@ -65,6 +76,8 @@ public class AdminAnalyticsDto {
                 ", activeSessions=" + activeSessions +
                 ", systemHealth=" + systemHealth +
                 ", authLogs=" + authLogs +
+                ", totalVisits=" + totalVisits +
+                ", totalUsers=" + totalUsers +
                 '}';
     }
 
@@ -75,6 +88,8 @@ public class AdminAnalyticsDto {
         private int activeSessions;
         private Map<String, Object> systemHealth;
         private List<?> authLogs;
+        private long totalVisits;
+        private long totalUsers;
 
         public Builder topQueries(List<TopQueryDto> topQueries) {
             this.topQueries = topQueries;
@@ -98,6 +113,16 @@ public class AdminAnalyticsDto {
 
         public Builder authLogs(List<?> authLogs) {
             this.authLogs = authLogs;
+            return this;
+        }
+
+        public Builder totalVisits(long totalVisits) {
+            this.totalVisits = totalVisits;
+            return this;
+        }
+
+        public Builder totalUsers(long totalUsers) {
+            this.totalUsers = totalUsers;
             return this;
         }
 
