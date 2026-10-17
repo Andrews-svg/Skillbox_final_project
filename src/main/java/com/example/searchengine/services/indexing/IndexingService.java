@@ -10,6 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.example.searchengine.config.CrawlerConfig;
+import com.example.searchengine.models.CrawlerMode;
+import com.example.searchengine.models.SessionStatus;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -28,6 +33,7 @@ public class IndexingService {
     private final SitesList sitesList;
     private final IndexingState indexingState;
     private final CrawlerConfig crawlerConfig;
+    private final SessionHistoryService sessionHistoryService;
 
 
     private final ExecutorService indexingExecutor = Executors.newCachedThreadPool(r -> {
@@ -42,7 +48,10 @@ public class IndexingService {
                            LemmaService lemmaService,
                            IndexService indexService,
                            CrawlerService crawlerService,
-                           SitesList sitesList, IndexingState indexingState, CrawlerConfig crawlerConfig) {
+                           SitesList sitesList,
+                           IndexingState indexingState,
+                           CrawlerConfig crawlerConfig,
+                           SessionHistoryService sessionHistoryService) {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -51,6 +60,7 @@ public class IndexingService {
         this.sitesList = sitesList;
         this.indexingState = indexingState;
         this.crawlerConfig = crawlerConfig;
+        this.sessionHistoryService = sessionHistoryService;
     }
 
 
@@ -286,9 +296,14 @@ public class IndexingService {
 
     private void logSessionEnd(String status) {
         long durationSeconds = 0;
+        LocalDateTime startedAt = null;
         if (indexingState.getSessionStartTime() > 0) {
+            startedAt = LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(indexingState.getSessionStartTime()),
+                    ZoneId.systemDefault());
             durationSeconds = (System.currentTimeMillis() - indexingState.getSessionStartTime()) / 1000;
         }
+
         logger.info("[SESSION] END | mode={} | sites={} | pages={} | lemmas={} | errors={} | duration={}s | status={}",
                 crawlerConfig.getCurrentMode(),
                 indexingState.getSessionSiteIds().size(),
@@ -297,6 +312,27 @@ public class IndexingService {
                 indexingState.getTotalErrors(),
                 durationSeconds,
                 status);
+
+        // ⚠️ Сохраняем в БД
+        try {
+            CrawlerMode mode = crawlerConfig.isMultiSiteMode() ? CrawlerMode.MULTI : CrawlerMode.SINGLE;
+            SessionStatus sessionStatus = SessionStatus.valueOf(status);
+
+            sessionHistoryService.saveSession(
+                    startedAt,
+                    LocalDateTime.now(),
+                    mode,
+                    indexingState.getSessionSiteIds().size(),
+                    (int) indexingState.getTotalPages(),
+                    (int) indexingState.getTotalLemmas(),
+                    (int) indexingState.getTotalErrors(),
+                    (int) durationSeconds,
+                    sessionStatus,
+                    null
+            );
+        } catch (Exception e) {
+            logger.error("Ошибка при сохранении истории сессии: {}", e.getMessage(), e);
+        }
     }
 
 
