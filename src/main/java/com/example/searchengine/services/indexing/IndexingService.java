@@ -15,6 +15,8 @@ import com.example.searchengine.models.SessionStatus;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -294,6 +296,20 @@ public class IndexingService {
     }
 
 
+    private String getCurrentUsername() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()
+                    && !"anonymousUser".equals(auth.getName())) {
+                return auth.getName();
+            }
+        } catch (Exception e) {
+            logger.debug("Не удалось получить username: {}", e.getMessage());
+        }
+        return null;
+    }
+
+
     private void logSessionEnd(String status) {
         long durationSeconds = 0;
         LocalDateTime startedAt = null;
@@ -313,7 +329,6 @@ public class IndexingService {
                 durationSeconds,
                 status);
 
-        // ⚠️ Сохраняем в БД
         try {
             CrawlerMode mode = crawlerConfig.isMultiSiteMode() ? CrawlerMode.MULTI : CrawlerMode.SINGLE;
             SessionStatus sessionStatus = SessionStatus.valueOf(status);
@@ -328,7 +343,7 @@ public class IndexingService {
                     (int) indexingState.getTotalErrors(),
                     (int) durationSeconds,
                     sessionStatus,
-                    null
+                    getCurrentUsername()
             );
         } catch (Exception e) {
             logger.error("Ошибка при сохранении истории сессии: {}", e.getMessage(), e);
