@@ -2,6 +2,8 @@ package com.example.searchengine.services;
 
 import com.example.searchengine.config.CrawlerConfig;
 import com.example.searchengine.services.indexing.IndexingState;
+import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.HikariPoolMXBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,18 +22,40 @@ public class HealthService {
     private final PageService pageService;
     private final IndexingState indexingState;
     private final CrawlerConfig crawlerConfig;
+    private final HikariDataSource hikariDataSource;
 
     public HealthService(JdbcTemplate jdbcTemplate,
                          SiteService siteService,
                          PageService pageService,
                          IndexingState indexingState,
-                         CrawlerConfig crawlerConfig) {
+                         CrawlerConfig crawlerConfig, HikariDataSource hikariDataSource) {
         this.jdbcTemplate = jdbcTemplate;
         this.siteService = siteService;
         this.pageService = pageService;
         this.indexingState = indexingState;
         this.crawlerConfig = crawlerConfig;
+        this.hikariDataSource = hikariDataSource;
     }
+
+
+    private Map<String, Object> getHikariMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+        try {
+            HikariPoolMXBean pool = hikariDataSource.getHikariPoolMXBean();
+            if (pool != null) {
+                metrics.put("active", pool.getActiveConnections());
+                metrics.put("idle", pool.getIdleConnections());
+                metrics.put("total", pool.getTotalConnections());
+                metrics.put("waiting", pool.getThreadsAwaitingConnection());
+            } else {
+                metrics.put("error", "HikariPoolMXBean is null");
+            }
+        } catch (Exception e) {
+            metrics.put("error", e.getMessage());
+        }
+        return metrics;
+    }
+
 
     public Map<String, Object> getStatus() {
         Map<String, Object> status = new HashMap<>();
@@ -41,6 +65,9 @@ public class HealthService {
 
         // ========== БАЗА ДАННЫХ ==========
         status.put("database", getDatabaseMetrics());
+
+        // ========== ПУЛ СОЕДИНЕНИЙ (HikariCP) ==========
+        status.put("connectionPool", getHikariMetrics());
 
         // ========== ИНДЕКСАЦИЯ ==========
         status.put("indexing", getIndexingMetrics());
