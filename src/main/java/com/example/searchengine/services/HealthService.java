@@ -6,11 +6,9 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import com.sun.management.OperatingSystemMXBean;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
+import java.lang.management.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -91,12 +89,33 @@ public class HealthService {
         metrics.put("heapMemoryUsage", memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024) + " MB");
 
 
-        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         metrics.put("availableProcessors", runtime.availableProcessors());
-        metrics.put("systemLoadAverage", osBean.getSystemLoadAverage());
+
+        double cpuLoad = osBean.getCpuLoad();
+        metrics.put("cpuLoad", cpuLoad >= 0 ? String.format("%.1f%%", cpuLoad * 100) : "N/A");
+        double processCpuLoad = osBean.getProcessCpuLoad();
+        metrics.put("processCpuLoad", processCpuLoad >= 0 ? String.format("%.1f%%", processCpuLoad * 100) : "N/A");
+
         metrics.put("osName", osBean.getName());
         metrics.put("osVersion", osBean.getVersion());
         metrics.put("osArch", osBean.getArch());
+
+        // ========== ПОТОКИ ==========
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        metrics.put("threadCount", threadBean.getThreadCount());
+        metrics.put("peakThreadCount", threadBean.getPeakThreadCount());
+        metrics.put("daemonThreadCount", threadBean.getDaemonThreadCount());
+
+        // ========== GC ==========
+        long gcCount = 0;
+        long gcTime = 0;
+        for (GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans()) {
+            if (gc.getCollectionCount() > 0) gcCount += gc.getCollectionCount();
+            if (gc.getCollectionTime() > 0) gcTime += gc.getCollectionTime();
+        }
+        metrics.put("gcCount", gcCount);
+        metrics.put("gcTimeMs", gcTime);
 
         RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
         long uptimeSeconds = runtimeBean.getUptime() / 1000;
