@@ -19,6 +19,8 @@ import java.util.Map;
 import com.example.searchengine.services.VisitCounterService;
 import com.example.searchengine.repositories.UserRepository;
 import com.example.searchengine.services.ApplicationStartupTime;
+import com.example.searchengine.models.IndexingSession;
+import com.example.searchengine.services.indexing.SessionHistoryService;
 
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class AdminApiController {
     private final VisitCounterService visitCounterService;
     private final UserRepository userRepository;
     private final ApplicationStartupTime applicationStartupTime;
+    private final SessionHistoryService sessionHistoryService;
 
 
 
@@ -48,7 +51,7 @@ public class AdminApiController {
                               HealthService healthService,
                               AuthService authService,
                               VisitCounterService visitCounterService,
-                              UserRepository userRepository, ApplicationStartupTime applicationStartupTime) {
+                              UserRepository userRepository, ApplicationStartupTime applicationStartupTime, SessionHistoryService sessionHistoryService) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
@@ -58,6 +61,7 @@ public class AdminApiController {
         this.visitCounterService = visitCounterService;
         this.userRepository = userRepository;
         this.applicationStartupTime = applicationStartupTime;
+        this.sessionHistoryService = sessionHistoryService;
     }
 
 
@@ -129,6 +133,12 @@ public class AdminApiController {
                 "progress", crawlerService.getIndexingProgress(),
                 "errors", crawlerService.getIndexingErrors()
         ));
+    }
+
+    @GetMapping("/sessions")
+    @ResponseBody
+    public List<IndexingSession> getSessions(@RequestParam(defaultValue = "20") int limit) {
+        return sessionHistoryService.getRecentSessions(limit);
     }
 
     @GetMapping("/crawler/progress")
