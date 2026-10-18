@@ -15,12 +15,17 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import com.example.searchengine.services.crawler.CrawlerService;
+
+import java.util.HashMap;
 import java.util.Map;
 import com.example.searchengine.services.VisitCounterService;
 import com.example.searchengine.repositories.UserRepository;
 import com.example.searchengine.services.ApplicationStartupTime;
 import com.example.searchengine.models.IndexingSession;
 import com.example.searchengine.services.indexing.SessionHistoryService;
+import com.example.searchengine.services.SiteService;
+import com.example.searchengine.services.PageService;
+import com.example.searchengine.services.LemmaService;
 
 import java.util.List;
 
@@ -41,6 +46,9 @@ public class AdminApiController {
     private final UserRepository userRepository;
     private final ApplicationStartupTime applicationStartupTime;
     private final SessionHistoryService sessionHistoryService;
+    private final SiteService siteService;
+    private final PageService pageService;
+    private final LemmaService lemmaService;
 
 
 
@@ -51,7 +59,9 @@ public class AdminApiController {
                               HealthService healthService,
                               AuthService authService,
                               VisitCounterService visitCounterService,
-                              UserRepository userRepository, ApplicationStartupTime applicationStartupTime, SessionHistoryService sessionHistoryService) {
+                              UserRepository userRepository, ApplicationStartupTime applicationStartupTime,
+                              SessionHistoryService sessionHistoryService, SiteService siteService,
+                              PageService pageService, LemmaService lemmaService) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
@@ -62,6 +72,9 @@ public class AdminApiController {
         this.userRepository = userRepository;
         this.applicationStartupTime = applicationStartupTime;
         this.sessionHistoryService = sessionHistoryService;
+        this.siteService = siteService;
+        this.pageService = pageService;
+        this.lemmaService = lemmaService;
     }
 
 
@@ -139,6 +152,50 @@ public class AdminApiController {
     @ResponseBody
     public List<IndexingSession> getSessions(@RequestParam(defaultValue = "20") int limit) {
         return sessionHistoryService.getRecentSessions(limit);
+    }
+
+    @GetMapping("/overview")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getOverview() {
+        Map<String, Object> sites = new HashMap<>();
+        sites.put("total", siteService.countAll());
+        sites.put("indexed", siteService.countByStatus(com.example.searchengine.models.Status.INDEXED));
+        sites.put("indexing", siteService.countByStatus(com.example.searchengine.models.Status.INDEXING));
+        sites.put("failed", siteService.countByStatus(com.example.searchengine.models.Status.FAILED));
+
+        Map<String, Object> pages = new HashMap<>();
+        pages.put("total", pageService.countAll());
+
+        Map<String, Object> lemmas = new HashMap<>();
+        lemmas.put("total", lemmaService.getTotalLemmas());
+
+        Map<String, Object> mode = new HashMap<>();
+        mode.put("current", crawlerConfig.getCurrentMode());
+        mode.put("isMulti", crawlerConfig.isMultiSiteMode());
+
+        Map<String, Object> indexing = new HashMap<>();
+        indexing.put("active", crawlerService.isIndexing());
+        indexing.put("progress", crawlerService.getIndexingProgress());
+        indexing.put("errors", crawlerService.getIndexingErrors());
+
+        Map<String, Object> users = new HashMap<>();
+        users.put("activeSessions", sessionRegistry.getAllPrincipals().size());
+        users.put("totalUsers", userRepository.count());
+
+        Map<String, Object> visits = new HashMap<>();
+        visits.put("total", visitCounterService.getTotalVisits());
+
+        Map<String, Object> overview = new HashMap<>();
+        overview.put("sites", sites);
+        overview.put("pages", pages);
+        overview.put("lemmas", lemmas);
+        overview.put("mode", mode);
+        overview.put("indexing", indexing);
+        overview.put("users", users);
+        overview.put("visits", visits);
+        overview.put("uptimeSeconds", applicationStartupTime.getUptimeSeconds());
+
+        return ResponseEntity.ok(overview);
     }
 
     @GetMapping("/crawler/progress")
