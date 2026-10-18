@@ -198,6 +198,12 @@ public class AdminApiController {
         return ResponseEntity.ok(overview);
     }
 
+    @GetMapping("/health")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getHealth() {
+        return ResponseEntity.ok(healthService.getStatus());
+    }
+
     @GetMapping("/crawler/progress")
     @ResponseBody
     public Map<Long, Integer> getCrawlerProgress() {
