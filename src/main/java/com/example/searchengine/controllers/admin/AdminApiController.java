@@ -18,6 +18,7 @@ import com.example.searchengine.services.crawler.CrawlerService;
 import java.util.Map;
 import com.example.searchengine.services.VisitCounterService;
 import com.example.searchengine.repositories.UserRepository;
+import com.example.searchengine.services.ApplicationStartupTime;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class AdminApiController {
     private final CrawlerService crawlerService;
     private final VisitCounterService visitCounterService;
     private final UserRepository userRepository;
+    private final ApplicationStartupTime applicationStartupTime;
 
 
 
@@ -46,7 +48,7 @@ public class AdminApiController {
                               HealthService healthService,
                               AuthService authService,
                               VisitCounterService visitCounterService,
-                              UserRepository userRepository) {
+                              UserRepository userRepository, ApplicationStartupTime applicationStartupTime) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
@@ -55,6 +57,7 @@ public class AdminApiController {
         this.authService = authService;
         this.visitCounterService = visitCounterService;
         this.userRepository = userRepository;
+        this.applicationStartupTime = applicationStartupTime;
     }
 
 
@@ -91,6 +94,7 @@ public class AdminApiController {
                 .authLogs(authService.getRecentLogs(20))
                 .totalVisits(visitCounterService.getTotalVisits())
                 .totalUsers(userRepository.count())
+                .uptimeSeconds(applicationStartupTime.getUptimeSeconds())
                 .build();
     }
 

@@ -12,6 +12,7 @@ public class AdminAnalyticsDto {
     private List<?> authLogs;
     private long totalVisits;
     private long totalUsers;
+    private long uptimeSeconds;
 
     private AdminAnalyticsDto(Builder builder) {
         this.topQueries = builder.topQueries;
@@ -21,6 +22,7 @@ public class AdminAnalyticsDto {
         this.authLogs = builder.authLogs;
         this.totalVisits = builder.totalVisits;
         this.totalUsers = builder.totalUsers;
+        this.uptimeSeconds = builder.uptimeSeconds;
     }
 
     public static Builder builder() {
@@ -35,6 +37,7 @@ public class AdminAnalyticsDto {
     public List<?> getAuthLogs() { return authLogs; }
     public long getTotalVisits() { return totalVisits; }
     public long getTotalUsers() { return totalUsers; }
+    public long getUptimeSeconds() { return uptimeSeconds; }
 
 
     public void setTopQueries(List<TopQueryDto> topQueries) { this.topQueries = topQueries; }
@@ -46,6 +49,7 @@ public class AdminAnalyticsDto {
     public void setAuthLogs(List<?> authLogs) { this.authLogs = authLogs; }
     public void setTotalVisits(long totalVisits) { this.totalVisits = totalVisits; }
     public void setTotalUsers(long totalUsers) { this.totalUsers = totalUsers; }
+    public void setUptimeSeconds(long uptimeSeconds) { this.uptimeSeconds = uptimeSeconds; }
 
     @Override
     public boolean equals(Object o) {
@@ -55,6 +59,7 @@ public class AdminAnalyticsDto {
         return activeSessions == that.activeSessions &&
                 totalVisits == that.totalVisits &&
                 totalUsers == that.totalUsers &&
+                uptimeSeconds == that.uptimeSeconds &&
                 Objects.equals(topQueries, that.topQueries) &&
                 Objects.equals(zeroResultQueries, that.zeroResultQueries) &&
                 Objects.equals(systemHealth, that.systemHealth) &&
@@ -65,7 +70,7 @@ public class AdminAnalyticsDto {
     public int hashCode() {
         return Objects.hash(topQueries, zeroResultQueries,
                 activeSessions, systemHealth, authLogs,
-                totalVisits, totalUsers);
+                totalVisits, totalUsers, uptimeSeconds);
     }
 
     @Override
@@ -78,11 +83,13 @@ public class AdminAnalyticsDto {
                 ", authLogs=" + authLogs +
                 ", totalVisits=" + totalVisits +
                 ", totalUsers=" + totalUsers +
+                ", uptimeSeconds=" + uptimeSeconds +
                 '}';
     }
 
 
     public static class Builder {
+        private long uptimeSeconds;
         private List<TopQueryDto> topQueries;
         private List<ZeroResultQueryDto> zeroResultQueries;
         private int activeSessions;
@@ -90,6 +97,12 @@ public class AdminAnalyticsDto {
         private List<?> authLogs;
         private long totalVisits;
         private long totalUsers;
+
+
+        public Builder uptimeSeconds(long uptimeSeconds) {
+            this.uptimeSeconds = uptimeSeconds;
+            return this;
+        }
 
         public Builder topQueries(List<TopQueryDto> topQueries) {
             this.topQueries = topQueries;
