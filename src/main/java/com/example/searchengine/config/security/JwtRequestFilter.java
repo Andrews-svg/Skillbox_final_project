@@ -66,6 +66,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
 
+        if (path.startsWith("/fragments/admin/")) {
+            logger.debug("JWT фильтр: админ-фрагмент, требуется токен: '{}'", path);
+            return false;
+        }
+
         if (path.equals("/")) {
             logger.debug("JWT фильтр: исключаем корневой путь '/'");
             return true;
