@@ -1002,6 +1002,7 @@
             <a class="tab-link Tabs-link" href="#dashboard">📊 Статистика</a>
             <a class="tab-link Tabs-link" href="#management">⚙️ Управление</a>
             <a class="tab-link Tabs-link" href="#search">🔍 Поиск</a>
+            <a class="tab-link Tabs-link" href="#panel" id="adminTab" style="display: none;">🛡️ Админ-панель</a>
         </div>
     </div>
 
@@ -1011,6 +1012,7 @@
     <div class="Tabs-block" id="dashboard" style="display: none;"></div>
     <div class="Tabs-block" id="management" style="display: none;"></div>
     <div class="Tabs-block" id="search" style="display: none;"></div>
+    <div class="Tabs-block" id="panel" style="display: none;"></div>
 
     <!-- Для отладки информация о режиме -->
     <div class="mode-info" th:if="${currentMode}">
@@ -1166,20 +1168,26 @@
         }
 
          // Функция загрузки фрагментов вкладок (dashboard, management, search)
-        function loadTabFragment(tabName, callback) {
+         function loadTabFragment(tabName, callback) {
             var version = Date.now();
-            var url = '/fragments/' + tabName + '-fragment.html?v=' + version;
-            $('#' + tabName).load(url, function() {
+            var url = tabName === 'panel'
+                ? '/fragments/admin/panel.html?v=' + version
+                : '/fragments/' + tabName + '-fragment.html?v=' + version;
+            $('#' + tabName).load(url, function(response, status) {
+                if (status === 'error') {
+                    $('#' + tabName).html('<div style="padding: 40px; text-align: center; color: #c00;">Доступ запрещён</div>');
+                    return;
+                }
                 console.log('✅ Загружен фрагмент:', tabName);
-                // Сообщаем scripts.js, что фрагмент готов — можно обновлять данные
                 $(document).trigger('fragmentLoaded', [tabName]);
                 if (callback) callback();
             });
         }
 
+
         // Функция переключения видимости табов
         function updateTabsVisibility(route) {
-            var isAuthRoute = (route === 'dashboard' || route === 'management' || route === 'search');
+            var isAuthRoute = (route === 'dashboard' || route === 'management' || route === 'search' || route === 'panel');
 
             if (isAuthRoute) {
                 $('#publicTabs').hide();
@@ -1195,7 +1203,7 @@
             console.log('📍 Маршрутизация:', hash);
 
             // Скрываем все блоки
-            $('#welcomeBlock, .auth-container, .main-interface, #dashboard, #management, #search').hide();
+            $('#welcomeBlock, .auth-container, .main-interface, #dashboard, #management, #search, #panel').hide();
 
             if (!hash || hash === '#') {
                 $('#welcomeBlock').show();
@@ -1238,6 +1246,11 @@
                 updateTabsVisibility('search');
                 $('#search').show();
                 loadTabFragment('search');
+            }
+            else if (route === 'panel') {
+                updateTabsVisibility('panel');
+                $('#panel').show();
+                loadTabFragment('panel');
             }
             else {
                 $('#welcomeBlock').show();
