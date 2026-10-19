@@ -79,7 +79,7 @@ public class SecurityConfig {
                         .requestMatchers("/password/**").authenticated()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-
+                        .requestMatchers("/fragments/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/fragments/**").permitAll()
 
                         .requestMatchers("/api/**").authenticated()

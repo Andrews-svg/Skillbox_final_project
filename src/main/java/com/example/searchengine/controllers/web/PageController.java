@@ -30,4 +30,9 @@ public class PageController {
     public String searchFragment() {
         return "fragments/search-fragment";
     }
+
+    @GetMapping("/fragments/admin/panel.html")
+    public String adminPanel() {
+        return "fragments/admin/panel";
+    }
 }
