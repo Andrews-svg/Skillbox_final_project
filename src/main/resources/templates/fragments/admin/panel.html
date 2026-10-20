@@ -1,9 +1,98 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-<div th:fragment="content">
-    <h1 style="color: green; font-size: 48px;">✅ АДМИНКА РАБОТАЕТ!</h1>
-    <p>Текущий режим: <strong th:text="${currentMode}">ОДИН САЙТ</strong></p>
+<div class="Section">
+    <div class="Section-header">
+        <h2 class="Section-title">🛡️ Админ-панель</h2>
+        <div class="admin-status-bar">
+            <span class="admin-status-item">Режим: <strong id="adminMode">—</strong></span>
+            <span class="admin-status-item">Индексация: <strong id="adminIndexing">—</strong></span>
+        </div>
+    </div>
+
+    <nav class="admin-subtabs" id="adminSubtabs">
+        <a href="#" class="admin-subtab active" data-subtab="overview">Overview</a>
+        <a href="#" class="admin-subtab" data-subtab="sessions">Sessions</a>
+        <a href="#" class="admin-subtab" data-subtab="health">Health</a>
+        <a href="#" class="admin-subtab" data-subtab="sites">Sites</a>
+        <a href="#" class="admin-subtab" data-subtab="users">Users</a>
+        <a href="#" class="admin-subtab" data-subtab="search">Search</a>
+        <a href="#" class="admin-subtab" data-subtab="modes">Modes</a>
+    </nav>
+
+    <div id="admin-content" class="admin-content">
+        <div class="admin-tab-panel" data-panel="overview">
+            <div class="Statistics">
+                <div class="Statistics-info">
+                    <div class="Statistics-block">
+                        <span class="Statistics-amount" id="adminTotalUsers">—</span>
+                        <span class="Statistics-title">Пользователи</span>
+                    </div>
+                    <div class="Statistics-block">
+                        <span class="Statistics-amount" id="adminTotalVisits">—</span>
+                        <span class="Statistics-title">Визиты</span>
+                    </div>
+                    <div class="Statistics-block">
+                        <span class="Statistics-amount" id="adminUptime">—</span>
+                        <span class="Statistics-title">Uptime</span>
+                    </div>
+                    <div class="Statistics-block">
+                        <span class="Statistics-amount" id="adminModeCard">—</span>
+                        <span class="Statistics-title">Режим</span>
+                    </div>
+                    <div class="Statistics-block">
+                        <span class="Statistics-amount" id="adminIndexingCard">—</span>
+                        <span class="Statistics-title">Индексация</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-</body>
-</html>
+
+<style>
+    .admin-status-bar {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        font-size: 14px;
+        color: #4a5568;
+        flex-wrap: wrap;
+    }
+    .admin-status-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .admin-subtabs {
+        display: flex;
+        gap: 4px;
+        margin: 20px 0;
+        padding: 4px;
+        border-bottom: 2px solid #e2e8f0;
+        flex-wrap: wrap;
+    }
+    .admin-subtab {
+        padding: 8px 16px;
+        color: #4a5568;
+        text-decoration: none;
+        border-radius: 6px 6px 0 0;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.15s;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+    }
+    .admin-subtab:hover {
+        background: #edf2f7;
+        color: #2d3748;
+    }
+    .admin-subtab.active {
+        color: #3182ce;
+        border-bottom-color: #3182ce;
+        background: #ebf8ff;
+    }
+    .admin-content {
+        min-height: 300px;
+    }
+    .admin-tab-panel {
+        padding: 10px 0;
+    }
+</style>

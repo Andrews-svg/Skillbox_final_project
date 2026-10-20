@@ -1745,10 +1745,11 @@ sendData(
                                if (response.token) {
                                    localStorage.setItem('authToken', response.token);
                                }
-                               if (response.refreshToken) {
-                                   localStorage.setItem('refreshToken', response.refreshToken);
-                               }
-                               showMessage('success', successMessage);
+                              if (response.refreshToken) {
+                                  localStorage.setItem('refreshToken', response.refreshToken);
+                                  }
+                                  if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
+                                  showMessage('success', successMessage);
                                return true;
                            } else {
                                var errorMsg = response && response.error ? response.error : 'Ошибка сервера';
@@ -1914,6 +1915,58 @@ sendData(
                    var apiInstance = API();
                    window.apiInstance = apiInstance;
 
+                    // ===========================================
+                                      // JWT helpers + управление админ-табом
+                                      // ===========================================
+                                      function decodeJwtPayload(token) {
+                                          try {
+                                              var b = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                                              return JSON.parse(decodeURIComponent(atob(b).split('').map(function(c) {
+                                                  return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                                              }).join('')));
+                                          } catch (e) { return null; }
+                                      }
+
+                                      function getRoles() {
+                                          var t = localStorage.getItem('authToken');
+                                          if (!t) return [];
+                                          var p = decodeJwtPayload(t);
+                                          return (p && p.roles) ? p.roles : [];
+                                      }
+
+                                      function hasRole(role) {
+                                          return getRoles().map(function(r) {
+                                              return String(r).replace(/^ROLE_/, '');
+                                          }).indexOf(role) !== -1;
+                                      }
+
+                                      function updateAdminTab() {
+                                          if (hasRole('ADMIN')) {
+                                              $('#adminTab').show();
+                                          } else {
+                                              $('#adminTab').hide();
+                                          }
+                                      }
+
+                                      function logoutUser() {
+                                          $.ajax({
+                                              url: (window.backendApiUrl || '/api') + '/auth/logout',
+                                              type: 'POST',
+                                              complete: function() {
+                                                  localStorage.removeItem('authToken');
+                                                  localStorage.removeItem('refreshToken');
+                                                  $('#adminTab').hide();
+                                                  $('#protectedTabs').hide();
+                                                  $('#publicTabs').show();
+                                                  window.location.hash = 'login';
+                                              }
+                                          });
+                                      }
+
+                                      window.App = window.App || {};
+                                      window.App.updateAdminTab = updateAdminTab;
+                                      window.App.logout = logoutUser;
+
                    // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
                    $.ajaxSetup({
                        beforeSend: function(xhr) {
@@ -1925,10 +1978,11 @@ sendData(
                    });
 
                    // Если токен уже в localStorage — включаем авторизованный режим
-                   if (localStorage.getItem('authToken')) {
-                       console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
-                       apiInstance.initAuthorized();
-                   }
+                  if (localStorage.getItem('authToken')) {
+                   console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
+                   apiInstance.initAuthorized();
+                  if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
+                  }
 
         // ===========================================
         // ПЕРЕХВАТ AJAX ЗАПРОСОВ ДЛЯ ОБРАБОТКИ 302
