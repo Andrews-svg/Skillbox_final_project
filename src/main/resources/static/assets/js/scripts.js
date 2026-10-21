@@ -1963,9 +1963,63 @@ sendData(
                                           });
                                       }
 
+                               // ===========================================
+                               // Админ-панель: Overview
+                               // ===========================================
+                               function loadAdminOverview() {
+                                  $.ajax({
+                                      url: (window.backendApiUrl || '/api') + '/admin/overview',
+                                      type: 'GET',
+                                      dataType: 'json'
+                                  }).done(function(data) {
+                                      if (!data) {
+                                          console.warn('⚠️ Overview: пустой ответ');
+                                          return;
+                                      }
+
+                                      var users = data.users && data.users.totalUsers != null ? data.users.totalUsers : '—';
+                                      var visits = data.visits && data.visits.total != null ? data.visits.total : '—';
+                                      var uptime = data.uptimeSeconds != null ? formatUptime(data.uptimeSeconds) : '—';
+                                      var modeLabel = data.mode && data.mode.isMulti ? 'MULTI' : 'SINGLE';
+
+                                      $('#adminTotalUsers').text(users);
+                                      $('#adminTotalVisits').text(visits);
+                                      $('#adminUptime').text(uptime);
+                                      $('#adminMode').text(modeLabel);
+                                      $('#adminIndexing').text(data.indexing && data.indexing.active ? 'Идёт' : 'Нет');
+                                  }).fail(function(xhr) {
+                                      console.error('❌ Overview: ошибка', xhr.status, xhr.responseText);
+                                  });
+                              }
+
+                               function formatUptime(seconds) {
+                                   if (seconds == null) return '—';
+                                   var d = Math.floor(seconds / 86400);
+                                   var h = Math.floor((seconds % 86400) / 3600);
+                                   var m = Math.floor((seconds % 3600) / 60);
+                                   if (d > 0) return d + 'д ' + h + 'ч';
+                                   if (h > 0) return h + 'ч ' + m + 'м';
+                                   return m + 'м';
+                               }
+
+                               // Подвкладки: клик → активная (визуально)
+                               $(document).on('click', '.admin-subtab', function(e) {
+                                   e.preventDefault();
+                                   $('.admin-subtab').removeClass('active');
+                                   $(this).addClass('active');
+                                   console.log('🛡️ Admin subtab:', $(this).data('subtab'));
+                               });
+
+                               // Загрузка Overview при переходе на #panel
+                               $(document).on('fragmentLoaded', function(e, tabName) {
+                                   if (tabName === 'panel') {
+                                       loadAdminOverview();
+                                   }
+                               });
                                       window.App = window.App || {};
                                       window.App.updateAdminTab = updateAdminTab;
                                       window.App.logout = logoutUser;
+                                      window.App.loadAdminOverview = loadAdminOverview;
 
                    // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
                    $.ajaxSetup({
@@ -1979,10 +2033,10 @@ sendData(
 
                    // Если токен уже в localStorage — включаем авторизованный режим
                   if (localStorage.getItem('authToken')) {
-                   console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
-                   apiInstance.initAuthorized();
-                  if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
-                  }
+           console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
+           apiInstance.initAuthorized();
+          if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
+          }
 
         // ===========================================
         // ПЕРЕХВАТ AJAX ЗАПРОСОВ ДЛЯ ОБРАБОТКИ 302
