@@ -2003,12 +2003,19 @@ sendData(
                                }
 
                                // Подвкладки: клик → активная (визуально)
-                               $(document).on('click', '.admin-subtab', function(e) {
-                                   e.preventDefault();
-                                   $('.admin-subtab').removeClass('active');
-                                   $(this).addClass('active');
-                                   console.log('🛡️ Admin subtab:', $(this).data('subtab'));
-                               });
+                              $(document).on('click', '.admin-subtab', function(e) {
+                                                     e.preventDefault();
+                                                     var subtab = $(this).data('subtab');
+                                                     $('.admin-subtab').removeClass('active');
+                                                     $(this).addClass('active');
+                                                     $('.admin-tab-panel').hide();
+                                                     $('.admin-tab-panel[data-panel="' + subtab + '"]').show();
+                                                     console.log('🛡️ Admin subtab:', subtab);
+
+                                                     if (subtab === 'sessions') {
+                                                         loadAdminSessions();
+                                                     }
+                                                 });
 
                                // Загрузка Overview при переходе на #panel
                                $(document).on('fragmentLoaded', function(e, tabName) {
@@ -2019,7 +2026,61 @@ sendData(
                                       window.App = window.App || {};
                                       window.App.updateAdminTab = updateAdminTab;
                                       window.App.logout = logoutUser;
-                                      window.App.loadAdminOverview = loadAdminOverview;
+                                       window.App.loadAdminOverview = loadAdminOverview;
+                                                                            window.App.loadAdminSessions = loadAdminSessions;
+
+                                                         function loadAdminSessions() {
+                                                             $.ajax({
+                                                                 url: (window.backendApiUrl || '/api') + '/admin/sessions?limit=20',
+                                                                 type: 'GET',
+                                                                 dataType: 'json'
+                                                             }).done(function(data) {
+                                                                 var $tbody = $('#sessionsTableBody').empty();
+                                                                 var $table = $('#sessionsTable');
+                                                                 var $empty = $('#sessionsEmpty');
+
+                                                                 if (!data || !Array.isArray(data) || data.length === 0) {
+                                                                     $table.hide();
+                                                                     $empty.show();
+                                                                     return;
+                                                                 }
+
+                                                                 $empty.hide();
+                                                                 $table.show();
+
+                                                                 data.forEach(function(s) {
+                                                                     var $row = $('<tr></tr>');
+                                                                     $row.append($('<td></td>').text(s.id != null ? s.id : '—'));
+                                                                     $row.append($('<td></td>').text(formatDate(s.startedAt)));
+                                                                     $row.append($('<td></td>').text(formatDuration(s.durationSeconds)));
+                                                                     $row.append($('<td></td>').text(s.mode || '—'));
+                                                                     $row.append($('<td></td>').text(s.totalSites != null ? s.totalSites : '—'));
+                                                                     $row.append($('<td></td>').text(s.totalPages != null ? s.totalPages : '—'));
+                                                                     $row.append($('<td></td>').text(s.totalLemmas != null ? s.totalLemmas : '—'));
+                                                                     $row.append($('<td></td>').text(s.totalErrors != null ? s.totalErrors : '—'));
+                                                                     $row.append($('<td></td>').text(s.status || '—'));
+                                                                     $row.append($('<td></td>').text(s.startedBy || '—'));
+                                                                     $tbody.append($row);
+                                                                 });
+                                                             }).fail(function(xhr) {
+                                                                 console.error('❌ Sessions: ошибка', xhr.status, xhr.responseText);
+                                                             });
+                                                         }
+
+                                                         function formatDate(iso) {
+                                                             if (!iso) return '—';
+                                                             return iso.replace('T', ' ').substring(0, 16);
+                                                         }
+
+                                                         function formatDuration(seconds) {
+                                                             if (seconds == null) return '—';
+                                                             var h = Math.floor(seconds / 3600);
+                                                             var m = Math.floor((seconds % 3600) / 60);
+                                                             var s = seconds % 60;
+                                                             if (h > 0) return h + 'ч ' + m + 'м';
+                                                             if (m > 0) return m + 'м ' + s + 'с';
+                                                             return s + 'с';
+                                                         }
 
                    // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
                    $.ajaxSetup({
