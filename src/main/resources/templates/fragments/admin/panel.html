@@ -36,6 +36,31 @@
                 </div>
             </div>
         </div>
+
+        <div class="admin-tab-panel" data-panel="sessions" style="display: none;">
+            <div id="sessionsEmpty" style="text-align: center; padding: 30px; color: #888; display: none;">
+                История сессий пуста
+            </div>
+            <div class="table-container" style="overflow-x: auto;">
+                <table class="data-table" id="sessionsTable" style="display: none;">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Начало</th>
+                        <th>Длительность</th>
+                        <th>Режим</th>
+                        <th>Сайты</th>
+                        <th>Страницы</th>
+                        <th>Леммы</th>
+                        <th>Ошибки</th>
+                        <th>Статус</th>
+                        <th>Запустил</th>
+                    </tr>
+                    </thead>
+                    <tbody id="sessionsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
