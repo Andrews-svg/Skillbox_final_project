@@ -2013,8 +2013,10 @@ sendData(
                                                      console.log('🛡️ Admin subtab:', subtab);
 
                                                      if (subtab === 'sessions') {
-                                                         loadAdminSessions();
-                                                     }
+                                                                loadAdminSessions();
+                                                            } else if (subtab === 'health') {
+                                                                loadAdminHealth();
+                                                             }
                                                  });
 
                                // Загрузка Overview при переходе на #panel
@@ -2028,6 +2030,7 @@ sendData(
                                       window.App.logout = logoutUser;
                                        window.App.loadAdminOverview = loadAdminOverview;
                                                                             window.App.loadAdminSessions = loadAdminSessions;
+                                                                            window.App.loadAdminHealth = loadAdminHealth;
 
                                                          function loadAdminSessions() {
                                                              $.ajax({
@@ -2063,11 +2066,54 @@ sendData(
                                                                      $tbody.append($row);
                                                                  });
                                                              }).fail(function(xhr) {
-                                                                 console.error('❌ Sessions: ошибка', xhr.status, xhr.responseText);
-                                                             });
-                                                         }
+                                                                                        console.error('❌ Sessions: ошибка', xhr.status, xhr.responseText);
+                                                                                    });
+                                                                                }
 
-                                                         function formatDate(iso) {
+                                                            function loadAdminHealth() {
+                                                                $.ajax({
+                                                                    url: (window.backendApiUrl || '/api') + '/admin/health',
+                                                                    type: 'GET',
+                                                                    dataType: 'json'
+                                                                }).done(function(d) {
+                                                                    if (!d) return;
+                                                                    var sys = d.system || {};
+                                                                    var db = d.database || {};
+                                                                    var tot = d.total || {};
+                                                                    var idx = d.indexing || {};
+                                                                    var pool = d.connectionPool || {};
+
+                                                                    $('#hCpuLoad').text(sys.cpuLoad || '—');
+                                                                    $('#hProcessCpu').text(sys.processCpuLoad || '—');
+                                                                    $('#hUsedMem').text(sys.usedMemory || '—');
+                                                                    $('#hMaxMem').text(sys.maxMemory || '—');
+                                                                    $('#hThreads').text(sys.threadCount != null ? sys.threadCount : '—');
+                                                                    $('#hUptime').text(sys.uptime || '—');
+                                                                    $('#hCores').text(sys.availableProcessors != null ? sys.availableProcessors : '—');
+                                                                    $('#hOs').text(sys.osName || '—');
+
+                                                                    $('#hDbTables').text(db.tablesCount != null ? db.tablesCount : '—');
+                                                                    $('#hDbSize').text(db.databaseSize || '—');
+                                                                    $('#hDbConn').text(db.connection || '—');
+
+                                                                    $('#hTotalSites').text(tot.totalSites != null ? tot.totalSites : '—');
+                                                                    $('#hTotalPages').text(tot.totalPages != null ? tot.totalPages : '—');
+
+                                                                    $('#hIndexActive').text(idx.isActive ? 'Да' : 'Нет');
+                                                                    $('#hActiveSites').text(idx.activeSitesCount != null ? idx.activeSitesCount : '—');
+                                                                    $('#hIndexedSites').text(idx.indexedSitesCount != null ? idx.indexedSitesCount : '—');
+                                                                    $('#hFailedSites').text(idx.failedSitesCount != null ? idx.failedSitesCount : '—');
+
+                                                                    $('#hPoolTotal').text(pool.total != null ? pool.total : '—');
+                                                                    $('#hPoolActive').text(pool.active != null ? pool.active : '—');
+                                                                    $('#hPoolIdle').text(pool.idle != null ? pool.idle : '—');
+                                                                    $('#hPoolWaiting').text(pool.waiting != null ? pool.waiting : '—');
+                                                                }).fail(function(xhr) {
+                                                                    console.error('❌ Health: ошибка', xhr.status, xhr.responseText);
+                                                                });
+                                                            }
+
+                                                                                function formatDate(iso) {
                                                              if (!iso) return '—';
                                                              return iso.replace('T', ' ').substring(0, 16);
                                                          }

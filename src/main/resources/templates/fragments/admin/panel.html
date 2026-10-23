@@ -61,6 +61,49 @@
                 </table>
             </div>
         </div>
+
+        <div class="admin-tab-panel" data-panel="health" style="display: none;">
+            <h3 class="admin-health-title">Система</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="hCpuLoad">—</span><span class="Statistics-title">CPU</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hProcessCpu">—</span><span class="Statistics-title">Process CPU</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hUsedMem">—</span><span class="Statistics-title">Used Memory</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hMaxMem">—</span><span class="Statistics-title">Max Memory</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hThreads">—</span><span class="Statistics-title">Threads</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hUptime">—</span><span class="Statistics-title">Uptime</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hCores">—</span><span class="Statistics-title">Cores</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hOs">—</span><span class="Statistics-title">OS</span></div>
+            </div>
+
+            <h3 class="admin-health-title">База данных</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="hDbTables">—</span><span class="Statistics-title">Таблиц</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hDbSize">—</span><span class="Statistics-title">Размер</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hDbConn">—</span><span class="Statistics-title">Соединение</span></div>
+            </div>
+
+            <h3 class="admin-health-title">Всего</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="hTotalSites">—</span><span class="Statistics-title">Сайтов</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hTotalPages">—</span><span class="Statistics-title">Страниц</span></div>
+            </div>
+
+            <h3 class="admin-health-title">Индексация</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="hIndexActive">—</span><span class="Statistics-title">Активна</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hActiveSites">—</span><span class="Statistics-title">В работе</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hIndexedSites">—</span><span class="Statistics-title">Проиндексировано</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hFailedSites">—</span><span class="Statistics-title">С ошибками</span></div>
+            </div>
+
+            <h3 class="admin-health-title">Пул соединений</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="hPoolTotal">—</span><span class="Statistics-title">Всего</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hPoolActive">—</span><span class="Statistics-title">Активных</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hPoolIdle">—</span><span class="Statistics-title">Свободных</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="hPoolWaiting">—</span><span class="Statistics-title">В очереди</span></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -111,5 +154,20 @@
     }
     .admin-tab-panel {
         padding: 10px 0;
+    }
+    .admin-health-title {
+        margin: 20px 0 10px;
+        font-size: 15px;
+        color: #2d3748;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 6px;
+    }
+    .admin-health-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .admin-health-grid .Statistics-block {
+        min-width: 130px;
     }
 </style>
