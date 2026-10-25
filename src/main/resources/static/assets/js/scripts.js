@@ -2017,7 +2017,9 @@ sendData(
                                                             } else if (subtab === 'health') {
                                                                 loadAdminHealth();
                                                              } else if (subtab === 'sites') {
-                                                                loadAdminSites();
+                                                                 loadAdminSites();
+                                                             } else if (subtab === 'users') {
+                                                                 loadAdminUsers();
                                                              }
                                                  });
 
@@ -2034,6 +2036,7 @@ sendData(
                                                                             window.App.loadAdminSessions = loadAdminSessions;
                                                                             window.App.loadAdminHealth = loadAdminHealth;
                                                                             window.App.loadAdminSites = loadAdminSites;
+                                                                            window.App.loadAdminUsers = loadAdminUsers;
 
                               function loadAdminSessions() {
                                  $.ajax({
@@ -2170,6 +2173,84 @@ sendData(
                                         $('#sitesEmpty').text('Не удалось загрузить сайты').show();
                                     });
                                 }
+
+                              function formatDateLocal(iso) {
+                                  if (!iso) return '—';
+                                  var d = new Date(iso);
+                                  if (isNaN(d.getTime())) return iso;
+                                  var pad = function(n) { return n < 10 ? '0' + n : n; };
+                                  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                                         ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                              }
+
+                              function formatAction(action) {
+                                  var map = {
+                                      'LOGIN_SUCCESS': '✅ Вход',
+                                      'LOGIN_FAILED': '❌ Ошибка входа',
+                                      'LOGOUT': '👋 Выход',
+                                      'REGISTRATION': '📝 Регистрация',
+                                      'REGISTRATION_FAILED': '❌ Ошибка регистрации',
+                                      'ACCOUNT_ACTIVATION': '🔓 Активация',
+                                      'ACCOUNT_ACTIVATION_FAILED': '❌ Ошибка активации',
+                                      'TOKEN_REFRESH': '🔄 Обновление токена',
+                                      'SEARCH': '🔍 Поиск',
+                                      'INDEXING_START': '⚙️ Начало индексации',
+                                      'INDEXING_SINGLE_SITE': '⚙️ Индексация одного сайта',
+                                      'INDEXING_COMPLETE': '✅ Индексация завершена',
+                                      'ACTION': '📝 Действие'
+                                  };
+                                  return map[action] || action || '—';
+                              }
+
+                              function loadAdminUsers() {
+                                  $.ajax({
+                                      url: (window.backendApiUrl || '/api') + '/admin/analytics',
+                                      type: 'GET',
+                                      dataType: 'json'
+                                  }).done(function(d) {
+                                      if (!d) return;
+                                      $('#uTotalUsers').text(d.totalUsers != null ? d.totalUsers : '—');
+                                      $('#uActiveSessions').text(d.activeSessions != null ? d.activeSessions : '—');
+                                      $('#uTotalVisits').text(d.totalVisits != null ? d.totalVisits : '—');
+                                      $('#uUptime').text(formatUptime(d.uptimeSeconds));
+                                  }).fail(function(xhr) {
+                                      console.error('❌ Users cards: ошибка', xhr.status, xhr.responseText);
+                                  });
+
+                                  $.ajax({
+                                      url: (window.backendApiUrl || '/api') + '/admin/auth-log?limit=50',
+                                      type: 'GET',
+                                      dataType: 'json'
+                                  }).done(function(data) {
+                                      var $tbody = $('#usersTableBody').empty();
+                                      var $table = $('#usersTable');
+                                      var $empty = $('#usersEmpty');
+                                      var rows = Array.isArray(data) ? data : [];
+                                      if (!rows.length) {
+                                          $table.hide();
+                                          $empty.show();
+                                          return;
+                                      }
+                                      $empty.hide();
+                                      $table.show();
+                                      rows.forEach(function(a) {
+                                          var $row = $('<tr></tr>');
+                                          $row.append($('<td></td>').text(formatDateLocal(a.timestamp)));
+                                          $row.append($('<td></td>').text(a.username || '—'));
+                                          $row.append($('<td></td>').text(formatAction(a.action)));
+                                          $row.append($('<td></td>').text(a.ipAddress || '—'));
+                                          var ua = a.userAgent || '—';
+                                          if (ua.length > 40) ua = ua.substring(0, 37) + '…';
+                                          $row.append($('<td></td>').text(ua));
+                                          $row.append($('<td></td>').text(a.actionDetail || (a.success === false ? 'Ошибка' : '—')));
+                                          $tbody.append($row);
+                                      });
+                                  }).fail(function(xhr) {
+                                      $('#usersTable').hide();
+                                      $('#usersEmpty').text('Не удалось загрузить журнал').show();
+                                      console.error('❌ AuthLog: ошибка', xhr.status, xhr.responseText);
+                                  });
+                              }
 
                               function formatDate(iso) {
                                      if (!iso) return '—';

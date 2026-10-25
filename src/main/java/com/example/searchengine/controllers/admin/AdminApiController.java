@@ -18,6 +18,11 @@ import com.example.searchengine.services.crawler.CrawlerService;
 import com.example.searchengine.models.IndexingSession;
 import com.example.searchengine.models.Site;
 import com.example.searchengine.dto.adminLogs.AdminSiteDto;
+import com.example.searchengine.dto.adminLogs.UserActivityDto;
+import com.example.searchengine.models.statistics.UserActivityLog;
+import com.example.searchengine.repositories.statistics.UserActivityRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.example.searchengine.repositories.PageRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +34,7 @@ import com.example.searchengine.services.indexing.SessionHistoryService;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.PageService;
 import com.example.searchengine.services.LemmaService;
+
 
 import java.util.List;
 
@@ -53,6 +59,7 @@ public class AdminApiController {
     private final PageService pageService;
     private final LemmaService lemmaService;
     private final PageRepository pageRepository;
+    private final UserActivityRepository userActivityRepository;
 
 
 
@@ -65,7 +72,8 @@ public class AdminApiController {
                               VisitCounterService visitCounterService,
                               UserRepository userRepository, ApplicationStartupTime applicationStartupTime,
                               SessionHistoryService sessionHistoryService, SiteService siteService,
-                              PageService pageService, LemmaService lemmaService, PageRepository pageRepository) {
+                              PageService pageService, LemmaService lemmaService, PageRepository pageRepository,
+                              UserActivityRepository userActivityRepository) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
@@ -80,6 +88,7 @@ public class AdminApiController {
         this.pageService = pageService;
         this.lemmaService = lemmaService;
         this.pageRepository = pageRepository;
+        this.userActivityRepository = userActivityRepository;
     }
 
 
@@ -226,6 +235,27 @@ public class AdminApiController {
             ));
         }
         return result;
+    }
+
+    @GetMapping("/auth-log")
+    @ResponseBody
+    public List<UserActivityDto> getAuthLog(@RequestParam(defaultValue = "50") int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        PageRequest page = PageRequest.of(0, safeLimit,
+                Sort.by(Sort.Direction.DESC, "timestamp"));
+        return userActivityRepository.findAll(page).stream()
+                .map(a -> new UserActivityDto(
+                        a.getId(),
+                        a.getUserId(),
+                        a.getUsername(),
+                        a.getAction(),
+                        a.getActionDetail(),
+                        a.getIpAddress(),
+                        a.getUserAgent(),
+                        a.getTimestamp(),
+                        a.getSuccess()
+                ))
+                .toList();
     }
 
     @GetMapping("/crawler/progress")
