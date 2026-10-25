@@ -43,4 +43,12 @@ public interface SiteRepository extends JpaRepository<Site, Long> {
     @Query("UPDATE Site s SET s.statusTime = :statusTime WHERE s.id = :id")
     int updateStatusTimeById(@Param("id") Long id,
                              @Param("statusTime") LocalDateTime statusTime);
+
+    @Modifying
+    @Query("UPDATE Site s SET s.status = :failed, s.statusTime = :time, s.lastError = :error " +
+            "WHERE s.status = :indexing")
+    int markStaleIndexingAsFailed(@Param("failed") Status failed,
+                                  @Param("indexing") Status indexing,
+                                  @Param("time") LocalDateTime time,
+                                  @Param("error") String error);
 }
