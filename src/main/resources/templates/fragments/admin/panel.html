@@ -127,9 +127,38 @@
                 </table>
             </div>
         </div>
+
+        <div class="admin-tab-panel" data-panel="users" style="display: none;">
+            <h3 class="admin-health-title">Пользователи</h3>
+            <div class="admin-health-grid">
+                <div class="Statistics-block"><span class="Statistics-amount" id="uTotalUsers">—</span><span class="Statistics-title">Всего</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="uActiveSessions">—</span><span class="Statistics-title">Активных сессий</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="uTotalVisits">—</span><span class="Statistics-title">Визитов</span></div>
+                <div class="Statistics-block"><span class="Statistics-amount" id="uUptime">—</span><span class="Statistics-title">Время работы</span></div>
+            </div>
+
+            <h3 class="admin-health-title">Журнал аутентификации</h3>
+            <div id="usersEmpty" style="text-align: center; padding: 30px; color: #888; display: none;">
+                Журнал пуст
+            </div>
+            <div class="table-container" style="overflow-x: auto; max-height: 420px; overflow-y: auto;">
+                <table class="data-table" id="usersTable" style="display: none;">
+                    <thead>
+                    <tr>
+                        <th>Время</th>
+                        <th>Пользователь</th>
+                        <th>Действие</th>
+                        <th>IP</th>
+                        <th>Устройство</th>
+                        <th>Детали</th>
+                    </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-
 
 <style>
     .admin-status-bar {
@@ -194,7 +223,8 @@
     .admin-health-grid .Statistics-block {
         min-width: 130px;
     }
-    #sitesTable thead th {
+    #sitesTable thead th,
+    #usersTable thead th {
         position: sticky;
         top: 0;
         background: #2d3748 !important;
