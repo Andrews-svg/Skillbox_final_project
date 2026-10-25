@@ -2016,6 +2016,8 @@ sendData(
                                                                 loadAdminSessions();
                                                             } else if (subtab === 'health') {
                                                                 loadAdminHealth();
+                                                             } else if (subtab === 'sites') {
+                                                                loadAdminSites();
                                                              }
                                                  });
 
@@ -2031,102 +2033,158 @@ sendData(
                                        window.App.loadAdminOverview = loadAdminOverview;
                                                                             window.App.loadAdminSessions = loadAdminSessions;
                                                                             window.App.loadAdminHealth = loadAdminHealth;
+                                                                            window.App.loadAdminSites = loadAdminSites;
 
-                                                         function loadAdminSessions() {
-                                                             $.ajax({
-                                                                 url: (window.backendApiUrl || '/api') + '/admin/sessions?limit=20',
-                                                                 type: 'GET',
-                                                                 dataType: 'json'
-                                                             }).done(function(data) {
-                                                                 var $tbody = $('#sessionsTableBody').empty();
-                                                                 var $table = $('#sessionsTable');
-                                                                 var $empty = $('#sessionsEmpty');
+                              function loadAdminSessions() {
+                                 $.ajax({
+                                     url: (window.backendApiUrl || '/api') + '/admin/sessions?limit=20',
+                                     type: 'GET',
+                                     dataType: 'json'
+                                 }).done(function(data) {
+                                     var $tbody = $('#sessionsTableBody').empty();
+                                     var $table = $('#sessionsTable');
+                                     var $empty = $('#sessionsEmpty');
 
-                                                                 if (!data || !Array.isArray(data) || data.length === 0) {
-                                                                     $table.hide();
-                                                                     $empty.show();
-                                                                     return;
-                                                                 }
+                                     if (!data || !Array.isArray(data) || data.length === 0) {
+                                         $table.hide();
+                                         $empty.show();
+                                         return;
+                                     }
 
-                                                                 $empty.hide();
-                                                                 $table.show();
+                                     $empty.hide();
+                                     $table.show();
 
-                                                                 data.forEach(function(s) {
-                                                                     var $row = $('<tr></tr>');
-                                                                     $row.append($('<td></td>').text(s.id != null ? s.id : '—'));
-                                                                     $row.append($('<td></td>').text(formatDate(s.startedAt)));
-                                                                     $row.append($('<td></td>').text(formatDuration(s.durationSeconds)));
-                                                                     $row.append($('<td></td>').text(s.mode || '—'));
-                                                                     $row.append($('<td></td>').text(s.totalSites != null ? s.totalSites : '—'));
-                                                                     $row.append($('<td></td>').text(s.totalPages != null ? s.totalPages : '—'));
-                                                                     $row.append($('<td></td>').text(s.totalLemmas != null ? s.totalLemmas : '—'));
-                                                                     $row.append($('<td></td>').text(s.totalErrors != null ? s.totalErrors : '—'));
-                                                                     $row.append($('<td></td>').text(s.status || '—'));
-                                                                     $row.append($('<td></td>').text(s.startedBy || '—'));
-                                                                     $tbody.append($row);
-                                                                 });
-                                                             }).fail(function(xhr) {
-                                                                                        console.error('❌ Sessions: ошибка', xhr.status, xhr.responseText);
-                                                                                    });
-                                                                                }
+                                     data.forEach(function(s) {
+                                         var $row = $('<tr></tr>');
+                                         $row.append($('<td></td>').text(s.id != null ? s.id : '—'));
+                                         $row.append($('<td></td>').text(formatDate(s.startedAt)));
+                                         $row.append($('<td></td>').text(formatDuration(s.durationSeconds)));
+                                         $row.append($('<td></td>').text(s.mode || '—'));
+                                         $row.append($('<td></td>').text(s.totalSites != null ? s.totalSites : '—'));
+                                         $row.append($('<td></td>').text(s.totalPages != null ? s.totalPages : '—'));
+                                         $row.append($('<td></td>').text(s.totalLemmas != null ? s.totalLemmas : '—'));
+                                         $row.append($('<td></td>').text(s.totalErrors != null ? s.totalErrors : '—'));
+                                         $row.append($('<td></td>').text(s.status || '—'));
+                                         $row.append($('<td></td>').text(s.startedBy || '—'));
+                                         $tbody.append($row);
+                                     });
+                                 }).fail(function(xhr) {
+                                                            console.error('❌ Sessions: ошибка', xhr.status, xhr.responseText);
+                                                        });
+                                                    }
 
-                                                            function loadAdminHealth() {
-                                                                $.ajax({
-                                                                    url: (window.backendApiUrl || '/api') + '/admin/health',
-                                                                    type: 'GET',
-                                                                    dataType: 'json'
-                                                                }).done(function(d) {
-                                                                    if (!d) return;
-                                                                    var sys = d.system || {};
-                                                                    var db = d.database || {};
-                                                                    var tot = d.total || {};
-                                                                    var idx = d.indexing || {};
-                                                                    var pool = d.connectionPool || {};
+                                function loadAdminHealth() {
+                                    $.ajax({
+                                        url: (window.backendApiUrl || '/api') + '/admin/health',
+                                        type: 'GET',
+                                        dataType: 'json'
+                                    }).done(function(d) {
+                                        if (!d) return;
+                                        var sys = d.system || {};
+                                        var db = d.database || {};
+                                        var tot = d.total || {};
+                                        var idx = d.indexing || {};
+                                        var pool = d.connectionPool || {};
 
-                                                                    $('#hCpuLoad').text(sys.cpuLoad || '—');
-                                                                    $('#hProcessCpu').text(sys.processCpuLoad || '—');
-                                                                    $('#hUsedMem').text(sys.usedMemory || '—');
-                                                                    $('#hMaxMem').text(sys.maxMemory || '—');
-                                                                    $('#hThreads').text(sys.threadCount != null ? sys.threadCount : '—');
-                                                                    $('#hUptime').text(sys.uptime || '—');
-                                                                    $('#hCores').text(sys.availableProcessors != null ? sys.availableProcessors : '—');
-                                                                    $('#hOs').text(sys.osName || '—');
+                                        $('#hCpuLoad').text(sys.cpuLoad || '—');
+                                        $('#hProcessCpu').text(sys.processCpuLoad || '—');
+                                        $('#hUsedMem').text(sys.usedMemory || '—');
+                                        $('#hMaxMem').text(sys.maxMemory || '—');
+                                        $('#hThreads').text(sys.threadCount != null ? sys.threadCount : '—');
+                                        $('#hUptime').text(sys.uptime || '—');
+                                        $('#hCores').text(sys.availableProcessors != null ? sys.availableProcessors : '—');
+                                        $('#hOs').text(sys.osName || '—');
 
-                                                                    $('#hDbTables').text(db.tablesCount != null ? db.tablesCount : '—');
-                                                                    $('#hDbSize').text(db.databaseSize || '—');
-                                                                    $('#hDbConn').text(db.connection || '—');
+                                        $('#hDbTables').text(db.tablesCount != null ? db.tablesCount : '—');
+                                        $('#hDbSize').text(db.databaseSize || '—');
+                                        $('#hDbConn').text(db.connection || '—');
 
-                                                                    $('#hTotalSites').text(tot.totalSites != null ? tot.totalSites : '—');
-                                                                    $('#hTotalPages').text(tot.totalPages != null ? tot.totalPages : '—');
+                                        $('#hTotalSites').text(tot.totalSites != null ? tot.totalSites : '—');
+                                        $('#hTotalPages').text(tot.totalPages != null ? tot.totalPages : '—');
 
-                                                                    $('#hIndexActive').text(idx.isActive ? 'Да' : 'Нет');
-                                                                    $('#hActiveSites').text(idx.activeSitesCount != null ? idx.activeSitesCount : '—');
-                                                                    $('#hIndexedSites').text(idx.indexedSitesCount != null ? idx.indexedSitesCount : '—');
-                                                                    $('#hFailedSites').text(idx.failedSitesCount != null ? idx.failedSitesCount : '—');
+                                        $('#hIndexActive').text(idx.isActive ? 'Да' : 'Нет');
+                                        $('#hActiveSites').text(idx.activeSitesCount != null ? idx.activeSitesCount : '—');
+                                        $('#hIndexedSites').text(idx.indexedSitesCount != null ? idx.indexedSitesCount : '—');
+                                        $('#hFailedSites').text(idx.failedSitesCount != null ? idx.failedSitesCount : '—');
 
-                                                                    $('#hPoolTotal').text(pool.total != null ? pool.total : '—');
-                                                                    $('#hPoolActive').text(pool.active != null ? pool.active : '—');
-                                                                    $('#hPoolIdle').text(pool.idle != null ? pool.idle : '—');
-                                                                    $('#hPoolWaiting').text(pool.waiting != null ? pool.waiting : '—');
-                                                                }).fail(function(xhr) {
-                                                                    console.error('❌ Health: ошибка', xhr.status, xhr.responseText);
-                                                                });
-                                                            }
+                                        $('#hPoolTotal').text(pool.total != null ? pool.total : '—');
+                                        $('#hPoolActive').text(pool.active != null ? pool.active : '—');
+                                        $('#hPoolIdle').text(pool.idle != null ? pool.idle : '—');
+                                        $('#hPoolWaiting').text(pool.waiting != null ? pool.waiting : '—');
+                                    }).fail(function(xhr) {
+                                        console.error('❌ Health: ошибка', xhr.status, xhr.responseText);
+                                    });
+                                }
 
-                                                                                function formatDate(iso) {
-                                                             if (!iso) return '—';
-                                                             return iso.replace('T', ' ').substring(0, 16);
-                                                         }
+                                function loadAdminSites() {
+                                    $.ajax({
+                                        url: (window.backendApiUrl || '/api') + '/admin/sites',
+                                        type: 'GET',
+                                        dataType: 'json'
+                                    }).done(function(data) {
+                                        var $tbody = $('#sitesTableBody').empty();
+                                        var $table = $('#sitesTable');
+                                        var $empty = $('#sitesEmpty');
+                                        var sites = Array.isArray(data) ? data : [];
+                                        if (!sites.length) {
+                                            $table.hide();
+                                            $empty.show();
+                                            return;
+                                        }
+                                        $empty.hide();
+                                        $table.show();
+                                        sites.forEach(function(s) {
+                                            var $row = $('<tr></tr>');
+                                            $row.append($('<td></td>').text(s.id != null ? s.id : '—'));
+                                            $row.append($('<td></td>').text(s.name || '—'));
+                                            $row.append($('<td></td>').text(s.url || '—'));
+                                            $row.append($('<td></td>').text(s.status || '—'));
+                                            $row.append($('<td></td>').text(s.pagesCount != null ? s.pagesCount : '—'));
+                                            $row.append($('<td></td>').text(formatDate(s.statusTime)));
+                                            $row.append($('<td></td>').text(s.lastError || '—'));
+                                            var $action = $('<td></td>');
+                                            if (s.status === 'INDEXING') {
+                                                var $btn = $('<button></button>')
+                                                    .text('Стоп')
+                                                    .on('click', function() {
+                                                        if (!confirm('Остановить обход сайта ' + s.url + '?')) return;
+                                                        $.ajax({
+                                                            url: (window.backendApiUrl || '/api') + '/admin/crawler/stop/' + s.id,
+                                                            type: 'POST',
+                                                            dataType: 'json'
+                                                        }).done(function() {
+                                                            loadAdminSites();
+                                                        }).fail(function() {
+                                                            alert('Не удалось остановить обход');
+                                                        });
+                                                    });
+                                                $action.append($btn);
+                                            } else {
+                                                $action.text('—');
+                                            }
+                                            $row.append($action);
+                                            $tbody.append($row);
+                                        });
+                                    }).fail(function() {
+                                        $('#sitesTable').hide();
+                                        $('#sitesEmpty').text('Не удалось загрузить сайты').show();
+                                    });
+                                }
 
-                                                         function formatDuration(seconds) {
-                                                             if (seconds == null) return '—';
-                                                             var h = Math.floor(seconds / 3600);
-                                                             var m = Math.floor((seconds % 3600) / 60);
-                                                             var s = seconds % 60;
-                                                             if (h > 0) return h + 'ч ' + m + 'м';
-                                                             if (m > 0) return m + 'м ' + s + 'с';
-                                                             return s + 'с';
-                                                         }
+                              function formatDate(iso) {
+                                     if (!iso) return '—';
+                                     return iso.replace('T', ' ').substring(0, 16);
+                                 }
+
+                              function formatDuration(seconds) {
+                                 if (seconds == null) return '—';
+                                 var h = Math.floor(seconds / 3600);
+                                 var m = Math.floor((seconds % 3600) / 60);
+                                 var s = seconds % 60;
+                                 if (h > 0) return h + 'ч ' + m + 'м';
+                                 if (m > 0) return m + 'м ' + s + 'с';
+                                 return s + 'с';
+                             }
 
                    // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
                    $.ajaxSetup({

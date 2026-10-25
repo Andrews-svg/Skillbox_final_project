@@ -15,13 +15,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import com.example.searchengine.services.crawler.CrawlerService;
-
+import com.example.searchengine.models.IndexingSession;
+import com.example.searchengine.models.Site;
+import com.example.searchengine.dto.adminLogs.AdminSiteDto;
+import com.example.searchengine.repositories.PageRepository;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import com.example.searchengine.services.VisitCounterService;
 import com.example.searchengine.repositories.UserRepository;
 import com.example.searchengine.services.ApplicationStartupTime;
-import com.example.searchengine.models.IndexingSession;
 import com.example.searchengine.services.indexing.SessionHistoryService;
 import com.example.searchengine.services.SiteService;
 import com.example.searchengine.services.PageService;
@@ -49,6 +52,7 @@ public class AdminApiController {
     private final SiteService siteService;
     private final PageService pageService;
     private final LemmaService lemmaService;
+    private final PageRepository pageRepository;
 
 
 
@@ -61,7 +65,7 @@ public class AdminApiController {
                               VisitCounterService visitCounterService,
                               UserRepository userRepository, ApplicationStartupTime applicationStartupTime,
                               SessionHistoryService sessionHistoryService, SiteService siteService,
-                              PageService pageService, LemmaService lemmaService) {
+                              PageService pageService, LemmaService lemmaService, PageRepository pageRepository) {
         this.crawlerConfig = crawlerConfig;
         this.crawlerService = crawlerService;
         this.searchLogService = searchLogService;
@@ -75,6 +79,7 @@ public class AdminApiController {
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
+        this.pageRepository = pageRepository;
     }
 
 
@@ -202,6 +207,25 @@ public class AdminApiController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getHealth() {
         return ResponseEntity.ok(healthService.getStatus());
+    }
+
+    @GetMapping("/sites")
+    @ResponseBody
+    public List<AdminSiteDto> getSites() {
+        List<Site> sites = siteService.findAll();
+        List<AdminSiteDto> result = new ArrayList<>(sites.size());
+        for (Site site : sites) {
+            result.add(new AdminSiteDto(
+                    site.getId(),
+                    site.getUrl(),
+                    site.getName(),
+                    site.getStatus() != null ? site.getStatus().name() : "UNKNOWN",
+                    site.getStatusTime(),
+                    pageRepository.countBySite(site),
+                    site.getLastError()
+            ));
+        }
+        return result;
     }
 
     @GetMapping("/crawler/progress")
