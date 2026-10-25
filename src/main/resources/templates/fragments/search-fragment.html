@@ -35,8 +35,16 @@
         let currentSite = '';
         const limit = 20;
 
+        function authFetch(url, opts) {
+            opts = opts || {};
+            opts.headers = Object.assign({}, opts.headers, {
+                'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
+            });
+            return fetch(url, opts);
+        }
+
         function loadSites() {
-            fetch(backendUrl + '/statistics')
+            authFetch(backendUrl + '/statistics')
                 .then(response => response.json())
                 .then(data => {
                     if (data.result && data.statistics && data.statistics.detailed) {
@@ -55,13 +63,22 @@
 
         function displaySearchResults(response) {
             const container = document.getElementById('searchResults');
-            if (!response.result || !response.data || response.data.length === 0) {
+             if (!response.result || !response.data || response.data.length === 0) {
+                const isError = !!response.error;
+                const icon = isError ? '⚠️' : '🔍';
+                const titleColor = isError ? '#e53e3e' : '#2d3748';
+                const hint = isError
+                    ? 'Проверьте введённые данные'
+                    : 'Попробуйте изменить запрос или проверить раскладку клавиатуры';
                 container.innerHTML = `
-                    <div class="search-result-placeholder" style="text-align: center; padding: 40px; color: #718096;">
-                        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px;"></i>
-                        <p>${response.error || 'Ничего не найдено'}</p>
+                    <div class="search-result-placeholder" style="text-align: center; padding: 40px;">
+                        <div style="font-size: 56px; margin-bottom: 12px;">${icon}</div>
+                        <div id="searchEmptyTitle" style="font-size: 20px; font-weight: 600; color: ${titleColor}; margin-bottom: 8px;"></div>
+                        <div style="font-size: 14px; color: #a0aec0;">${hint}</div>
                     </div>
                 `;
+                document.getElementById('searchEmptyTitle').textContent =
+                    isError ? response.error : 'Ничего не найдено';
                 return;
             }
 
@@ -83,9 +100,10 @@
             const query = document.getElementById('searchQuery').value.trim();
             if (!query) {
                 document.getElementById('searchResults').innerHTML = `
-                    <div class="search-result-placeholder" style="text-align: center; padding: 40px; color: #718096;">
-                        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px;"></i>
-                        <p>Введите поисковый запрос</p>
+                    <div class="search-result-placeholder" style="text-align: center; padding: 40px;">
+                        <div style="font-size: 56px; margin-bottom: 12px;">✏️</div>
+                        <div style="font-size: 20px; font-weight: 600; color: #2d3748; margin-bottom: 8px;">Введите поисковый запрос</div>
+                        <div style="font-size: 14px; color: #a0aec0;">Например: «книга», «любовь» или «book»</div>
                     </div>
                 `;
                 return;
@@ -103,7 +121,7 @@
                 url += `&site=${encodeURIComponent(currentSite)}`;
             }
 
-            fetch(url)
+            authFetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (resetOffset) {
