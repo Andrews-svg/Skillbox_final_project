@@ -104,8 +104,32 @@
                 <div class="Statistics-block"><span class="Statistics-amount" id="hPoolWaiting">—</span><span class="Statistics-title">В очереди</span></div>
             </div>
         </div>
+
+        <div class="admin-tab-panel" data-panel="sites" style="display: none;">
+            <div id="sitesEmpty" style="text-align: center; padding: 30px; color: #888; display: none;">
+                Сайты не добавлены
+            </div>
+            <div class="table-container" style="overflow-x: auto; max-height: 420px; overflow-y: auto;">
+                <table class="data-table" id="sitesTable" style="display: none;">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Название</th>
+                        <th>URL</th>
+                        <th>Статус</th>
+                        <th>Страниц</th>
+                        <th>Обновлён</th>
+                        <th>Ошибка</th>
+                        <th>Действие</th>
+                    </tr>
+                    </thead>
+                    <tbody id="sitesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
 
 <style>
     .admin-status-bar {
@@ -169,5 +193,13 @@
     }
     .admin-health-grid .Statistics-block {
         min-width: 130px;
+    }
+    #sitesTable thead th {
+        position: sticky;
+        top: 0;
+        background: #2d3748 !important;
+        color: #ffffff !important;
+        z-index: 2;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
 </style>
