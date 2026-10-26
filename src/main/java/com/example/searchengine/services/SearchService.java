@@ -10,6 +10,7 @@ import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +39,7 @@ public class SearchService {
     }
 
 
+    @Transactional(readOnly = true)
     public SearchResponse search(String query, String siteUrl, int offset, int limit) {
         if (query == null || query.trim().isEmpty()) {
             throw new IllegalArgumentException("Задан пустой поисковый запрос");
@@ -126,21 +128,29 @@ public class SearchService {
                 .orElse(1.0);
         List<SearchData> results = new ArrayList<>();
         for (Page page : pages) {
-            double relevance = absoluteRelevance.get(page) / maxRelevance;
-            SearchData data = new SearchData();
-            data.setSite(site.getUrl());
-            data.setSiteName(site.getName());
-            data.setUri(page.getPath());
-            data.setTitle(extractTitle(page.getContent()));
-            data.setSnippet(generateSnippet(page.getContent(), sortedLemmas));
-            data.setRelevance(relevance);
-            results.add(data);
+            try {
+                double relevance = absoluteRelevance.get(page) / maxRelevance;
+                SearchData data = new SearchData();
+                data.setSite(site.getUrl());
+                data.setSiteName(site.getName());
+                data.setUri(page.getPath());
+                data.setTitle(extractTitle(page.getContent()));
+                data.setSnippet(generateSnippet(page.getContent(), sortedLemmas));
+                data.setRelevance(relevance);
+                results.add(data);
+            } catch (Exception e) {
+                logger.warn("Страница {} сайта {} пропущена: {}",
+                        page.getPath(), site.getUrl(), e.getMessage());
+            }
         }
         return results;
     }
 
 
     private String extractTitle(String html) {
+        if (html == null || html.isEmpty()) {
+            return "Без заголовка";
+        }
         try {
             Document doc = Jsoup.parse(html);
             String title = doc.title();
@@ -152,6 +162,9 @@ public class SearchService {
 
 
     private String generateSnippet(String html, List<Lemma> lemmas) {
+        if (html == null || html.isEmpty()) {
+            return "Содержимое страницы недоступно...";
+        }
         try {
             Document doc = Jsoup.parse(html);
             String text = doc.body().text();
