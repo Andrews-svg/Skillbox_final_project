@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -28,17 +28,19 @@ public class ApiController {
     private final SiteValidator siteValidator;
     private final IndexingService indexingService;
     private final SearchService searchService;
+    private final SearchLogService searchLogService;
 
     public ApiController(SitesList sitesList,
                          StatisticsService statisticsService,
                          SiteValidator siteValidator,
                          IndexingService indexingService,
-                         SearchService searchService) {
+                         SearchService searchService, SearchLogService searchLogService) {
         this.sitesList = sitesList;
         this.statisticsService = statisticsService;
         this.siteValidator = siteValidator;
         this.indexingService = indexingService;
         this.searchService = searchService;
+        this.searchLogService = searchLogService;
     }
 
 
@@ -119,7 +121,8 @@ public class ApiController {
             @RequestParam String query,
             @RequestParam(required = false) String site,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(defaultValue = "20") int limit,
+            HttpServletRequest request) {
 
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(
@@ -127,7 +130,18 @@ public class ApiController {
             );
         }
         try {
+            long startTime = System.currentTimeMillis();
             SearchResponse response = searchService.search(query, site, offset, limit);
+            long responseTimeMs = System.currentTimeMillis() - startTime;
+
+            searchLogService.logQuery(
+                    query,
+                    response.getCount(),
+                    responseTimeMs,
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent")
+            );
+
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             logger.error("Ошибка поиска: {}", e.getMessage());
