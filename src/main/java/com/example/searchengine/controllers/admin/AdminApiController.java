@@ -296,7 +296,7 @@ public class AdminApiController {
         logger.info("✅ Режим переключён на SINGLE");
         return ResponseEntity.ok(Map.of(
                 "result", true,
-                "mode", "single",
+                "mode", "SINGLE",
                 "message", "Режим переключён на SINGLE"
         ));
     }
@@ -315,7 +315,7 @@ public class AdminApiController {
         logger.info("✅ Режим переключён на MULTI");
         return ResponseEntity.ok(Map.of(
                 "result", true,
-                "mode", "multi",
+                "mode", "MULTI",
                 "message", "Режим переключён на MULTI"
         ));
     }
