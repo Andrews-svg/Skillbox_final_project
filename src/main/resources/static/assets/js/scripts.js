@@ -2022,7 +2022,9 @@ sendData(
                                                                   loadAdminUsers();
                                                              } else if (subtab === 'search') {
                                                                   loadAdminSearch();
-                                                          }
+                                                             } else if (subtab === 'modes') {
+                                                                  loadAdminModes();
+                                                             }
                                                  });
 
                                // Загрузка Overview при переходе на #panel
@@ -2040,6 +2042,7 @@ sendData(
                                                                             window.App.loadAdminSites = loadAdminSites;
                                                                             window.App.loadAdminUsers = loadAdminUsers;
                                                                             window.App.loadAdminSearch = loadAdminSearch;
+                                                                            window.App.loadAdminModes = loadAdminModes;
 
                               function loadAdminSessions() {
                                  $.ajax({
@@ -2312,13 +2315,50 @@ sendData(
                                                $tbody.append($row);
                                            });
                                        }).fail(function(xhr) {
-                                           $('#zeroResultTable').hide();
-                                           $('#zeroResultEmpty').text('Не удалось загрузить запросы без результата').show();
-                                           console.error('❌ ZeroResult: ошибка', xhr.status, xhr.responseText);
-                                       });
-                                   }
+                                             $('#zeroResultTable').hide();
+                                             $('#zeroResultEmpty').text('Не удалось загрузить запросы без результата').show();
+                                             console.error('❌ ZeroResult: ошибка', xhr.status, xhr.responseText);
+                                         });
+                                     }
+       
+                                     function loadAdminModes() {
+                                         $.ajax({
+                                             url: (window.backendApiUrl || '/api') + '/admin/mode',
+                                             type: 'GET',
+                                             dataType: 'json'
+                                         }).done(function(d) {
+                                             renderModes(d.isMulti === true);
+                                             $('.mode-card').off('click').on('click', function() {
+                                                 if ($(this).hasClass('active')) return;
 
-                                   function formatDate(iso) {
+                                                 var targetMulti = $(this).data('mode') === 'multi';
+                                                 var url = (window.backendApiUrl || '/api') + '/admin/mode/' + (targetMulti ? 'multi' : 'single');
+
+                                                 $.ajax({ url: url, type: 'POST', dataType: 'json' })
+                                                     .done(function() {
+                                                         loadAdminModes();
+                                                     })
+                                                     .fail(function(xhr) {
+                                                         if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.error) {
+                                                             alert(xhr.responseJSON.error);
+                                                         } else {
+                                                             console.error('❌ Modes: ошибка переключения', xhr.status, xhr.responseText);
+                                                             alert('Не удалось переключить режим');
+                                                         }
+                                                     });
+                                             });
+                                         }).fail(function(xhr) {
+                                             console.error('❌ Modes: ошибка загрузки', xhr.status, xhr.responseText);
+                                             alert('Не удалось загрузить режим');
+                                         });
+                                     }
+
+                                     function renderModes(isMulti) {
+                                         $('#modeCardSingle').toggleClass('active', !isMulti);
+                                         $('#modeCardMulti').toggleClass('active', isMulti);
+                                     }
+
+                                     function formatDate(iso) {
 
                                      if (!iso) return '—';
                                      return iso.replace('T', ' ').substring(0, 16);
