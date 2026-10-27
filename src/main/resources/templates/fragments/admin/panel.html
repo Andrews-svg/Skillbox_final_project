@@ -157,6 +157,43 @@
                 </table>
             </div>
         </div>
+
+        <div class="admin-tab-panel" data-panel="search" style="display: none;">
+            <h3 class="admin-health-title">Топ запросов</h3>
+            <div id="topQueriesEmpty" style="text-align: center; padding: 30px; color: #888; display: none;">
+                Запросов пока нет
+            </div>
+            <div class="table-container" style="overflow-x: auto; max-height: 420px; overflow-y: auto;">
+                <table class="data-table" id="topQueriesTable" style="display: none;">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Запрос</th>
+                        <th>Количество</th>
+                        <th>Доля</th>
+                    </tr>
+                    </thead>
+                    <tbody id="topQueriesTableBody"></tbody>
+                </table>
+            </div>
+
+            <h3 class="admin-health-title">Запросы без результата</h3>
+            <div id="zeroResultEmpty" style="text-align: center; padding: 30px; color: #888; display: none;">
+                Запросов без результата нет
+            </div>
+            <div class="table-container" style="overflow-x: auto; max-height: 420px; overflow-y: auto;">
+                <table class="data-table" id="zeroResultTable" style="display: none;">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Запрос</th>
+                        <th>Количество</th>
+                    </tr>
+                    </thead>
+                    <tbody id="zeroResultTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -223,8 +260,10 @@
     .admin-health-grid .Statistics-block {
         min-width: 130px;
     }
-    #sitesTable thead th,
-    #usersTable thead th {
+   #sitesTable thead th,
+    #usersTable thead th,
+    #topQueriesTable thead th,
+    #zeroResultTable thead th {
         position: sticky;
         top: 0;
         background: #2d3748 !important;
