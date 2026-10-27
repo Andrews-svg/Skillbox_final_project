@@ -415,7 +415,11 @@
             .then(response => response.json())
             .then(data => {
                  if (data.result) {
-                    localStorage.setItem('authToken', data.token);
+                    if (window.App && window.App.setAuth) {
+                        window.App.setAuth(data.token, data.refreshToken);
+                    } else {
+                        localStorage.setItem('authToken', data.token);
+                    }
 
                     showAlert('Вход выполнен успешно!', 'success');
 

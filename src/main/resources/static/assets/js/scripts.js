@@ -1005,7 +1005,7 @@
         // ===========================================
         var API = function(){
             function sendData(address, type, data, cb, $this) {
-                            var token = localStorage.getItem('authToken');
+                            var token = getAuth();
                             var headers = {};
                             if (token) {
                                 headers['Authorization'] = 'Bearer ' + token;
@@ -1020,8 +1020,7 @@
                                 complete: function(result) {
                                     if (result.status === 401 || result.status === 403) {
                                         console.warn('🔒 Токен истёк или отсутствует, требуется повторный вход');
-                                        localStorage.removeItem('authToken');
-                                        localStorage.removeItem('refreshToken');
+                                        clearAuth();
                                         $('.auth-container').show();
                                         $('.main-interface').hide();
                                         $('#protectedTabs').hide();
@@ -1455,7 +1454,7 @@ sendData(
                                                });
                                         },   // ← ЗАКРЫВАЕМ initAuthorized (эта строка была утеряна!)
                                         checkAuth: function(){
-                                             return !!localStorage.getItem('authToken');
+                                             return !!getAuth();
                                        }
                                     };
                                  };
@@ -1742,12 +1741,7 @@ sendData(
             // 6. Обработка ответа
                        function handleAuthResponse(response, successMessage, errorElement) {
                            if (response && response.result) {
-                               if (response.token) {
-                                   localStorage.setItem('authToken', response.token);
-                               }
-                              if (response.refreshToken) {
-                                  localStorage.setItem('refreshToken', response.refreshToken);
-                                  }
+                               setAuth(response.token, response.refreshToken);
                                   if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
                                   showMessage('success', successMessage);
                                return true;
@@ -1927,8 +1921,27 @@ sendData(
                                           } catch (e) { return null; }
                                       }
 
-                                      function getRoles() {
-                                          var t = localStorage.getItem('authToken');
+                                       function setAuth(token, refreshToken) {
+                                            if (!token) return;
+                                            localStorage.setItem('authToken', token);
+                                            if (refreshToken) {
+                                                localStorage.setItem('refreshToken', refreshToken);
+                                            }
+                                            $(document).trigger('authChanged');
+                                        }
+
+                                        function clearAuth() {
+                                            localStorage.removeItem('authToken');
+                                            localStorage.removeItem('refreshToken');
+                                            $(document).trigger('authChanged');
+                                        }
+
+                                        function getAuth() {
+                                            return localStorage.getItem('authToken');
+                                        }
+
+                                        function getRoles() {
+                                            var t = getAuth();
                                           if (!t) return [];
                                           var p = decodeJwtPayload(t);
                                           return (p && p.roles) ? p.roles : [];
@@ -1953,8 +1966,7 @@ sendData(
                                               url: (window.backendApiUrl || '/api') + '/auth/logout',
                                               type: 'POST',
                                               complete: function() {
-                                                  localStorage.removeItem('authToken');
-                                                  localStorage.removeItem('refreshToken');
+                                                  clearAuth();
                                                   $('#adminTab').hide();
                                                   $('#protectedTabs').hide();
                                                   $('#publicTabs').show();
@@ -2036,13 +2048,23 @@ sendData(
                                       window.App = window.App || {};
                                       window.App.updateAdminTab = updateAdminTab;
                                       window.App.logout = logoutUser;
-                                       window.App.loadAdminOverview = loadAdminOverview;
-                                                                            window.App.loadAdminSessions = loadAdminSessions;
-                                                                            window.App.loadAdminHealth = loadAdminHealth;
-                                                                            window.App.loadAdminSites = loadAdminSites;
-                                                                            window.App.loadAdminUsers = loadAdminUsers;
-                                                                            window.App.loadAdminSearch = loadAdminSearch;
-                                                                            window.App.loadAdminModes = loadAdminModes;
+                                      window.App.setAuth = setAuth;
+                                      window.App.clearAuth = clearAuth;
+                                      window.App.getAuth = getAuth;
+                                      window.App.loadAdminOverview = loadAdminOverview;
+                                      window.App.loadAdminSessions = loadAdminSessions;
+                                      window.App.loadAdminHealth = loadAdminHealth;
+                                      window.App.loadAdminSites = loadAdminSites;
+                                      window.App.loadAdminUsers = loadAdminUsers;
+                                      window.App.loadAdminSearch = loadAdminSearch;
+                                      window.App.loadAdminModes = loadAdminModes;
+
+                                      // Реагируем на любое изменение auth: логин, логаут, истечение
+                                          $(document).on('authChanged', function() {
+                                              if (typeof updateAdminTab === 'function') {
+                                                  updateAdminTab();
+                                              }
+                                          });
 
                               function loadAdminSessions() {
                                  $.ajax({
@@ -2320,7 +2342,7 @@ sendData(
                                              console.error('❌ ZeroResult: ошибка', xhr.status, xhr.responseText);
                                          });
                                      }
-       
+
                                      function loadAdminModes() {
                                          $.ajax({
                                              url: (window.backendApiUrl || '/api') + '/admin/mode',
@@ -2377,7 +2399,7 @@ sendData(
                    // ✅ Глобальный AJAX setup: подставляем токен во ВСЕ jQuery-запросы
                    $.ajaxSetup({
                        beforeSend: function(xhr) {
-                           var token = localStorage.getItem('authToken');
+                           var token = getAuth();
                            if (token) {
                                xhr.setRequestHeader('Authorization', 'Bearer ' + token);
                            }
@@ -2385,7 +2407,7 @@ sendData(
                    });
 
                    // Если токен уже в localStorage — включаем авторизованный режим
-                  if (localStorage.getItem('authToken')) {
+                  if (getAuth()) {
            console.log('🔐 Найден токен в localStorage, включаем авторизованный режим');
            apiInstance.initAuthorized();
           if (window.App && window.App.updateAdminTab) window.App.updateAdminTab();
