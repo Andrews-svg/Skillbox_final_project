@@ -2019,8 +2019,10 @@ sendData(
                                                              } else if (subtab === 'sites') {
                                                                  loadAdminSites();
                                                              } else if (subtab === 'users') {
-                                                                 loadAdminUsers();
-                                                             }
+                                                                  loadAdminUsers();
+                                                             } else if (subtab === 'search') {
+                                                                  loadAdminSearch();
+                                                          }
                                                  });
 
                                // Загрузка Overview при переходе на #panel
@@ -2037,6 +2039,7 @@ sendData(
                                                                             window.App.loadAdminHealth = loadAdminHealth;
                                                                             window.App.loadAdminSites = loadAdminSites;
                                                                             window.App.loadAdminUsers = loadAdminUsers;
+                                                                            window.App.loadAdminSearch = loadAdminSearch;
 
                               function loadAdminSessions() {
                                  $.ajax({
@@ -2246,13 +2249,77 @@ sendData(
                                           $tbody.append($row);
                                       });
                                   }).fail(function(xhr) {
-                                      $('#usersTable').hide();
-                                      $('#usersEmpty').text('Не удалось загрузить журнал').show();
-                                      console.error('❌ AuthLog: ошибка', xhr.status, xhr.responseText);
-                                  });
-                              }
+                                           $('#usersTable').hide();
+                                           $('#usersEmpty').text('Не удалось загрузить журнал').show();
+                                           console.error('❌ AuthLog: ошибка', xhr.status, xhr.responseText);
+                                       });
+                                   }
 
-                              function formatDate(iso) {
+                                   function loadAdminSearch() {
+                                       $.ajax({
+                                           url: (window.backendApiUrl || '/api') + '/admin/analytics/top-queries?limit=10',
+                                           type: 'GET',
+                                           dataType: 'json'
+                                       }).done(function(data) {
+                                           var $tbody = $('#topQueriesTableBody').empty();
+                                           var $table = $('#topQueriesTable');
+                                           var $empty = $('#topQueriesEmpty');
+                                           var rows = Array.isArray(data) ? data : [];
+                                           if (!rows.length) {
+                                               $table.hide();
+                                               $empty.show();
+                                               return;
+                                           }
+                                           $empty.hide();
+                                           $table.show();
+                                           var total = rows.reduce(function(sum, r) { return sum + (r.count || 0); }, 0);
+                                           rows.forEach(function(r, i) {
+                                               var $row = $('<tr></tr>');
+                                               $row.append($('<td></td>').text(i + 1));
+                                               $row.append($('<td></td>').text(r.query || '—'));
+                                               $row.append($('<td></td>').text(r.count != null ? r.count : '—'));
+                                               var share = total > 0 ? Math.round((r.count || 0) / total * 100) : 0;
+                                               $row.append($('<td></td>').text(share + '%'));
+                                               $tbody.append($row);
+                                           });
+                                       }).fail(function(xhr) {
+                                           $('#topQueriesTable').hide();
+                                           $('#topQueriesEmpty').text('Не удалось загрузить топ запросов').show();
+                                           console.error('❌ TopQueries: ошибка', xhr.status, xhr.responseText);
+                                       });
+
+                                       $.ajax({
+                                           url: (window.backendApiUrl || '/api') + '/admin/analytics/zero-result',
+                                           type: 'GET',
+                                           dataType: 'json'
+                                       }).done(function(data) {
+                                           var $tbody = $('#zeroResultTableBody').empty();
+                                           var $table = $('#zeroResultTable');
+                                           var $empty = $('#zeroResultEmpty');
+                                           var rows = Array.isArray(data) ? data : [];
+                                           if (!rows.length) {
+                                               $table.hide();
+                                               $empty.show();
+                                               return;
+                                           }
+                                           $empty.hide();
+                                           $table.show();
+                                           rows.forEach(function(r, i) {
+                                               var $row = $('<tr></tr>');
+                                               $row.append($('<td></td>').text(i + 1));
+                                               $row.append($('<td></td>').text(r.query || '—'));
+                                               $row.append($('<td></td>').text(r.count != null ? r.count : '—'));
+                                               $tbody.append($row);
+                                           });
+                                       }).fail(function(xhr) {
+                                           $('#zeroResultTable').hide();
+                                           $('#zeroResultEmpty').text('Не удалось загрузить запросы без результата').show();
+                                           console.error('❌ ZeroResult: ошибка', xhr.status, xhr.responseText);
+                                       });
+                                   }
+
+                                   function formatDate(iso) {
+
                                      if (!iso) return '—';
                                      return iso.replace('T', ' ').substring(0, 16);
                                  }
