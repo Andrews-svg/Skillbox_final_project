@@ -201,7 +201,7 @@ public class CrawlerConfig {
     // ===========================================
 
     public String getCurrentMode() {
-        return multiSiteMode ? "🟡 МУЛЬТИ-САЙТ" : "🔵 ОДИН САЙТ";
+        return multiSiteMode ? "MULTI" : "SINGLE";
     }
 
     public boolean isMultiSiteMode() {
