@@ -149,7 +149,7 @@ public class ApiController {
                     Map.of("result", false, "error", e.getMessage())
             );
         } catch (Exception e) {
-            logger.error("Внутренняя ошибка поиска: {}", e.getMessage());
+            logger.error("Внутренняя ошибка поиска: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     Map.of("result", false, "error", "Внутренняя ошибка сервера")
             );
