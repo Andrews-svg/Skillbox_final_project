@@ -1012,7 +1012,7 @@
                             }
 
                             $.ajax({
-                                url: (window.backendApiUrl || '') + address,
+                                url: (window.backendApiUrl || '/api') + address,
                                 type: type,
                                 dataType: 'json',
                                 data: data,
