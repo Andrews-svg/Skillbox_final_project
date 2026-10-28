@@ -1254,8 +1254,6 @@
             }
         }
 
-         // (функции loadStatistics, loadSitesForSearch, displaySearchResults, showResult удалены)
-        // Вся логика загрузки статистики и результатов поиска перенесена в scripts.js
 
         // Экспорт loadFragment для внешних вызовов
         window.App = window.App || {};
@@ -1270,34 +1268,17 @@
         });
 
  $(document).ready(function() {
-            console.log('🚀 Запуск приложения');
+    console.log('🚀 Запуск приложения');
 
-            setTimeout(function() {
-                $('#globalLoader').fadeOut(500);
-            }, 500);
+    setTimeout(function() {
+        $('#globalLoader').fadeOut(500);
+    }, 500);
 
-            // Проверяем авторизацию с учётом срока действия токена
-            if (window.isAuthenticated()) {
-                $('#publicTabs').hide();
-                $('#protectedTabs').show();
-            } else {
-                $('#publicTabs').show();
-                $('#protectedTabs').hide();
-
-                // Если токен истёк или отсутствует — принудительно на форму входа
-                if (window.location.hash && window.location.hash !== '#login' && window.location.hash !== '#register') {
-                    console.log('🔒 Токен отсутствует или истёк, перенаправляем на логин');
-                    window.location.hash = 'login';
-                    return;
-                }
-            }
-
-            loadFragment(window.location.hash);
-
-             $(window).on('hashchange', function() {
-                loadFragment(window.location.hash);
-            });
-        });
+    $(window).on('hashchange', function() {
+        loadFragment(window.location.hash);
+    });
+    loadFragment(window.location.hash);
+});
 
     })();
 </script>
