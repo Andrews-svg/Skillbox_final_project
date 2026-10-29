@@ -7,8 +7,12 @@ import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -47,7 +51,6 @@ public class SeleniumFetcher {
             }
             logger.debug("✅ Доступ получен, запуск Chrome для: {}", url);
             ChromeOptions options = new ChromeOptions();
-            System.setProperty("webdriver.chrome.driver", "D:\\My ProGramms\\chromedriver-win64\\chromedriver.exe");
             options.addArguments("--headless");
             options.addArguments("--disable-gpu");
             options.addArguments("--no-sandbox");
@@ -61,9 +64,9 @@ public class SeleniumFetcher {
             options.addArguments("--accept-lang=ru-RU,ru;q=0.9");
             options.setPageLoadStrategy(PageLoadStrategy.EAGER);
             long startTime = System.currentTimeMillis();
-            logger.debug("⏱ Создание ChromeDriver...");
-            driver = new ChromeDriver(options);
-            logger.debug("✅ ChromeDriver создан за {} мс", System.currentTimeMillis() - startTime);
+            logger.debug("⏱ Создание WebDriver...");
+            driver = createDriver(options);
+            logger.debug("✅ WebDriver создан за {} мс", System.currentTimeMillis() - startTime);
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
             driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(5));
             logger.debug("⏱ Загрузка страницы: {}", url);
@@ -115,5 +118,19 @@ public class SeleniumFetcher {
         }
         logger.debug("📄 JSOUP для {}", url);
         return false;
+    }
+
+    // ===========================================
+    // 🌐 ВЫБОР ДРАЙВЕРА: REMOTE (Docker/Selenium Grid) ИЛИ LOCAL (dev на Windows)
+    // ===========================================
+    private WebDriver createDriver(ChromeOptions options) throws MalformedURLException {
+        String remoteUrl = System.getenv("SELENIUM_REMOTE_URL");
+        if (remoteUrl != null && !remoteUrl.isBlank()) {
+            logger.info("🌐 Remote WebDriver: {}", remoteUrl);
+            return new RemoteWebDriver(new URL(remoteUrl), options);
+        }
+        logger.info("💻 Local ChromeDriver (dev)");
+        System.setProperty("webdriver.chrome.driver", "D:\\My ProGramms\\chromedriver-win64\\chromedriver.exe");
+        return new ChromeDriver(options);
     }
 }
