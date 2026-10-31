@@ -90,6 +90,9 @@ desktop.ini
 *.ear
 *.class
 
+# Project artifacts: lucene morphology 1.5 (не в публичных репо)
+!lib/*.jar
+
 # Eclipse-specific ignores
 .metadata
 bin/
@@ -132,3 +135,4 @@ Icon?
 __MACOSX
 Page/src/main/resources/application.yaml
 src/main/resources/static/assets/js/copy files/
+searchengine-local-backup.tar
