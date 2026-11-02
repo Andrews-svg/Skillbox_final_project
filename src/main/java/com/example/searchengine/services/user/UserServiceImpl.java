@@ -1,7 +1,7 @@
 package com.example.searchengine.services.user;
 
 
-import com.example.searchengine.config.security.PasswordValidator;
+import com.example.searchengine.validation.PasswordValidator;
 import com.example.searchengine.exceptions.UserRegistrationException;
 import com.example.searchengine.exceptions.UsernameAlreadyExistsException;
 import com.example.searchengine.models.AccountStatus;

@@ -1,13 +1,19 @@
-package com.example.searchengine.config.security;
+package com.example.searchengine.validation;
 
 import org.springframework.stereotype.Component;
 
 @Component
 public class PasswordValidator {
 
+    private static final int MIN_LENGTH = 8;
+    private static final int MAX_LENGTH = 20;
+
     public boolean isValid(String password) {
 
-        if (password.length() < 8) {
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+        if (password.length() < MIN_LENGTH || password.length() > MAX_LENGTH) {
             return false;
         }
         if (!password.matches(".*\\d.*")) {
@@ -28,3 +34,4 @@ public class PasswordValidator {
         return true;
     }
 }
+
