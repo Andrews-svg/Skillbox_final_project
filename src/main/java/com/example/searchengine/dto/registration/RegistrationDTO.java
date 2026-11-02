@@ -3,6 +3,7 @@ package com.example.searchengine.dto.registration;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import com.example.searchengine.validation.ValidPassword;
 
 public class RegistrationDTO {
 
@@ -19,11 +20,10 @@ public class RegistrationDTO {
     private String email;
 
     @NotNull(message = "Пароль обязателен.")
-    @Size(min = 8, max = 20, message = "Минимальная длина пароля - 8 символов.")
+    @ValidPassword
     private String password;
 
     @NotNull(message = "Подтверждение пароля обязательно.")
-    @Size(min = 8, max = 20, message = "Минимальная длина подтверждения пароля - 8 символов.")
     private String confirmPassword;
 
     public String getUsername() { return username; }

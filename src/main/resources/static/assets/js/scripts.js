@@ -1683,16 +1683,6 @@ sendData(
                 });
             }
 
-            // 2. Валидация сложности пароля
-            function validatePassword(password) {
-                var errors = [];
-                if (password.length < 8) errors.push('Минимум 8 символов');
-                if (!/[A-Z]/.test(password)) errors.push('Хотя бы одна заглавная буква');
-                if (!/[a-z]/.test(password)) errors.push('Хотя бы одна строчная буква');
-                if (!/[0-9]/.test(password)) errors.push('Хотя бы одна цифра');
-                return errors;
-            }
-
             // 3. Проверка совпадения паролей
             function checkPasswordsMatch(passwordId, confirmId) {
                 var $password = $('#' + passwordId);
@@ -1815,7 +1805,7 @@ sendData(
                             var errorMsg = 'Ошибка соединения с сервером';
                             try {
                                 var response = JSON.parse(xhr.responseText);
-                                errorMsg = response.message || errorMsg;
+                                errorMsg = response.error || response.message || errorMsg;
                             } catch(e) {}
                             showMessage('error', errorMsg);
                         });
