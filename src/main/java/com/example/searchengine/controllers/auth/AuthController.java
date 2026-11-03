@@ -10,7 +10,6 @@ import com.example.searchengine.services.jwt.JwtTokenService;
 import com.example.searchengine.services.user.UserQueryServiceImpl;
 import com.example.searchengine.services.user.UserServiceImpl;
 import com.example.searchengine.services.UserActivityService;
-import com.example.searchengine.utils.TokenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -221,12 +220,7 @@ public class AuthController {
             appUser.setEmail(regDTO.getEmail());
             appUser.setPassword(regDTO.getPassword());
 
-            String activationToken = TokenUtils.generateActivationToken();
-            appUser.setActivationToken(activationToken);
-            appUser.setStatus(AccountStatus.UNCONFIRMED);
-
             userServiceImpl.registerNewUser(appUser);
-            emailService.sendActivationEmail(appUser);
             userActivityService.logRegistration(
                     appUser.getId(),
                     username,
