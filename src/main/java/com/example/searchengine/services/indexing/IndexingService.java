@@ -213,6 +213,10 @@ public class IndexingService {
 
 
     public boolean indexPage(String url) {
+        boolean wasActive = indexingState.isActive();
+        if (!wasActive) {
+            indexingState.setActive(true);
+        }
         try {
             logger.info("📥 Ручная индексация страницы: {}", url);
             SitesList.SiteConfig config = sitesList.getSites().stream()
@@ -249,6 +253,10 @@ public class IndexingService {
         } catch (Exception e) {
             logger.error("Ошибка индексации страницы {}: {}", url, e.getMessage(), e);
             return false;
+        } finally {
+            if (!wasActive) {
+                indexingState.setActive(false);
+            }
         }
     }
 
