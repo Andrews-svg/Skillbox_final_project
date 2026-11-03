@@ -82,12 +82,12 @@ public class UserServiceImpl implements UserService {
         }
         try {
             userRepository.save(newUser);
-            log.info("Пользователь '{}' успешно зарегистрирован. ID: {}",
-                    newUser.getUsername(), newUser.getId());
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
                         @Override
                         public void afterCommit() {
+                            log.info("Пользователь '{}' успешно зарегистрирован. ID: {}",
+                                    newUser.getUsername(), newUser.getId());
                             emailService.sendActivationEmail(newUser);
                         }
                     }
