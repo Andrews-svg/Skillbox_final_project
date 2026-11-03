@@ -18,6 +18,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
@@ -82,7 +84,14 @@ public class UserServiceImpl implements UserService {
             userRepository.save(newUser);
             log.info("Пользователь '{}' успешно зарегистрирован. ID: {}",
                     newUser.getUsername(), newUser.getId());
-            emailService.sendActivationEmail(newUser);
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            emailService.sendActivationEmail(newUser);
+                        }
+                    }
+            );
         } catch (Exception e) {
             log.error("Ошибка сохранения пользователя '{}': {}",
                     newUser.getUsername(), e.getMessage(), e);
