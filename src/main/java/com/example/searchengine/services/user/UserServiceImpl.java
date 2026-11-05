@@ -82,16 +82,22 @@ public class UserServiceImpl implements UserService {
         }
         try {
             userRepository.save(newUser);
-            TransactionSynchronizationManager.registerSynchronization(
-                    new TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                            log.info("Пользователь '{}' успешно зарегистрирован. ID: {}",
-                                    newUser.getUsername(), newUser.getId());
-                            emailService.sendActivationEmail(newUser);
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(
+                        new TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                log.info("Пользователь '{}' успешно зарегистрирован. ID: {}",
+                                        newUser.getUsername(), newUser.getId());
+                                emailService.sendActivationEmail(newUser);
+                            }
                         }
-                    }
-            );
+                );
+            } else {
+                log.warn("registerNewUser вызван вне транзакции (self-invocation?) — " +
+                        "email отправлен немедленно, без afterCommit");
+                emailService.sendActivationEmail(newUser);
+            }
         } catch (Exception e) {
             log.error("Ошибка сохранения пользователя '{}': {}",
                     newUser.getUsername(), e.getMessage(), e);
