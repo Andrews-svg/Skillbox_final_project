@@ -1,15 +1,15 @@
 ## CI/CD — план (Блок 2)
 
 ### Перед пайплайном (backlog-хвосты)
-- [ ] isSynchronizationActive() в UserServiceImpl.registerNewUser
-- [ ] activation_token → NULL после активации
-- [ ] AuthController.register: catch (Exception) → catch (IllegalArgumentException) throw
-- [ ] application.yaml:url → ${SPRING_DATASOURCE_URL:...}
+- [x] isSynchronizationActive() в UserServiceImpl.registerNewUser
+- [x] activation_token → NULL после активации
+- [x] AuthController.register: catch (Exception) → catch (IllegalArgumentException) throw
+- [x] application.yaml:url → ${SPRING_DATASOURCE_URL:...}
 - [ ] IndexingState: AtomicBoolean → AtomicInteger
 
 ### Тесты — первый слой (unit)
-- [ ] IndexingStateTest (wasActive: false→false, true→true)
-- [ ] PasswordValidatorTest (короткий/длинный/спецсимволы)
+- [x] IndexingStateTest (wasActive: false→false, true→true)
+- [x] PasswordValidatorTest (короткий/длинный/спецсимволы)
 
 ### Тесты — второй слой (integration)
 - [ ] UserServiceImplTest + Testcontainers MySQL (afterCommit, один email)
@@ -26,6 +26,24 @@
 - [ ] gitleaks — проверка, что секреты не в git
 
 ---
+
+## Безопасность — backlog
+
+- [ ] **Fail-fast: prod + пустой JWT_SECRET** → `IllegalStateException` на старте (`JwtConfig @PostConstruct`). Сейчас дефолт `mySuperSecret...` — если prod забудет env, приложение стартует с **тестовым** ключом → любой, кто видел git, подпишет валидный JWT. Лучше «не стартовать», чем «стартовать с дырой»
+- [ ] **Fail-fast: prod + DB_USER=root** → warning/fail. `root` в prod — плохо
+- [ ] **gitleaks в CI** — сканирует diff на паттерны секретов. Уже в разделе «Секреты», здесь — как **защита от будущих** ошибок
+- [ ] **Ротация JWT_SECRET** — процедура: сменить env → все токены инвалидируются. При инциденте
+
+## Технический долг — мелочи
+
+- [ ] **Дедуплицировать `.gitignore`** — блоки `HELP.md/target/...` + `### STS ###` + `### IntelliJ ###` + `### NetBeans ###` + `### VS Code ###` повторяются **дважды** (строки 1–37 и 39–...). `.gitignore` берёт первое совпадение — не ломает, но шум. 5 минут
+- [ ] **`!lib/russian-1.5.jar` до `*.jar`** — мёртвая строка (negation **до** правила — памятка 31.10). Спасает только `!lib/*.jar` в конце. Убрать или переставить
+- [ ] **`Page/src/main/resources/application.yaml`** в `.gitignore` — **другой** путь. Что такое `Page/`? Старая копия, подпроект? Решить: удалить папку или задокументировать
+- [ ] **`application.yaml` — YAML-структура**: `jpa.hibernate.properties` — часть `hibernate`, но `dialect` — на уровне `hibernate`. Возможно, `dialect` должен быть в `properties.hibernate.dialect`. Проверить при старте с MySQL (сейчас `test-compile` не ловит, `mvn test` не поднимает JPA)
+
+## CI/CD — следующий шаг
+
+- [ ] `.github/workflows/ci.yml` — **все 5 хвостов закрыты, можно начинать**
 
 ## Решения (журнал)
 
