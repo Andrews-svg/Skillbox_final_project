@@ -1,29 +1,29 @@
 package com.example.searchengine.dto.registration;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import com.example.searchengine.validation.ValidPassword;
 
 public class RegistrationDTO {
 
-    @NotNull(message = "Имя пользователя обязательно.")
+    @NotBlank(message = "Имя пользователя обязательно.")
     @Size(min = 3, max = 50, message = "Имя пользователя должно содержать от 3 до 50 символов.")
     private String username;
 
-    @NotNull(message = "Фамилия обязательна.")
+    @NotBlank(message = "Фамилия обязательна.")
     @Size(max = 50, message = "Фамилия не может превышать 50 символов.")
     private String lastName;
 
-    @NotNull(message = "E-mail обязателен.")
+    @NotBlank(message = "E-mail обязателен.")
     @Email(message = "Неверный формат E-mail.")
     private String email;
 
-    @NotNull(message = "Пароль обязателен.")
+    @NotBlank(message = "Пароль обязателен.")
     @ValidPassword
     private String password;
 
-    @NotNull(message = "Подтверждение пароля обязательно.")
+    @NotBlank(message = "Подтверждение пароля обязательно.")
     private String confirmPassword;
 
     public String getUsername() { return username; }

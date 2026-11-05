@@ -7,6 +7,7 @@ import com.example.searchengine.services.jwt.JwtTokenService;
 import com.example.searchengine.services.user.UserQueryServiceImpl;
 import com.example.searchengine.services.user.UserServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.example.searchengine.services.VisitCounterService;
 import com.example.searchengine.validation.PasswordValidator;
 
+
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +32,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.mockito.Mockito.never;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -76,6 +81,8 @@ class AuthControllerTest {
             verify(userActivityService).logRegistrationFailed(any(), any(), any(), any());
         }
 
+
+
         @Test
         @DisplayName("UserRegistrationException → 500 через catch (Exception) в контроллере")
         void userRegistrationExceptionReturnsInternalError() throws Exception {
@@ -95,6 +102,76 @@ class AuthControllerTest {
             when(userQueryServiceImpl.existsByUsername(anyString())).thenReturn(false);
             when(userQueryServiceImpl.existsByEmail(anyString())).thenReturn(false);
             when(passwordValidator.isValid(anyString())).thenReturn(true);
+        }
+    }
+
+    @Nested
+    @DisplayName("Валидация DTO на границе (@Valid)")
+    class DtoValidation {
+
+        @BeforeEach
+        void stubValidPassword() {
+            when(passwordValidator.isValid(anyString())).thenReturn(true);
+        }
+
+        @Test
+        @DisplayName("пустой email → 400, registerNewUser не вызван")
+        void emptyEmailReturnsBadRequest() throws Exception {
+            Map<String, String> body = Map.of(
+                    "username", "testuser",
+                    "lastName", "Test",
+                    "email", "",
+                    "password", "Password1!",
+                    "confirmPassword", "Password1!"
+            );
+
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value(containsString("E-mail обязателен")));
+
+            verify(userServiceImpl, never()).registerNewUser(any());
+        }
+
+        @Test
+        @DisplayName("username из пробелов → 400, registerNewUser не вызван")
+        void blankUsernameReturnsBadRequest() throws Exception {
+            Map<String, String> body = Map.of(
+                    "username", "   ",
+                    "lastName", "Test",
+                    "email", "test@example.com",
+                    "password", "Password1!",
+                    "confirmPassword", "Password1!"
+            );
+
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value(containsString("Имя пользователя обязательно")));
+
+            verify(userServiceImpl, never()).registerNewUser(any());
+        }
+
+        @Test
+        @DisplayName("пустой password → 400, registerNewUser не вызван")
+        void emptyPasswordReturnsBadRequest() throws Exception {
+            Map<String, String> body = Map.of(
+                    "username", "testuser",
+                    "lastName", "Test",
+                    "email", "test@example.com",
+                    "password", "",
+                    "confirmPassword", "Password1!"
+            );
+
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value(containsString("Пароль обязателен")));
+
+            verify(userServiceImpl, never()).registerNewUser(any());
         }
     }
 }
