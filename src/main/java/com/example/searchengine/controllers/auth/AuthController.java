@@ -235,6 +235,16 @@ public class AuthController {
             response.put("username", appUser.getUsername());
             response.put("email", appUser.getEmail());
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Некорректные данные при регистрации пользователя {} с IP: {}: {}",
+                    username, ipAddress, e.getMessage());
+            userActivityService.logRegistrationFailed(
+                    username,
+                    ipAddress,
+                    userAgent,
+                    e.getMessage()
+            );
+            throw e;
         } catch (Exception e) {
             log.error("Ошибка при регистрации пользователя {} с IP: {}: ",
                     username, ipAddress, e);
