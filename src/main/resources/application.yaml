@@ -1,0 +1,168 @@
+server:
+  port: 8080
+
+spring:
+  mvc:
+    contentnegotiation:
+      favor-path-extension: true
+      favor-parameter: false
+      ignore-accept-header: true
+      use-jaf: false
+      media-types:
+        css: text/css
+        js: application/javascript
+  resources:
+    static-locations: classpath:/static/,classpath:/public/,file:/uploads/
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/search_engine?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Europe/Moscow&useLegacyDatetimeCode=false}
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+    hikari:
+      pool-name: SearchEnginePool
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+  jpa:
+    show-sql: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      dialect: org.hibernate.dialect.MySQLDialect
+      properties:
+        hibernate:
+          format_sql: false
+          use_sql_comments: false
+          generate_statistics: false
+          session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 100
+          id:
+            new_generator_mappings: false
+          order_inserts: true
+          order_updates: true
+          jdbc:
+            batch_size: 30
+            time_zone: Europe/Moscow
+          cache:
+            use_second_level_cache: false
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+    encoding: UTF-8
+  jackson:
+    time-zone: Europe/Moscow
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+jwt:
+  secret: ${JWT_SECRET:bXlTdXBlclNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvblRoYXRJc0F0TGVhc3QzMkNoYXJzTG9uZw==}
+  issuer: search-engine
+  audience: search-engine-client
+  access-token:
+    expiration: 3600000
+  refresh-token:
+    expiration: 604800000
+  allowed-clock-skew-seconds: 30
+  cookie:
+    name: auth_token
+    secure: false
+    http-only: true
+    same-site: strict
+    max-age: 86400
+    path: /
+
+indexing-settings:
+  sites:
+    - url: https://books.toscrape.com
+      name: Books To Scrape
+    - url: https://playback.ru
+      name: Playback
+    - url: https://skillbox.ru
+      name: Skillbox
+    - url: https://lenta.ru
+      name: Lenta
+
+crawler:
+  js-enabled-sites:
+    - https://books.toscrape.com
+  js-wait: 5000
+
+logging:
+  level:
+    liquibase: DEBUG
+    searchengine: DEBUG
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework: DEBUG
+    org.springframework.mail: DEBUG
+    org.springframework.mail.javamail.JavaMailSenderImpl: DEBUG
+  file:
+    name: logs/debug.log
+    max-size: 100MB
+    max-history: 7
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    root: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+  file:
+    path: logs
+    name: dev-app.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+logging:
+  level:
+    root: ERROR
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+  file:
+    path: logs
+    name: test-app.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+    org.springframework: DEBUG
+  file:
+    path: logs
+    name: prod-app.log
