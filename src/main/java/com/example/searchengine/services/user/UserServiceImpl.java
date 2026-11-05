@@ -124,6 +124,12 @@ public class UserServiceImpl implements UserService {
         AppUser user = userOptional.get();
         if (user.getStatus() == AccountStatus.CONFIRMED) {
             log.warn("Аккаунт пользователя '{}' уже активирован", user.getUsername());
+            if (user.getActivationToken() != null) {
+                log.info("Очистка оставшегося токена активации у подтверждённого пользователя '{}'",
+                        user.getUsername());
+                user.setActivationToken(null);
+                userRepository.save(user);
+            }
             return;
         }
         user.setStatus(AccountStatus.CONFIRMED);

@@ -1,11 +1,13 @@
 package com.example.searchengine.services.user;
 
+import com.example.searchengine.models.AccountStatus;
 import com.example.searchengine.models.AppUser;
 import com.example.searchengine.models.Role;
 import com.example.searchengine.repositories.RoleRepository;
 import com.example.searchengine.repositories.UserRepository;
 import com.example.searchengine.services.EmailService;
 import com.example.searchengine.validation.PasswordValidator;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -30,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("UserServiceImpl.registerNewUser — afterCommit vs fallback")
+@DisplayName("UserServiceImpl")
 class UserServiceImplTest {
 
     @Mock private UserRepository userRepository;
@@ -55,12 +58,6 @@ class UserServiceImplTest {
 
         userRole = new Role();
         userRole.setName("USER");
-
-        when(passwordValidator.isValid("Password1!")).thenReturn(true);
-        when(userQueryService.existsByUsername("testuser")).thenReturn(false);
-        when(passwordEncoder.encode("Password1!")).thenReturn("encoded-pass");
-        when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
-        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @AfterEach
@@ -71,8 +68,17 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("Без активной транзакции (fallback)")
-    class WithoutTransaction {
+    @DisplayName("registerNewUser — без активной транзакции (fallback)")
+    class RegisterWithoutTransaction {
+
+        @BeforeEach
+        void stubHappyPath() {
+            when(passwordValidator.isValid("Password1!")).thenReturn(true);
+            when(userQueryService.existsByUsername("testuser")).thenReturn(false);
+            when(passwordEncoder.encode("Password1!")).thenReturn("encoded-pass");
+            when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
+            when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+        }
 
         @Test
         @DisplayName("email отправлен немедленно, синхронизация не регистрируется")
@@ -87,8 +93,17 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("С активной транзакцией (afterCommit)")
-    class WithTransaction {
+    @DisplayName("registerNewUser — с активной транзакцией (afterCommit)")
+    class RegisterWithTransaction {
+
+        @BeforeEach
+        void stubHappyPath() {
+            when(passwordValidator.isValid("Password1!")).thenReturn(true);
+            when(userQueryService.existsByUsername("testuser")).thenReturn(false);
+            when(passwordEncoder.encode("Password1!")).thenReturn("encoded-pass");
+            when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
+            when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+        }
 
         @Test
         @DisplayName("email не отправлен до commit, отправлен ровно один раз после afterCommit")
@@ -108,6 +123,70 @@ class UserServiceImplTest {
             synchronizations.forEach(TransactionSynchronization::afterCommit);
 
             verify(emailService, times(1)).sendActivationEmail(newUser);
+        }
+    }
+
+    @Nested
+    @DisplayName("activateAccount")
+    class ActivateAccount {
+
+        private static final String TOKEN = "activation-token-123";
+
+        @Test
+        @DisplayName("UNCONFIRMED → CONFIRMED, токен занулён, save один раз")
+        void happyPath() {
+            AppUser user = buildUser(AccountStatus.UNCONFIRMED, TOKEN);
+            when(userRepository.findByActivationToken(TOKEN)).thenReturn(Optional.of(user));
+
+            userService.activateAccount(TOKEN);
+
+            assertThat(user.getStatus()).isEqualTo(AccountStatus.CONFIRMED);
+            assertThat(user.getActivationToken()).isNull();
+            verify(userRepository, times(1)).save(user);
+        }
+
+        @Test
+        @DisplayName("уже CONFIRMED с оставшимся токеном → токен очищен, save один раз")
+        void alreadyConfirmedWithToken_clearsToken() {
+            AppUser user = buildUser(AccountStatus.CONFIRMED, TOKEN);
+            when(userRepository.findByActivationToken(TOKEN)).thenReturn(Optional.of(user));
+
+            userService.activateAccount(TOKEN);
+
+            assertThat(user.getActivationToken()).isNull();
+            assertThat(user.getStatus()).isEqualTo(AccountStatus.CONFIRMED);
+            verify(userRepository, times(1)).save(user);
+        }
+
+        @Test
+        @DisplayName("уже CONFIRMED без токена → save НЕ вызывается")
+        void alreadyConfirmedWithoutToken_noSave() {
+            AppUser user = buildUser(AccountStatus.CONFIRMED, null);
+            when(userRepository.findByActivationToken(TOKEN)).thenReturn(Optional.of(user));
+
+            userService.activateAccount(TOKEN);
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("неизвестный токен → EntityNotFoundException, save не вызывается")
+        void invalidToken_throws() {
+            when(userRepository.findByActivationToken(TOKEN)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.activateAccount(TOKEN))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage("Неверный токен активации");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        private AppUser buildUser(AccountStatus status, String token) {
+            AppUser user = new AppUser();
+            user.setUsername("activate-test");
+            user.setStatus(status);
+            user.setActivationToken(token);
+            return user;
         }
     }
 }
