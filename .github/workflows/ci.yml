@@ -68,13 +68,13 @@ jobs:
           echo "App did not become ready in 180s"
           exit 1
 
-      - name: Smoke: GET / returns 200
+      - name: "Smoke: GET / returns 200"
         run: |
           code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
           echo "GET / -> $code"
           test "$code" = "200"
 
-      - name: Smoke: GET /api/statistics returns 401
+      - name: "Smoke: GET /api/statistics returns 401"
         run: |
           code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/statistics)
           echo "GET /api/statistics -> $code"
