@@ -1,4 +1,4 @@
-﻿package com.example.searchengine;
+package com.example.searchengine;
 
 import org.junit.jupiter.api.Test;
 
