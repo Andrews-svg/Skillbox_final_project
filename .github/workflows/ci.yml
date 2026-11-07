@@ -8,6 +8,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks (full history)
+        # TODO: pin to a specific version after first successful run
+        uses: docker://ghcr.io/gitleaks/gitleaks:latest
+        with:
+          args: detect --source /github/workspace --config /github/workspace/.gitleaks.toml --redact --verbose --report-format sarif --report-path /github/workspace/gitleaks.sarif
+
+      - name: Upload gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.sarif
+
   build-and-test:
     runs-on: ubuntu-latest
 
