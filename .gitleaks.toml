@@ -1,0 +1,16 @@
+# Gitleaks config — full-history secret scan in CI.
+# Allowlist entries must say WHY they are safe.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dev defaults - not real secrets (publicly known, dev/local only)"
+
+regexes = [
+    # Dev JWT secret in src/main/resources/application.yaml.
+    # Publicly known test value; overridden by JWT_SECRET in prod profile.
+    '''bXlTdXBlclNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvblRoYXRJc0F0TGVhc3QzMkNoYXJzTG9uZw==''',
+    # Dev DB credentials in docker-compose.yml / ci.yml (root/root is a dev default).
+    '''(?i)(DB_PASS|MYSQL_ROOT_PASSWORD)[\s"':=]+root''',
+]
