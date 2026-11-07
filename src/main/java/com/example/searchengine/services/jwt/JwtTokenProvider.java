@@ -74,6 +74,13 @@ public class JwtTokenProvider {
             );
         }
 
+        if (secretKeyBase64.contains("${")) {
+            throw new IllegalStateException(
+                    "JWT secret key is unresolved: " + secretKeyBase64
+                            + ". Set the JWT_SECRET environment variable in the prod profile."
+            );
+        }
+
         try {
             byte[] keyBytes = Decoders.BASE64.decode(secretKeyBase64);
             if (keyBytes.length < 32) {
