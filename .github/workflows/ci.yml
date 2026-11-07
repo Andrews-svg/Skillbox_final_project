@@ -87,3 +87,33 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  docker-push:
+    needs: docker-smoke
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image (app only)
+        run: docker compose build app
+
+      - name: Tag and push to GHCR
+        run: |
+          IMAGE=ghcr.io/andrews-svg/searchengine
+          docker tag searchengine:local $IMAGE:${{ github.sha }}
+          docker tag searchengine:local $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
