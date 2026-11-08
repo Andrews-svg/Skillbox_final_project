@@ -127,7 +127,7 @@ jobs:
         run: docker compose down -v
 
   docker-push:
-    needs: docker-smoke
+    needs: [docker-smoke, secret-scan]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
