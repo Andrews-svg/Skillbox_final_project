@@ -31,7 +31,7 @@ public class LinkExtractor {
             String absUrl = link.absUrl("href");
             if (absUrl.startsWith(baseUrl)) {
                 String normalized = normalizeUrl(absUrl);
-                if (isValidCrawlableUrl(normalized, baseUrl)) {
+                if (isValidCrawlableUrl(normalized)) {
                     uniqueLinks.add(normalized);
                     if (isPaginationLink(normalized)) {
                         logger.info("📑 НАЙДЕНА ССЫЛКА ПАГИНАЦИИ: {} -> {}", pageUrl, normalized);
@@ -55,7 +55,7 @@ public class LinkExtractor {
             if (!fullUrl.startsWith(baseUrl)) {
                 continue;
             }
-            if (!isValidCrawlableUrl(fullUrl, baseUrl)) {
+            if (!isValidCrawlableUrl(fullUrl)) {
                 continue;
             }
             if (isPaginationLink(fullUrl)) {
@@ -95,7 +95,7 @@ public class LinkExtractor {
         return url;
     }
 
-    private boolean isValidCrawlableUrl(String url, String baseUrl) {
+    private boolean isValidCrawlableUrl(String url) {
         return !url.contains("#") &&
                 !url.contains("mailto:") &&
                 !url.contains("tel:") &&
