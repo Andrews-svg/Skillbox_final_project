@@ -41,12 +41,26 @@ public class LinkExtractor {
         }
         for (Element element : doc.select("[data-url], [data-href], [data-page]")) {
             String dataUrl = element.attr("data-url");
-            if (!dataUrl.isEmpty()) {
-                String fullUrl = dataUrl.startsWith("http") ? dataUrl : baseUrl + dataUrl;
-                if (isPaginationLink(fullUrl)) {
-                    logger.info("📑 ПАГИНАЦИЯ В DATA-АТРИБУТЕ: {} -> {}", pageUrl, fullUrl);
-                    uniqueLinks.add(normalizeUrl(fullUrl));
-                }
+            if (dataUrl.isEmpty()) {
+                continue;
+            }
+            String fullUrl;
+            if (dataUrl.startsWith("http")) {
+                fullUrl = dataUrl;
+            } else if (dataUrl.startsWith("/")) {
+                fullUrl = baseUrl + dataUrl;
+            } else {
+                fullUrl = baseUrl + "/" + dataUrl;
+            }
+            if (!fullUrl.startsWith(baseUrl)) {
+                continue;
+            }
+            if (!isValidCrawlableUrl(fullUrl, baseUrl)) {
+                continue;
+            }
+            if (isPaginationLink(fullUrl)) {
+                logger.info("📑 ПАГИНАЦИЯ В DATA-АТРИБУТЕ: {} -> {}", pageUrl, fullUrl);
+                uniqueLinks.add(normalizeUrl(fullUrl));
             }
         }
         logger.debug("✅ Найдено {} уникальных ссылок на {}", uniqueLinks.size(), pageUrl);

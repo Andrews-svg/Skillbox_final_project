@@ -124,4 +124,28 @@ class LinkExtractorTest {
 
         assertThat(links).isEmpty();
     }
+
+    @Test
+    @DisplayName("data-url with external domain is excluded")
+    void dataUrlExternalDomain_isExcluded() {
+        List<String> links = extract("<div data-url=\"https://evil.example/page/2\">2</div>");
+
+        assertThat(links).isEmpty();
+    }
+
+    @Test
+    @DisplayName("data-url without leading slash is resolved against baseUrl")
+    void dataUrlRelativeWithoutSlash_isResolved() {
+        List<String> links = extract("<div data-url=\"page/2\">2</div>");
+
+        assertThat(links).containsExactly("https://site.example/page/2");
+    }
+
+    @Test
+    @DisplayName("data-url with forbidden extension is excluded")
+    void dataUrlForbiddenExtension_isExcluded() {
+        List<String> links = extract("<div data-url=\"/manual.pdf?page=2\">2</div>");
+
+        assertThat(links).isEmpty();
+    }
 }
