@@ -156,6 +156,8 @@ spring:
   config:
     activate:
       on-profile: prod
+  datasource:
+    username: ${DB_USER}
 
 jwt:
   secret: ${JWT_SECRET}
