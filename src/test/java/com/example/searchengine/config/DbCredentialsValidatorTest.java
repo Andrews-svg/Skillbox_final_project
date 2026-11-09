@@ -42,6 +42,16 @@ class DbCredentialsValidatorTest {
         }
 
         @Test
+        @DisplayName("unresolved ${DB_USER} placeholder -> IllegalStateException")
+        void unresolvedPlaceholder() {
+            DbCredentialsValidator validator = new DbCredentialsValidator(env("prod"), "${DB_USER}");
+
+            assertThatThrownBy(validator::validate)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("DB_USER");
+        }
+
+        @Test
         @DisplayName("DB_USER=appuser -> ok")
         void nonRootOk() {
             DbCredentialsValidator validator = new DbCredentialsValidator(env("prod"), "appuser");

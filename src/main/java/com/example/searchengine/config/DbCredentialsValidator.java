@@ -37,6 +37,11 @@ public class DbCredentialsValidator {
             throw new IllegalStateException(
                     "DB_USER is not set in prod profile. Set DB_USER to a dedicated application user.");
         }
+        if (dbUsername.contains("${")) {
+            throw new IllegalStateException(
+                    "DB_USER is unresolved in prod profile: " + dbUsername
+                            + ". Set the DB_USER environment variable.");
+        }
         if (FORBIDDEN_USER.equalsIgnoreCase(dbUsername.trim())) {
             throw new IllegalStateException(
                     "DB_USER=root is forbidden in prod profile. Set DB_USER to a dedicated application user.");
