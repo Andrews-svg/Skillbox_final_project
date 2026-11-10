@@ -5,12 +5,18 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class IndexingState {
 
-    private final AtomicBoolean indexingInProgress = new AtomicBoolean(false);
+    // ===========================================
+    // ГЛОБАЛЬНЫЙ ФЛАГ ИНДЕКСАЦИИ (ref-count + stop)
+    // ===========================================
+    private final AtomicInteger activeCount = new AtomicInteger(0);
+    private final AtomicBoolean stopRequested = new AtomicBoolean(false);
+
     private final ConcurrentHashMap<Long, AtomicLong> sessionErrorsBySite = new ConcurrentHashMap<>();
 
     // ===========================================
@@ -22,14 +28,40 @@ public class IndexingState {
     private final ConcurrentHashMap<Long, AtomicLong> sessionLemmasBySite = new ConcurrentHashMap<>();
 
     // ===========================================
-    // ГЛОБАЛЬНЫЙ ФЛАГ (индексация идёт?)
+    // ФЛАГ: ИНДЕКСАЦИЯ АКТИВНА?
+    // false если явно запрошен стоп, ИЛИ нет ни одной активной операции.
     // ===========================================
     public boolean isActive() {
-        return indexingInProgress.get();
+        return !stopRequested.get() && activeCount.get() > 0;
     }
 
-    public void setActive(boolean active) {
-        indexingInProgress.set(active);
+    // ===========================================
+    // REF-COUNT: СТАРТ / ФИНИШ ОПЕРАЦИИ (full или page)
+    // Безусловная пара — без wasActive. Инкремент/декремент всегда.
+    // ===========================================
+    public void startIndexing() {
+        activeCount.incrementAndGet();
+    }
+
+    public void endIndexing() {
+        activeCount.updateAndGet(c -> Math.max(0, c - 1));
+    }
+
+    // ===========================================
+    // ЯВНЫЙ СТОП: новые/текущие операции увидят isActive()=false
+    // ===========================================
+    public void requestStop() {
+        stopRequested.set(true);
+    }
+
+    // ===========================================
+    // СБРОС: обнулить счётчик и снять stopRequested.
+    // Используется после stopAllCrawling (пулы дожданы → воркеров нет)
+    // и перед startFullIndexing (страховка от залипания).
+    // ===========================================
+    public void reset() {
+        activeCount.set(0);
+        stopRequested.set(false);
     }
 
     // ===========================================

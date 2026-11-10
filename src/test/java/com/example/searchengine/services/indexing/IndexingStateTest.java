@@ -18,7 +18,7 @@ class IndexingStateTest {
     }
 
     @Nested
-    @DisplayName("Флаг индексации (isActive/setActive)")
+    @DisplayName("Флаг индексации (ref-count + stop)")
     class ActiveFlag {
 
         @Test
@@ -28,32 +28,59 @@ class IndexingStateTest {
         }
 
         @Test
-        @DisplayName("setActive(true) включает флаг")
-        void setActiveTrueActivates() {
-            state.setActive(true);
-
+        @DisplayName("startIndexing включает, endIndexing выключает")
+        void startThenEnd_activatesAndDeactivates() {
+            state.startIndexing();
             assertThat(state.isActive()).isTrue();
-        }
 
-        @Test
-        @DisplayName("setActive(false) выключает флаг")
-        void setActiveFalseDeactivates() {
-            state.setActive(true);
-            state.setActive(false);
-
+            state.endIndexing();
             assertThat(state.isActive()).isFalse();
         }
 
         @Test
-        @DisplayName("повторный setActive идемпотентен")
-        void setActiveIsIdempotent() {
-            state.setActive(true);
-            state.setActive(true);
+        @DisplayName("два startIndexing + один endIndexing — всё ещё активна (ref-count)")
+        void refCountTwoStartsOneEnd_stillActive() {
+            state.startIndexing();
+            state.startIndexing();
+            state.endIndexing();
             assertThat(state.isActive()).isTrue();
 
-            state.setActive(false);
-            state.setActive(false);
+            state.endIndexing();
             assertThat(state.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("endIndexing при 0 не уходит в минус, следующий startIndexing работает")
+        void endIndexingAtZero_doesNotUnderflow() {
+            state.endIndexing();
+            state.endIndexing();
+            assertThat(state.isActive()).isFalse();
+
+            state.startIndexing();
+            assertThat(state.isActive()).isTrue();
+        }
+
+        @Test
+        @DisplayName("requestStop форсирует isActive=false даже при активном счётчике")
+        void requestStop_forcesInactive() {
+            state.startIndexing();
+            state.requestStop();
+            assertThat(state.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("reset обнуляет счётчик и снимает stopRequested")
+        void reset_clearsAll() {
+            state.startIndexing();
+            state.startIndexing();
+            state.requestStop();
+            assertThat(state.isActive()).isFalse();
+
+            state.reset();
+            assertThat(state.isActive()).isFalse();
+
+            state.startIndexing();
+            assertThat(state.isActive()).isTrue();
         }
     }
 

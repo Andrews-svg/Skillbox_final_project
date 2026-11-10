@@ -58,14 +58,14 @@ class IndexingServiceRaceTest {
 
     @AfterEach
     void tearDown() {
-        indexingState.setActive(false);
+        indexingState.reset();
         indexingService.destroy();
     }
 
     @Test
     @DisplayName("P1b: page-index, стартовавшая при active=true, не скипается после завершения full")
     void pageIndexStartedDuringFull_isNotSkippedAfterFullEnds() throws Exception {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         setUpSitesListWithOneSite();
 
         CountDownLatch pageEnteredCrawler = new CountDownLatch(1);
@@ -89,7 +89,7 @@ class IndexingServiceRaceTest {
                     .as("indexPage должен дойти до crawlerService.indexPage")
                     .isTrue();
 
-            indexingState.setActive(false);
+            indexingState.endIndexing();
             fullEnded.countDown();
 
             assertThat(result.get(5, TimeUnit.SECONDS))

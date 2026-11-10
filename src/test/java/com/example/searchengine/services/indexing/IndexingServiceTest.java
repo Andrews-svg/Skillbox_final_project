@@ -64,7 +64,7 @@ class IndexingServiceTest {
 
     @AfterEach
     void tearDown() {
-        indexingState.setActive(false);
+        indexingState.reset();
         indexingService.destroy();
     }
 
@@ -73,7 +73,7 @@ class IndexingServiceTest {
     @Test
     @DisplayName("startFullIndexing: already active -> IllegalStateException, no side effects")
     void startFullIndexing_alreadyActive_throws() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
 
         assertThatThrownBy(() -> indexingService.startFullIndexing())
                 .isInstanceOf(IllegalStateException.class)
@@ -142,9 +142,9 @@ class IndexingServiceTest {
     }
 
     @Test
-    @DisplayName("indexPage: already active (wasActive=true) -> active NOT reset after call")
-    void indexPage_wasAlreadyActive_keepsActiveTrue() {
-        indexingState.setActive(true);
+    @DisplayName("indexPage: чужой ref-count не задет — параллельная операция продолжает держать active=true")
+    void indexPage_foreignRefCountNotAffected_staysActive() {
+        indexingState.startIndexing();
         sitesList.setSites(List.of(new SitesList.SiteConfig("Site", "https://site.example")));
         Site site = site(1L, "https://site.example", Status.INDEXED);
         when(siteService.findByUrl(site.getUrl())).thenReturn(Optional.of(site));
@@ -205,9 +205,9 @@ class IndexingServiceTest {
     }
 
     @Test
-    @DisplayName("stopIndexing: active -> setActive(false), crawler stopped, session saved")
+    @DisplayName("stopIndexing: active -> requestStop + reset, crawler stopped, session saved")
     void stopIndexing_active_stopsAndSavesSession() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         indexingState.startSession();
         Site site = site(7L, "https://site.example", Status.INDEXING);
         indexingState.addSessionSite(7L);
@@ -226,7 +226,7 @@ class IndexingServiceTest {
     @Test
     @DisplayName("stopIndexing: active, crawler throws -> still deactivates and saves session")
     void stopIndexing_crawlerThrows_continuesGracefully() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         indexingState.startSession();
         org.mockito.Mockito.doThrow(new RuntimeException("crawler down"))
                 .when(crawlerService).stopAllCrawling();
@@ -254,7 +254,7 @@ class IndexingServiceTest {
     @Test
     @DisplayName("onPageIndexed: active -> status time updated")
     void onPageIndexed_active_updatesStatusTime() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         Site site = site(1L, "https://site.example", Status.INDEXING);
 
         indexingService.onPageIndexed(site);

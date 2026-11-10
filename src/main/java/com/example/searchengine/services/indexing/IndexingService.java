@@ -97,11 +97,12 @@ public class IndexingService {
         if (indexingExecutor.isShutdown()) {
             throw new IllegalStateException("Executor сервис остановлен");
         }
-        indexingState.setActive(true);
+        indexingState.reset();
+        indexingState.startIndexing();
         logger.info("=== ЗАПУСК ПОЛНОЙ ИНДЕКСАЦИИ ===");
         List<SitesList.SiteConfig> configs = sitesList.getSites();
         if (configs.isEmpty()) {
-            indexingState.setActive(false);
+            indexingState.endIndexing();
             throw new IllegalStateException("В конфигурации нет сайтов для индексации");
         }
         if (!crawlerConfig.isMultiSiteMode()) {
@@ -127,7 +128,7 @@ public class IndexingService {
                 } finally {
                     if (completedCount.incrementAndGet() == totalSites) {
                         if (indexingState.isActive()) {
-                            indexingState.setActive(false);
+                            indexingState.endIndexing();
                             logSessionEnd("COMPLETED");
                             logger.info("=== ВСЕ САЙТЫ ЗАВЕРШИЛИ ИНДЕКСАЦИЮ ===");
                         } else {
@@ -213,10 +214,7 @@ public class IndexingService {
 
 
     public boolean indexPage(String url) {
-        boolean wasActive = indexingState.isActive();
-        if (!wasActive) {
-            indexingState.setActive(true);
-        }
+        indexingState.startIndexing();
         try {
             logger.info("📥 Ручная индексация страницы: {}", url);
             SitesList.SiteConfig config = sitesList.getSites().stream()
@@ -254,9 +252,7 @@ public class IndexingService {
             logger.error("Ошибка индексации страницы {}: {}", url, e.getMessage(), e);
             return false;
         } finally {
-            if (!wasActive) {
-                indexingState.setActive(false);
-            }
+            indexingState.endIndexing();
         }
     }
 
@@ -282,11 +278,13 @@ public class IndexingService {
             return;
         }
         logger.info("=== ОСТАНОВКА ИНДЕКСАЦИИ ПО ЗАПРОСУ ПОЛЬЗОВАТЕЛЯ ===");
-        indexingState.setActive(false);
+        indexingState.requestStop();
         try {
             crawlerService.stopAllCrawling();
         } catch (Exception e) {
             logger.warn("Ошибка при остановке краулера: {}", e.getMessage());
+        } finally {
+            indexingState.reset();
         }
         try {
             indexingState.getSessionSiteIds().forEach(siteId ->

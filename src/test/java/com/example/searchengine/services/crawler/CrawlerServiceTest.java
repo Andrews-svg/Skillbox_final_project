@@ -62,7 +62,7 @@ class CrawlerServiceTest {
     @Test
     @DisplayName("crawlSite: active, crawler succeeds -> siteCrawler.crawl invoked once")
     void crawlSite_active_invokesCrawler() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         Site site = site(1L, "https://site.example");
 
         crawlerService.crawlSite(site);
@@ -74,7 +74,7 @@ class CrawlerServiceTest {
     @Test
     @DisplayName("crawlSite: active, crawler throws -> updateStatusWithError called")
     void crawlSite_crawlerThrows_updatesStatusWithError() {
-        indexingState.setActive(true);
+        indexingState.startIndexing();
         Site site = site(1L, "https://site.example");
         doThrow(new RuntimeException("crawl boom"))
                 .when(siteCrawler).crawl(eq(site), any(ForkJoinPool.class));
@@ -126,14 +126,14 @@ class CrawlerServiceTest {
     // ===== stopAllCrawling: 1 =====
 
     @Test
-    @DisplayName("stopAllCrawling: delegates to siteCrawler and deactivates state")
-    void stopAllCrawling_delegatesAndDeactivates() {
-        indexingState.setActive(true);
+    @DisplayName("stopAllCrawling: делегирует в siteCrawler, но не трогает indexing flag (владелец — IndexingService)")
+    void stopAllCrawling_delegatesButDoesNotTouchFlag() {
+        indexingState.startIndexing();
 
         crawlerService.stopAllCrawling();
 
         verify(siteCrawler).stopAllCrawling();
-        assertThat(indexingState.isActive()).isFalse();
+        assertThat(indexingState.isActive()).isTrue();
     }
 
     // ===== stopCrawling(siteId): 1 =====

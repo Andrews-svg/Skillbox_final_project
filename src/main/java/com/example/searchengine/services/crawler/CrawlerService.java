@@ -89,8 +89,6 @@ public class CrawlerService {
         siteCrawler.stopAllCrawling();
         sitePools.forEach(this::shutdownPool);
         sitePools.clear();
-        // ✅ Только после завершения всех пулов ставим флаг
-        indexingState.setActive(false);
         logger.info("✅ Все обходы остановлены");
     }
 
